@@ -1,7 +1,7 @@
 #ifndef BONNIE
 #define BONNIE
 
-#define BON_VERSION "1.90e"
+#define BON_VERSION "1.90f"
 
 #include "port.h"
 
@@ -31,6 +31,7 @@
 #define IOFileSize 1024
 // 3 digits
 #define MaxIOFiles 1000
+#define DefaultCharIO 20
 
 typedef const char * PCCHAR;
 typedef char * PCHAR;

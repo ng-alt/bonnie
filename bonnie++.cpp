@@ -21,10 +21,13 @@
 #ifdef OS2
 #define INCL_DOSMISC
 #endif
+
 #include "bonnie.h"
+
 #ifdef NON_UNIX
 typedef char Sync;
 #include "getopt.h"
+#endif
 
 #ifdef OS2
 #define INCL_DOSFILEMGR
@@ -32,12 +35,15 @@ typedef char Sync;
 #define INCL_DOSQUEUES
 #define INCL_DOSPROCESS
 #include <os2.h>
-#else
+#endif
+
+#ifdef WIN32
 #include <process.h>
 #include <windows.h>
 #endif
 
-#else
+#ifndef NON_UNIX
+#include <algo.h>
 #include <sys/wait.h>
 #include <unistd.h>
 #include <sys/time.h>
@@ -46,6 +52,7 @@ typedef char Sync;
 #include <sys/utsname.h>
 #include "sync.h"
 #endif
+
 #include <time.h>
 #include "bon_io.h"
 #include "bon_file.h"
@@ -61,7 +68,7 @@ class CGlobalItems
 {
 public:
   bool quiet;
-  bool fast;
+  int char_io_size;
   bool sync_bonnie;
   BonTimer timer;
   int ram;
@@ -117,7 +124,7 @@ private:
 
 CGlobalItems::CGlobalItems(bool *exitFlag)
  : quiet(false)
- , fast(false)
+ , char_io_size(DefaultCharIO)
  , sync_bonnie(false)
  , timer()
  , ram(0)
@@ -165,7 +172,7 @@ int main(int argc, char *argv[])
   int    directory_min_size = DefaultDirectoryMinSize;
   int    num_bonnie_procs = 0;
   int    num_directories = 1;
-  int    count = -1;
+  int    test_count = -1;
   const char * machine = NULL;
 #ifndef NON_UNIX
   char *userName = NULL, *groupName = NULL;
@@ -210,7 +217,7 @@ int main(int argc, char *argv[])
 #endif
 
   int int_c;
-  while(-1 != (int_c = getopt(argc, argv, "bd:fg:m:n:p:qr:s:u:x:y:")) )
+  while(-1 != (int_c = getopt(argc, argv, "bd:f::g:m:n:p:qr:s:u:x:y:")) )
   {
     switch(char(int_c))
     {
@@ -225,7 +232,10 @@ int main(int argc, char *argv[])
         globals.SetName(optarg);
       break;
       case 'f':
-        globals.fast = true;
+        if(optarg)
+          globals.char_io_size = atoi(optarg);
+        else
+          globals.char_io_size = 0;
       break;
       case 'm':
         machine = optarg;
@@ -290,7 +300,7 @@ int main(int argc, char *argv[])
       break;
 #endif
       case 'x':
-        count = atoi(optarg);
+        test_count = atoi(optarg);
       break;
 #ifndef NON_UNIX
       case 'y':
@@ -325,6 +335,8 @@ int main(int argc, char *argv[])
     if(file_size % 1024 > 512)
       file_size = file_size + 1024 - (file_size % 1024);
   }
+  globals.char_io_size = __min(file_size, globals.char_io_size);
+  globals.char_io_size = __max(0, globals.char_io_size);
 
   if(machine == NULL)
   {
@@ -400,7 +412,7 @@ int main(int argc, char *argv[])
     usage();
   // if doing more than one test run then we print a header before the
   // csv format output.
-  if(count > 1)
+  if(test_count > 1)
   {
     globals.timer.SetType(BonTimer::csv);
     globals.timer.PrintHeader(stdout);
@@ -413,7 +425,7 @@ int main(int argc, char *argv[])
   myPid = _getpid();
 #endif
   srand(myPid ^ time(NULL));
-  for(; count > 0 || count == -1; count--)
+  for(; test_count > 0 || test_count == -1; test_count--)
   {
     globals.timer.Initialize();
     int rc;
@@ -424,19 +436,22 @@ int main(int argc, char *argv[])
     if(rc) return rc;
     // if we are only doing one test run then print a plain-text version of
     // the results before printing a csv version.
-    if(count == -1)
+    if(test_count == -1)
     {
       globals.timer.SetType(BonTimer::txt);
-      rc = globals.timer.DoReport(machine, file_size, directory_size
-                                , directory_max_size, directory_min_size
-                                , num_directories, globals.chunk_size()
-                                , globals.quiet ? stderr : stdout);
+      rc = globals.timer.DoReport(machine
+                    , file_size, globals.char_io_size, globals.chunk_size()
+                    , directory_size
+                    , directory_max_size, directory_min_size, num_directories
+                    , globals.quiet ? stderr : stdout);
     }
     // print a csv version in every case
     globals.timer.SetType(BonTimer::csv);
-    rc = globals.timer.DoReport(machine, file_size, directory_size
-                              , directory_max_size, directory_min_size
-                              , num_directories, globals.chunk_size(), stdout);
+    rc = globals.timer.DoReport(machine
+                    , file_size, globals.char_io_size, globals.chunk_size()
+                    , directory_size
+                    , directory_max_size, directory_min_size, num_directories
+                    , stdout);
     if(rc) return rc;
   }
   return 0;
@@ -463,6 +478,7 @@ TestFileOps(int file_size, CGlobalItems &globals)
     }
     // default is we have 1M / 8K * 200 chunks = 25600
     num_chunks = Unit / globals.chunk_size() * file_size;
+    int char_io_chunks = Unit / globals.chunk_size() * globals.char_io_size;
 
     int rc;
     rc = file.open(globals.name, true, true);
@@ -473,13 +489,13 @@ TestFileOps(int file_size, CGlobalItems &globals)
     Duration dur;
 
     globals.timer.start();
-    if(!globals.fast)
+    if(char_io_chunks)
     {
       dur.reset();
       globals.decrement_and_wait(Putc);
       // Fill up a file, writing it a char at a time with the stdio putc() call
       if(!globals.quiet) fprintf(stderr, "Writing with putc()...");
-      for(words = 0; words < num_chunks; words++)
+      for(words = 0; words < char_io_chunks; words++)
       {
         dur.start();
         if(file.write_block_putc() == -1)
@@ -560,7 +576,7 @@ TestFileOps(int file_size, CGlobalItems &globals)
     globals.timer.add_latency(ReWrite, dur.getMax());
     if(!globals.quiet) fprintf(stderr, "done\n");
 
-    if(!globals.fast)
+    if(char_io_chunks)
     {
       // read them all back with getc()
       if(file.reopen(false, true))
@@ -570,7 +586,7 @@ TestFileOps(int file_size, CGlobalItems &globals)
       if(!globals.quiet) fprintf(stderr, "Reading with getc()...");
       globals.timer.start();
 
-      for(words = 0; words < num_chunks; words++)
+      for(words = 0; words < char_io_chunks; words++)
       {
         dur.start();
         if(file.read_block_getc(buf) == -1)

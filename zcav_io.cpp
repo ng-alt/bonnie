@@ -195,8 +195,8 @@ double average(double *array, int count)
   return total / double(arr_items);
 }
 
-// just like the read() system call but takes a (char *) and will not return
-// a partial result.
+// just like the read() system call but uses a member for the buffer and will
+// not return a partial result.
 ssize_t ZcavRead::readall(int count)
 {
   ssize_t total = 0;

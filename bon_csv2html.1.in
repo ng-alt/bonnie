@@ -18,70 +18,84 @@ standard output respectively.
 .SH FORMAT
 This is a list of the fields used in the CSV files format version 2.  Format
 version 1 was the type used in Bonnie++ < 1.90.
+Before each field I list the field number as well as the name given in the heading
 .TP
-.B format_version
+.B 0 format_version
 Version of the output format in use (2)
 .TP
-.B bonnie_version
+.B 1 bonnie_version
 (@version@)
 .TP
-.B name
+.B 2 name
 Machine Name
 .TP
-.B file_size
+.B 3 file_size
 Size in megs for the IO tests
 .TP
-.B chunk_size
+.B 4 chunk_size
 Size of chunks in bytes
 .TP
-.B putc,putc_cpu
+.B 5 putc,putc_cpu
 Results for writing a character at a time K/s,%CPU
 .TP
-.B put_block,put_block_cpu
+.B 7 put_block,put_block_cpu
 Results for writing a block at a time K/s,%CPU
 .TP
-.B rewrite,rewrite_cpu
+.B 9 rewrite,rewrite_cpu
 Results for reading and re-writing a block at a time K/s,%CPU
 .TP
-.B getc,getc_cpu
+.B 11 getc,getc_cpu
 Results for reading a character at a time K/s,%CPU
 .TP
-.B get_block,get_block_cpu
+.B 13 get_block,get_block_cpu
 Results for reading a block at a time K/s,%CPU
 .TP
-.B seeks,seeks_cpu
+.B 15 seeks,seeks_cpu
 Results for the seek test seeks/s,%CPU
 .TP
-.B num_files
+.B 17 num_files
 Number of files for file-creation tests (units of 1024 files)
 .TP
-.B max_size
+.B 18 max_size
 The maximum size of files for file-creation tests.  Or the type of files for
 links.
 .TP
-.B min_size
+.B 19 min_size
 The minimum size of files for file-creation tests.
 .TP
-.B num_dirs
+.B 20 num_dirs
 The number of directories for creation of files in multiple directories.
 .TP
-.B seq_create,seq_create_cpu
+.B 21 seq_create,seq_create_cpu
 Rate of creating files sequentially files/s,%CPU
 .TP
-.B seq_stat,seq_stat_cpu
+.B 23 seq_stat,seq_stat_cpu
 Rate of reading/stating files sequentially files/s,%CPU
 .TP
-.B seq_del,seq_del_cpu
+.B 25 seq_del,seq_del_cpu
 Rate of deleting files sequentially files/s,%CPU
 .TP
-.B ran_create,ran_create_cpu
+.B 27 ran_create,ran_create_cpu
 Rate of creating files in random order files/s,%CPU
 .TP
-.B ran_stat,ran_stat_cpu
+.B 29 ran_stat,ran_stat_cpu
 Rate of deleting files in random order files/s,%CPU
 .TP
-.B ran_del,ran_del_cpu
+.B 31 ran_del,ran_del_cpu
 Rate of deleting files in random order files/s,%CPU
+.TP
+.B 33 putc_latency,put_block_latency,rewrite_latency
+Latency (maximum amount of time for a single operation) for putc, put_block,
+and reqrite
+.TP
+.B 36 getc_latency,get_block_latency,seeks_latency
+Latency for getc, get_block, and seeks
+.TP
+.B 39 seq_create_latency,seq_stat_latency,seq_del_latency
+Latency for seq_create, seq_stat, and seq_del
+.TP
+.B 42 ran_create_latency,ran_stat_latency,ran_del_latency
+Latency for ran_create, ran_stat, and ran_del
 .P
 A string that starts with '#' is a comment.
 

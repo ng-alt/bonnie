@@ -1,3 +1,11 @@
+bonnie++ (1.90g) unstable; urgency=low
+
+  * Added latency parsing support to bon_csv2html.
+
+  * Fixed a number of bugs in bon_csv2html, now does colors correctly.
+
+ -- Russell Coker <russell@coker.com.au>  Tue, 6 Feb 2001 14:20:15 +0100
+
 bonnie++ (1.90f) unstable; urgency=low
 
   * Now use mode "b" for fopen() for NT and OS/2.

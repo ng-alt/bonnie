@@ -31,6 +31,7 @@
 #define IOFileSize 1024
 // 3 digits
 #define MaxIOFiles 1000
+#define DefaultCharIO 20
 
 typedef const char * PCCHAR;
 typedef char * PCHAR;

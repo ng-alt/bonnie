@@ -105,9 +105,9 @@ int BonTimer::print_cpu_stat(tests_t test)
 #endif
 }
 
-int BonTimer::print_io_stat(tests_t test)
+int BonTimer::print_io_stat(tests_t test, int file_size)
 {
-  int stat = int(double(m_file_size) / (m_delta[test].Elapsed / 1024.0));
+  int stat = int(double(file_size) / (m_delta[test].Elapsed / 1024.0));
   if(m_type == txt)
   {
     if(m_delta[test].Elapsed == 0.0)
@@ -232,20 +232,21 @@ BonTimer::PrintHeader(FILE *fp)
 }
 
 int
-BonTimer::DoReport(CPCCHAR machine, int file_size, int directory_size
+BonTimer::DoReport(CPCCHAR machine
+                 , int file_size, int char_file_size, int chunk_size
+                 , int directory_size
                  , int max_size, int min_size, int num_directories
-                 , int chunk_size, FILE *fp)
+                 , FILE *fp)
 {
   int i;
   m_fp = fp;
-  m_file_size = file_size;
   m_directory_size = directory_size;
   m_chunk_size = chunk_size;
   const int txt_machine_size = 20;
   char separator = ':';
   if(m_type == csv)
     separator = ',';
-  if(m_file_size)
+  if(file_size)
   {
     if(m_type == txt)
     {
@@ -263,10 +264,10 @@ BonTimer::DoReport(CPCCHAR machine, int file_size, int directory_size
       fprintf(m_fp, "%%CP  /sec %%CP\n");
     }
     char size_buf[1024];
-    if(m_file_size % 1024 == 0)
-      sprintf(size_buf, "%dG", m_file_size / 1024);
+    if(file_size % 1024 == 0)
+      sprintf(size_buf, "%dG", file_size / 1024);
     else
-      sprintf(size_buf, "%dM", m_file_size);
+      sprintf(size_buf, "%dM", file_size);
     char *tmp = size_buf + strlen(size_buf);
     if(m_chunk_size != DefaultChunkSize)
     {
@@ -304,7 +305,12 @@ BonTimer::DoReport(CPCCHAR machine, int file_size, int directory_size
       printf("2," BON_VERSION ",%s,%s", machine, size_buf);
     }
     for(i = Putc; i <= Lseek; i++)
-      print_io_stat(tests_t(i));
+    {
+      if(i == Putc || i == Getc)
+        print_io_stat(tests_t(i), char_file_size);
+      else
+        print_io_stat(tests_t(i), file_size);
+    }
     if(m_type == txt)
     {
       fprintf(m_fp, "\nLatency          ");
@@ -372,13 +378,13 @@ BonTimer::DoReport(CPCCHAR machine, int file_size, int directory_size
     }
     if(m_type == txt)
     {
-      if(m_file_size)
+      if(file_size)
         fprintf(m_fp, "                    ");
       else
         fprintf(m_fp, "Version %5s       ", BON_VERSION);
       fprintf(m_fp,
         "------Sequential Create------ --------Random Create--------\n");
-      if(m_file_size)
+      if(file_size)
         fprintf(m_fp, "                    ");
       else
         fprintf(m_fp, "%-19.19s ", machine);

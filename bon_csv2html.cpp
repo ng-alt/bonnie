@@ -4,25 +4,38 @@
 #include <string.h>
 #include <math.h>
 
-#define MAX_ITEMS 33
+// Maximum number of items expected on a csv line
+#define MAX_ITEMS 45
 #ifdef WIN32
 using namespace std;
 #endif
 typedef vector<PCCHAR> STR_VEC;
 
-vector<STR_VEC *> data;
+vector<STR_VEC> data;
 typedef PCCHAR * PPCCHAR;
 PPCCHAR * props;
 
+// Print the start of the HTML file
 void header();
+// Splits a line of text (CSV format) by commas and adds it to the list to
+// process later.  Doesn't keep any pointers to the buf...
 void read_in(CPCCHAR buf);
+// print line in the specified line from columns start..end as a line of a
+// HTML table
 void print_a_line(int num, int start, int end);
+// Print the end of the HTML file
 void footer();
+// Calculate the colors for backgrounds
 void calc_vals();
-PCCHAR get_col(double range_col, double val);
+// Returns a string representation of a color that maps to the value.  The
+// range of values is 0..range_col and val is the value.  If reverse is set
+// then low values are green and high values are red.
+PCCHAR get_col(double range_col, double val, bool reverse, CPCCHAR extra);
+// 0 means don't do colors, 1 means speed, 2 means CPU, 3 means latency
 const int vals[MAX_ITEMS] =
   { 0,0,0,0,0,1,2,1,2,1,2,1,2,1,2,1,2,
-    0,0,0,0,1,2,1,2,1,2,1,2,1,2,1,2 };
+    0,0,0,0,1,2,1,2,1,2,1,2,1,2,1,2,
+    3,3,3,3,3,3,3,3,3,3,3,3 };
 
 void usage()
 {
@@ -48,18 +61,6 @@ int main(int argc, char **argv)
     strtok(buf, "\r\n");
     read_in(buf);
   }
-//  $vals{putc} = 5;
-//  $vals{put_block} = 7;
-//  $vals{rewrite} = 9;
-//  $vals{getc} = 11;
-//  $vals{get_block} = 13;
-//  $vals{seeks} = 15;
-//  $vals{seq_create} = 21;
-//  $vals{seq_stat} = 23;
-//  $vals{seq_del} = 25;
-//  $vals{ran_create} = 27;
-//  $vals{ran_stat} = 29;
-//  $vals{ran_del} = 31;
 
   props = new PPCCHAR[data.size()];
   unsigned int i;
@@ -84,13 +85,19 @@ int main(int argc, char **argv)
       }
     }
   }
-  if(data.size() > 1)
-  {
-    calc_vals();
-  }
+  calc_vals();
   for(i = 0; i < data.size(); i++)
   {
+    printf("<TR>");
     print_a_line(i, 2, 32);
+    printf("</TR>\n");
+    printf("<TR>");
+    print_a_line(i, 2, 2);
+    printf("<TD class=\"size\" bgcolor=\"#FFFFFF\">Latency</TD><TD></TD>");
+    print_a_line(i, 33, 38);
+    printf("<TD COLSPAN=2></TD><TD class=\"size\" bgcolor=\"#FFFFFF\" COLSPAN=2>Latency</TD>");
+    print_a_line(i, 39, 44);
+    printf("</TR>\n");
   }
   footer();
   return 0;
@@ -115,37 +122,54 @@ void calc_vals()
   ITEM *arr = new ITEM[data.size()];
   for(unsigned int column_ind = 0; column_ind < MAX_ITEMS; column_ind++)
   {
-    if(vals[column_ind] == 1)
+    switch(vals[column_ind])
     {
-      unsigned int row_ind;
-      for(row_ind = 0; row_ind < data.size(); row_ind++)
+    case 2:
+      // gotta add support for CPU vals.  This means sorting on previous-col
+      // divided by this column.  If a test run takes twice the CPU but does
+      // three times the work it should be green!  If it does half the work but
+      // uses the same CPU it should be red!
+    break;
+    case 1:
+    case 3:
+      for(unsigned int row_ind = 0; row_ind < data.size(); row_ind++)
       {
-        if((*data[row_ind]).size() <= column_ind
-         || sscanf((*data[row_ind])[column_ind], "%lf", &arr[row_ind].val) == 0)
+        arr[row_ind].val = 0.0;
+        if(data[row_ind].size() <= column_ind
+         || sscanf(data[row_ind][column_ind], "%lf", &arr[row_ind].val) == 0)
           arr[row_ind].val = 0.0;
+        if(vals[column_ind] == 3 && arr[row_ind].val != 0.0)
+        {
+          if(strstr(data[row_ind][column_ind], "ms"))
+            arr[row_ind].val *= 1000.0;
+          else if(!strstr(data[row_ind][column_ind], "us"))
+            arr[row_ind].val *= 1000000.0; // is !us && !ms then secs!
+        }
         arr[row_ind].pos = row_ind;
       }
       qsort(arr, data.size(), sizeof(ITEM), compar);
-      int ind = -1;
+      int col_count = -1;
       double min_col = -1.0, max_col = -1.0;
-      for(row_ind = 0; row_ind < data.size(); row_ind++)
+      for(unsigned int sort_ind = 0; sort_ind < data.size(); sort_ind++)
       {
-        // if item is different from previous then increment col index
-        if(row_ind == 0 || arr[row_ind].val != arr[row_ind - 1].val)
+        // if item is different from previous or if the first row
+        // (sort_ind == 0) then increment col count
+        if(sort_ind == 0 || arr[sort_ind].val != arr[sort_ind - 1].val)
         {
-          if(arr[row_ind].val != 0.0)
+          if(arr[sort_ind].val != 0.0)
           {
-            ind++;
+            col_count++;
             if(min_col == -1.0)
-              min_col = arr[row_ind].val;
+              min_col = arr[sort_ind].val;
             else
-              min_col = __min(arr[row_ind].val, min_col);
-            max_col = __max(max_col, arr[row_ind].val);
+              min_col = __min(arr[sort_ind].val, min_col);
+            max_col = __max(max_col, arr[sort_ind].val);
           }
         }
-        arr[row_ind].col_ind = ind;
+        arr[sort_ind].col_ind = col_count;
       }
-      if(ind > 0)
+      // if more than 1 line has data then calculate colors
+      if(col_count > 0)
       {
         double divisor = max_col / min_col;
         if(divisor < 2.0)
@@ -155,25 +179,47 @@ void calc_vals()
           min_col /= mult;
         }
         double range_col = max_col - min_col;
-        for(row_ind = 0; row_ind < data.size(); row_ind++)
+        for(unsigned int sort_ind = 0; sort_ind < data.size(); sort_ind++)
         {
-          if(arr[row_ind].col_ind > -1)
-            props[row_ind][column_ind]
-                          = get_col(range_col, arr[row_ind].val - min_col);
+          if(arr[sort_ind].col_ind > -1)
+          {
+            bool reverse = false;
+            PCCHAR extra = "";
+            if(vals[column_ind] != 1)
+            {
+              reverse = true;
+              extra = " COLSPAN=2";
+            }
+            props[arr[sort_ind].pos][column_ind]
+                  = get_col(range_col, arr[sort_ind].val - min_col, reverse, extra);
+          }
         }
       }
+      else
+      {
+        for(unsigned int sort_ind = 0; sort_ind < data.size(); sort_ind++)
+        {
+          if(vals[column_ind] != 1)
+          {
+            props[sort_ind][column_ind] = "COLSPAN=2";
+          }
+        }
+      }
+    break;
     }
   }
 }
 
-PCCHAR get_col(double range_col, double val)
+PCCHAR get_col(double range_col, double val, bool reverse, CPCCHAR extra)
 {
-  const int buf_len = 18;
+  if(reverse)
+    val = range_col - val;
+  const int buf_len = 256;
   PCHAR buf = new char[buf_len];
   int green = int(255.0 * val / range_col);
   green = __min(green, 255);
   int red = 255 - green;
-  _snprintf(buf, buf_len, "bgcolor=\"#%02X%02X00\"", green, red);
+  _snprintf(buf, buf_len, "bgcolor=\"#%02X%02X00\"%s", red, green, extra);
   buf[buf_len - 1] = '\0';
   return buf;
 }
@@ -240,13 +286,13 @@ void footer()
   printf("</TABLE>\n</BODY></HTML>\n");
 }
 
-STR_VEC *split(CPCCHAR delim, CPCCHAR buf)
+STR_VEC split(CPCCHAR delim, CPCCHAR buf)
 {
-  STR_VEC *arr = new STR_VEC;
+  STR_VEC arr;
   char *tmp = strdup(buf);
   while(1)
   {
-    arr->push_back(tmp);
+    arr.push_back(tmp);
     tmp = strstr(tmp, delim);
     if(!tmp)
       break;
@@ -258,33 +304,32 @@ STR_VEC *split(CPCCHAR delim, CPCCHAR buf)
 
 void read_in(CPCCHAR buf)
 {
-  STR_VEC *arr = split(",", buf);
-  if(strcmp((*arr)[0], "2") )
+  STR_VEC arr = split(",", buf);
+  if(strcmp(arr[0], "2") )
   {
     fprintf(stderr, "Can't process: %s\n", buf);
-    free((void *)(*arr)[0]);
-    delete arr;
+    free((void *)arr[0]);
     return;
   }
 
-//printf("str:%s,%s,%s,%s\n", (*arr)[2], (*arr)[3], (*arr)[4], (*arr)[5]);
   data.push_back(arr);
+}
+
+void print_item(int num, int item)
+{
+  PCCHAR line_data = data[num][item];
+  if(!line_data) line_data = "";
+  if(props[num][item])
+    printf("<TD %s>%s</TD>", props[num][item], line_data);
+  else
+    printf("<TD>%s</TD>", line_data);
 }
 
 void print_a_line(int num, int start, int end)
 {
-  STR_VEC *arr = data[num];
-
-  printf("<TR>");
   int i;
-  for(i = start; i < end; i++)
+  for(i = start; i <= end; i++)
   {
-    PCCHAR line_data = (*arr)[i];
-    if(!line_data) line_data = "";
-    if(props[num][i])
-      printf("<TD %s>%s</TD>", props[num][i], line_data);
-    else
-      printf("<TD>%s</TD>", line_data);
+    print_item(num, i);
   }
-  printf("</TR>\n");
 }

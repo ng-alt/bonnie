@@ -8,7 +8,7 @@ bonnie++ \- program to test hard drive performance.
 .I [-n number-to-stat(*1024)[:max-size[:min-size][:num-directories]]]
 .I [-m machine-name] [-r ram-size-in-Mb] [-x number-of-tests]
 .I [-u uid-to-use:gid-to-use] [-g gid-to-use]
-.I [-q] [-f] [-b] [-p processes | -y p|s ]
+.I [-q] [-f size-for-char-io] [-b] [-p processes | -y p|s ]
 
 .SH "DESCRIPTION"
 This manual page documents briefly the
@@ -128,8 +128,9 @@ quiet mode. If specified then some of the extra informational messages will be
 suppressed.
 
 .TP
-.B -f
-fast mode, skips per-char IO tests.
+.B -f size-for-char-io
+fast mode control, skips per-char IO tests if no parameter, otherwise specifies
+the size of the tests for per-char IO tests (default 20M).
 
 .TP
 .B -b
