@@ -1,3 +1,15 @@
+bonnie++ (1.01) unstable; urgency=low
+
+  * Made it conflict/provide/replace the bonnie package.  Bonnie++ does
+    everything that bonnie does and fixes some bugs including doing srand()
+    after fork(), and having sensible defaults and detection of RAM installed
+    to avoid meaningless test results.
+    There is no need to have bonnie and bonnie++ installed.
+
+  * Added an autoconf check for snprintf() for IRIX.
+
+ -- Russell Coker <russell@coker.com.au>  Tue, 13 Mar 2001 12:42:43 +0100
+
 bonnie++ (1.00h) unstable; urgency=low
 
   * Changed readme.html to make it more up to date.

@@ -524,7 +524,7 @@ fi
 
 
 
-version="1.00h"
+version="1.01"
 
 # Check whether --enable-stripping or --disable-stripping was given.
 if test "${enable_stripping+set}" = set; then
@@ -1096,6 +1096,27 @@ else
 fi
 rm -f conftest*
 
+cat > conftest.$ac_ext <<EOF
+#line 1101 "configure"
+#include "confdefs.h"
+#include <stdio.h>
+int main() {
+char buf[10]; snprintf(buf, sizeof(buf), "abc");
+; return 0; }
+EOF
+if { (eval echo configure:1108: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+  :
+else
+  echo "configure: failed program was:" >&5
+  cat conftest.$ac_ext >&5
+  rm -rf conftest*
+  snprintf="no"
+fi
+rm -f conftest*;
+if [ -n "$snprintf" ]; then
+   snprintf="#define NO_SNPRINTF"
+fi
+
 
 
 exes="bonnie++"
@@ -1106,17 +1127,17 @@ for ac_hdr in vector.h
 do
 ac_safe=`echo "$ac_hdr" | sed 'y%./+-%__p_%'`
 echo $ac_n "checking for $ac_hdr""... $ac_c" 1>&6
-echo "configure:1110: checking for $ac_hdr" >&5
+echo "configure:1131: checking for $ac_hdr" >&5
 if eval "test \"`echo '$''{'ac_cv_header_$ac_safe'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 1115 "configure"
+#line 1136 "configure"
 #include "confdefs.h"
 #include <$ac_hdr>
 EOF
 ac_try="$ac_cpp conftest.$ac_ext >/dev/null 2>conftest.out"
-{ (eval echo configure:1120: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
+{ (eval echo configure:1141: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
 ac_err=`grep -v '^ *+' conftest.out | grep -v "^conftest.${ac_ext}\$"`
 if test -z "$ac_err"; then
   rm -rf conftest*
@@ -1301,6 +1322,7 @@ s%@INSTALL_DATA@%$INSTALL_DATA%g
 s%@semun@%$semun%g
 s%@bool@%$bool%g
 s%@true_false@%$true_false%g
+s%@snprintf@%$snprintf%g
 s%@exes@%$exes%g
 s%@man8@%$man8%g
 s%@stl@%$stl%g

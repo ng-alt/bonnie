@@ -37,6 +37,7 @@ install: build
 
 	# Add here commands to install the package into debian/bonnie++.
 	$(MAKE) install-bin
+	ln -s bonnie++ debian/bonnie++/usr/sbin/bonnie
 
 	touch install-stamp
 

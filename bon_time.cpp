@@ -288,7 +288,11 @@ BonTimer::DoReport(CPCCHAR machine, int file_size, int directory_size
     {
       // copy machine name to buf
       //
-      snprintf(buf, txt_machine_size - 1, "%s                  ", machine);
+      snprintf(buf
+#ifndef NO_SNPRINTF
+              , txt_machine_size - 1
+#endif
+              , "%s                  ", machine);
       buf[txt_machine_size - 1] = '\0';
       // set cur to point to a byte past where we end the machine name
       // size of the buf - size of the new data - 1 for the space - 1 for the

@@ -5,12 +5,14 @@
 
 @semun@
 @bool@
+@snprintf@
 #if @true_false@
 #define false 0
 #define true 1
 #endif
 
 #ifdef OS2
+#define NO_SNPRINTF
 typedef enum
 {
   false = 0,
@@ -36,6 +38,10 @@ typedef int FILE_TYPE;
 typedef FILE_TYPE *PFILE_TYPE;
 //typedef FILE *PFILE;
 
+#endif
+
+#ifdef NO_SNPRINTF
+#define snprintf sprintf
 #endif
 
 #define EXIT_CTRL_C 5

@@ -608,12 +608,12 @@ void
 usage()
 {
   fprintf(stderr,
-    "usage: Bonnie [-d scratch-dir] [-s size(Mb)[:chunk-size(b)]]\n"
-    "              [-n number-to-stat[:max-size[:min-size][:num-directories]]]\n"
-    "              [-m machine-name]\n"
-    "              [-r ram-size-in-Mb]\n"
-    "              [-x number-of-tests] [-u uid-to-use:gid-to-use] [-g gid-to-use]\n"
-    "              [-q] [-f] [-b] [-p processes | -y]\n"
+    "usage: bonnie++ [-d scratch-dir] [-s size(Mb)[:chunk-size(b)]]\n"
+    "                [-n number-to-stat[:max-size[:min-size][:num-directories]]]\n"
+    "                [-m machine-name]\n"
+    "                [-r ram-size-in-Mb]\n"
+    "                [-x number-of-tests] [-u uid-to-use:gid-to-use] [-g gid-to-use]\n"
+    "                [-q] [-f] [-b] [-p processes | -y]\n"
     "\nVersion: " BON_VERSION "\n");
   exit(1);
 }

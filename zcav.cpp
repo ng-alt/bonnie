@@ -20,7 +20,6 @@ double average(double *array, int count);
 void printavg(int position, double avg, int block_size);
 
 const int meg = 1024*1024;
-const int max_blocks = 10000;
 typedef double *PDOUBLE;
 
 void usage()

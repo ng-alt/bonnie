@@ -468,11 +468,9 @@ void CFileOp::close()
 int
 CFileOp::doseek(long where, bool update)
 {
-  int   size;
-
   if (seek(where, SEEK_SET) == -1)
     return io_error("lseek in doseek");
-  if ((size = read_block(PVOID(m_buf))) == -1)
+  if (read_block(PVOID(m_buf)) == -1)
     return io_error("read in doseek");
 
   /* every so often, update a block */

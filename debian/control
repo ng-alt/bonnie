@@ -8,9 +8,9 @@ Build-Depends: debhelper
 Package: bonnie++
 Architecture: any
 Depends: ${shlibs:Depends}
-Conflicts: zcav
-Replaces: zcav
-Provides: zcav
+Conflicts: zcav, bonnie
+Replaces: zcav, bonnie
+Provides: zcav, bonnie
 Description: Hard drive bottleneck testing benchmark suite.
  It is called Bonnie++ because it was based on the Bonnie program.  This
  program also tests performance with creating large numbers of files.
