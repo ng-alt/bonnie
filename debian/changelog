@@ -1,3 +1,15 @@
+bonnie++ (1.01a) unstable; urgency=low
+
+  * Fixed bon_csv2txt so that it can handle a '/' in the CSV file denoting
+    multiple directories for the file creation tests.
+
+  * Stopped it giving a floating point exception (on correctly performing
+    machines such as Alphas) when a test is skipped.
+
+  * Fixed a warning about the variable name "basename" with the latest gcc.
+
+ -- Russell Coker <russell@coker.com.au>  Mon, 16 Apr 2001 19:10:34 +0100
+
 bonnie++ (1.01) unstable; urgency=low
 
   * Made it conflict/provide/replace the bonnie package.  Bonnie++ does

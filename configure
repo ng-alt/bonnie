@@ -524,7 +524,7 @@ fi
 
 
 
-version="1.01"
+version="1.01a"
 
 # Check whether --enable-stripping or --disable-stripping was given.
 if test "${enable_stripping+set}" = set; then

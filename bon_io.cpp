@@ -298,10 +298,10 @@ int CFileOp::write_block_putc()
   return 0;
 }
 
-int CFileOp::open(CPCCHAR basename, bool create, bool use_fopen)
+int CFileOp::open(CPCCHAR base_name, bool create, bool use_fopen)
 {
-  m_name = new char[strlen(basename) + 8];
-  strcpy(m_name, basename);
+  m_name = new char[strlen(base_name) + 8];
+  strcpy(m_name, base_name);
   return reopen(create, use_fopen);
 }
 
@@ -368,7 +368,7 @@ int CFileOp::reopen(bool create, bool use_fopen)
   return 0;
 }
 
-int CFileOp::m_open(CPCCHAR basename, int ind, bool create)
+int CFileOp::m_open(CPCCHAR base_name, int ind, bool create)
 {
 #ifdef OS2
   ULONG createFlag;
@@ -379,7 +379,7 @@ int CFileOp::m_open(CPCCHAR basename, int ind, bool create)
   if(create)
   { /* create from scratch */
 #ifndef OS2
-    unlink(basename);
+    unlink(base_name);
 #endif
     fopen_mode = "w+";
 #ifdef OS2
@@ -401,23 +401,23 @@ int CFileOp::m_open(CPCCHAR basename, int ind, bool create)
   {
 #ifdef OS2
     ULONG action = 0;
-    ULONG rc = DosOpen(basename, &m_fd[ind], &action, 0, FILE_NORMAL, createFlag
+    ULONG rc = DosOpen(base_name, &m_fd[ind], &action, 0, FILE_NORMAL, createFlag
                      , OPEN_FLAGS_SEQUENTIAL | OPEN_SHARE_DENYNONE | OPEN_ACCESS_READWRITE
                      , NULL);
     if(rc)
       m_fd[ind] = -1;
 #else
-    m_fd[ind] = ::open(basename, flags, S_IRUSR | S_IWUSR);
+    m_fd[ind] = ::open(base_name, flags, S_IRUSR | S_IWUSR);
 #endif
   }
   else
   {
-    m_stream[ind] = fopen(basename, fopen_mode);
+    m_stream[ind] = fopen(base_name, fopen_mode);
   }
 
   if( (m_fd && m_fd[ind] == -1) || (m_stream && m_stream[ind] == NULL) )
   {
-    fprintf(stderr, "Can't open file %s\n", basename);
+    fprintf(stderr, "Can't open file %s\n", base_name);
     return -1;
   }
   return 0;

@@ -42,9 +42,8 @@ public:
  
 private:
   int print_cpu_stat(tests_t test);
-  int print_io_stat(tests_t test);
+  int print_stat(tests_t test);
   int print_file_stat(tests_t test);
-  int print_seek_stat(tests_t test);
 
   delta_s m_delta[TestCount];
   double m_last_cpustamp;

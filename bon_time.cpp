@@ -146,91 +146,84 @@ int BonTimer::print_cpu_stat(tests_t test)
       fprintf(m_fp, ",+++");
     return 0;
   }
-  double cpu = m_delta[test].CPU / m_delta[test].Elapsed * 100.0;
+  int cpu = int(m_delta[test].CPU / m_delta[test].Elapsed * 100.0);
   if(m_type == txt)
-  {
-      fprintf(m_fp, " %3d", (int)cpu);
-  }
+    fprintf(m_fp, " %3d", cpu);
   else
-    fprintf(m_fp, ",%d", (int)cpu);
+    fprintf(m_fp, ",%d", cpu);
   return 0;
 }
 
-int BonTimer::print_io_stat(tests_t test)
+int BonTimer::print_stat(tests_t test)
 {
-  int stat = int(double(m_file_size) / (m_delta[test].Elapsed / 1024.0));
-  if(m_type == txt)
+  if(m_delta[test].Elapsed == 0.0)
   {
-    if(m_delta[test].Elapsed == 0.0)
+    if(m_type == txt)
       fprintf(m_fp, "      ");
-    else if(m_delta[test].Elapsed < MinTime)
+    else
+      fprintf(m_fp, ",");
+  }
+  else if(m_delta[test].Elapsed < MinTime)
+  {
+    if(m_type == txt)
       fprintf(m_fp, " +++++");
     else
-      fprintf(m_fp, " %5d", stat);
-
+      fprintf(m_fp, ",+++++");
   }
   else
   {
-    if(m_delta[test].Elapsed == 0.0)
-      fprintf(m_fp, ",");
-    else if(m_delta[test].Elapsed < MinTime)
-      fprintf(m_fp, ",+++++");
+    if(test == Lseek)
+    {
+      double seek_stat = double(Seeks) / m_delta[test].Elapsed;
+      if(m_type == txt)
+      {
+        if(seek_stat >= 1000.0)
+          fprintf(m_fp, " %5.0f", seek_stat);
+        else
+          fprintf(m_fp, " %5.1f", seek_stat);
+      }
+      else
+        fprintf(m_fp, ",%.1f", seek_stat);
+    }
     else
-      fprintf(m_fp, ",%d", stat);
+    {
+      double stat = double(m_file_size) / (m_delta[test].Elapsed / 1024.0);
+      if(m_type == txt)
+        fprintf(m_fp, " %5d", int(stat));
+      else
+        fprintf(m_fp, ",%d", int(stat));
+    }
   }
-  print_cpu_stat(test);
-  return 0;
-}
-
-int BonTimer::print_seek_stat(tests_t test)
-{
-  double seek_stat = double(Seeks) / m_delta[test].Elapsed;
-  if(m_type == txt)
-  {
-    if(m_delta[test].Elapsed == 0.0)
-      fprintf(m_fp, "      ");
-    else if(m_delta[test].Elapsed < MinTime)
-      fprintf(m_fp, " +++++");
-    else
-      fprintf(m_fp, " %5.1f", seek_stat);
-  }
-  else
-  {
-    if(m_delta[test].Elapsed == 0.0)
-      fprintf(m_fp, ",");
-    else if(m_delta[test].Elapsed < MinTime)
-      fprintf(m_fp, ",+++++");
-    else
-      fprintf(m_fp, ",%.1f", seek_stat);
-  }
-  print_cpu_stat(test);
-  return 0;
+  return print_cpu_stat(test);
 }
 
 int BonTimer::print_file_stat(tests_t test)
 {
-  int stat = int(double(m_directory_size) * double(DirectoryUnit)
-                / m_delta[test].Elapsed);
-  if(m_type == txt)
+  if(m_delta[test].Elapsed == 0.0)
   {
-    if(m_delta[test].Elapsed == 0.0)
+    if(m_type == txt)
       fprintf(m_fp, "      ");
-    else if(m_delta[test].Elapsed < MinTime)
+    else
+      fprintf(m_fp, ",");
+  }
+  else if(m_delta[test].Elapsed < MinTime)
+  {
+    if(m_type == txt)
       fprintf(m_fp, " +++++");
     else
-      fprintf(m_fp, " %5d", stat);
+      fprintf(m_fp, ",+++++");
   }
   else
   {
-    if(m_delta[test].Elapsed == 0.0)
-      fprintf(m_fp, ",");
-    else if(m_delta[test].Elapsed < MinTime)
-      fprintf(m_fp, ",+++++");
+    int stat = int(double(m_directory_size) * double(DirectoryUnit)
+                / m_delta[test].Elapsed);
+    if(m_type == txt)
+      fprintf(m_fp, " %5d", stat);
     else
       fprintf(m_fp, ",%d", stat);
   }
-  print_cpu_stat(test);
-  return 0;
+
+  return print_cpu_stat(test);
 }
 
 void
@@ -307,12 +300,12 @@ BonTimer::DoReport(CPCCHAR machine, int file_size, int directory_size
     {
       printf("%s,%s", machine, size_buf);
     }
-    print_io_stat(Putc);
-    print_io_stat(FastWrite);
-    print_io_stat(ReWrite);
-    print_io_stat(Getc);
-    print_io_stat(FastRead);
-    print_seek_stat(Lseek);
+    print_stat(Putc);
+    print_stat(FastWrite);
+    print_stat(ReWrite);
+    print_stat(Getc);
+    print_stat(FastRead);
+    print_stat(Lseek);
     if(m_type == txt)
       fprintf(m_fp, "\n");
   }
