@@ -1,3 +1,11 @@
+bonnie++ (1.00h) unstable; urgency=low
+
+  * Changed readme.html to make it more up to date.
+
+  * Now use exec_prefix for binary installation.
+
+ -- Russell Coker <russell@coker.com.au>  Mon, 19 Feb 2001 15:23:17 +0100
+
 bonnie++ (1.00g) unstable; urgency=low
 
   * Fixed a bug in zcav that prevented it working with parameters other than
@@ -16,6 +24,8 @@ bonnie++ (1.00g) unstable; urgency=low
     Closes:#64995
 
   * Back-ported some extra error handling from 1.90c.
+
+  * Made quiet mode not tell you which UID it uses.
 
  -- Russell Coker <russell@coker.com.au>  Mon, 1 Jan 2001 14:29:32 +1100
 

@@ -11,7 +11,9 @@ should be used in the program. Tim has graciously given me permission to use
 the name "bonnie++" for my program which is based around his benchmark.<BR>
 Bonnie++ adds the facility to test more than 2G of storage on a 32bit
 machine, and tests for file creat(), stat(), unlink() operations.<BR>
-Also it has the option (via -t csv) to output in CSV spread-sheet format.
+Also it will output in CSV spread-sheet format to standard output. If you use
+the "-q" option for quiet mode then the human-readable version will go to
+stderr so redirecting stdout to a file will get only the csv in the file.
 The program bon_csv2html takes csv format data on stdin and writes a HTML
 file on standard output which has a nice display of all the data. The program
 bon_csv2txt takes csv format data on stdin and writes a formatted plain text
