@@ -33,4 +33,4 @@ typedef int FILE_TYPE;
 
 #endif
 
-
+#define EXIT_CTRL_C 5

@@ -4,8 +4,11 @@ bonnie++ \- program to test hard drive performance.
 
 .SH SYNOPSIS
 .B bonnie++
-.I [-d dir] [-s size(Mb)[:chunk-size(b)]] [-n number-to-stat(*1024)[:max-size[:min-size][:num-directories]]]
-.I [-m machine-name] [-r ram-size-in-Mb] [-x number-of-tests] [-q] [-f] [-b] [-p processes | -y]
+.I [-d dir] [-s size(Mb)[:chunk-size(b)]]
+.I [-n number-to-stat(*1024)[:max-size[:min-size][:num-directories]]]
+.I [-m machine-name] [-r ram-size-in-Mb] [-x number-of-tests]
+.I [-u uid-to-use:gid-to-use] [-g gid-to-use]
+.I [-q] [-f] [-b] [-p processes | -y]
 
 .SH "DESCRIPTION"
 This manual page documents briefly the
@@ -42,7 +45,9 @@ the size of the file(s) for IO performance measures in megabytes. If the size
 is greater than 1G then multiple files will be used to store the data, and
 each file will be up to 1G in size.  This parameter may include the chunk size
 seperated from the size by a colon.  The chunk-size is measured in bytes and
-must be a power of two from 256 to 1048576.
+must be a power of two from 256 to 1048576.  NB You can specify the size in
+giga-bytes or the chunk-size in kilo-bytes if you add 'g' or 'k' to the end of
+the number respectively.
 
 If the specified size is 0 then this test will be skipped.
 .TP
@@ -95,6 +100,27 @@ really necessary. If unsure then use it.
 number of test runs. This is useful if you want to perform more than one test.
 It will dump output continuously in CSV format until either the number of
 tests have been completed, or it is killed.
+
+.TP
+.B -u
+user-id to use.  When running as root specify the UID to use for the tests.  It
+is not recommended to use root, so if you really want to run as root then use
+.B -u root.
+Also if you want to specify the group to run as then use the
+.B user:group
+format.  If you specify a user by name but no group then the primary group of
+that user will be chosen.  If you specify a user by number and no group then
+the group will be
+.B nogroup.
+
+.TP
+.B -g
+group-id to use.  Same as using
+.B :group
+for the
+.B -u
+parameter, just a different way to specify it for compatibility with other
+programs.
 
 .TP
 .B -q
@@ -151,6 +177,15 @@ work of Tim Bray <tbray@textuality.com>.
 The documentation, the Perl scripts, and all the code for testing the creation
 of thousands of files was written by Russell Coker, but the entire package is
 under joint copyright with Tim Bray.
+
+.SH SIGNALS
+Handles SIGINT and does a cleanup (which may take some time), a second SIGINT
+or a SIGQUIT will cause it to immidiately die.
+.P
+SIGXCPU and SIGXFSZ act like SIGINT.
+.P
+Ignores SIGHUP.
+
 
 .SH BUGS
 The random file sizes will add up to different values for different test runs.

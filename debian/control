@@ -7,6 +7,7 @@ Standards-Version: 2.5.1
 Package: bonnie++
 Architecture: any
 Depends: ${shlibs:Depends}
+Build-Depends: debhelper
 Conflicts: zcav
 Replaces: zcav
 Provides: zcav

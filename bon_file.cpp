@@ -17,7 +17,7 @@
 CPCCHAR rand_chars = "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 
-COpenTest::COpenTest(int chunk_size, bool use_sync)
+COpenTest::COpenTest(int chunk_size, bool use_sync, bool *doExit)
  : m_chunk_size(chunk_size)
  , m_buf(new char[m_chunk_size])
 {
@@ -29,6 +29,7 @@ COpenTest::COpenTest(int chunk_size, bool use_sync)
   m_sync = use_sync;
   m_directoryHandles = NULL;
   m_dirIndex = NULL;
+  m_exit = doExit;
 }
 
 void COpenTest::random_sort()
@@ -45,6 +46,7 @@ void COpenTest::random_sort()
       m_dirIndex[i] = m_dirIndex[newind];
       m_dirIndex[newind] = tmpInd;
     }
+    if(*m_exit) return;
   }
 }
 
@@ -104,6 +106,12 @@ void COpenTest::make_names(bool do_random)
   PCHAR buf = m_file_name_buf;
   for(int i = 0; i < m_number; i++)
   {
+    if(*m_exit)
+    {
+      delete m_file_names;
+      m_file_names = NULL;
+      return;
+    }
     char rand_buf[RandExtraLen + 1];
     int len = rand() % (RandExtraLen + 1);
     int j;
@@ -281,6 +289,10 @@ int COpenTest::create(CPCCHAR dirname, BonTimer &timer, int num, int max_size
   timer.timestamp();
   for(i = 0; i < m_number; i++)
   {
+    if(*m_exit)
+    {
+      return EXIT_CTRL_C;
+    }
     // m_max < 0 means link or sym-link
     if(m_max < 0)
     {
@@ -541,6 +553,10 @@ int COpenTest::stat_sequential(BonTimer &timer)
     }
     do
     {
+      if(*m_exit)
+      {
+        return EXIT_CTRL_C;
+      }
       if(findBuf.achName[0] != '.') // our files do not start with a dot
       {
         if(-1 == stat_file(findBuf.achName))
@@ -560,6 +576,10 @@ int COpenTest::stat_sequential(BonTimer &timer)
     dirent *file_ent;
     while((file_ent = readdir(d)) != NULL)
     {
+      if(*m_exit)
+      {
+        return EXIT_CTRL_C;
+      }
       if(file_ent->d_name[0] != '.') // our files do not start with a dot
       {
         if(-1 == stat_file(file_ent->d_name))

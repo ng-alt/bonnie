@@ -1,3 +1,48 @@
+bonnie++ (1.00c) unstable; urgency=low
+
+  * Closes:#53545
+    Fixed in 0.99e, should have been closed in Debian BTS.
+
+  * Closes:#53546
+    Fixed in 0.99e, should have been closed in Debian BTS.
+
+  * Closes:#61925
+    Fixed in 1.00a.
+
+  * Closes:#64995
+    It is in /usr/sbin because it can only sensibly be run by the administrator
+    of the machine, otherwise it probably will give bad results and may impact
+    the performance of the machine in question.  Also it can now change
+    UID/GID.  The new way of dealing with the running as root issue is in the
+    next change.
+
+  * Made zcav and bonnie++ take -u and -g options to set the UID and GID to run
+    as.  For bonnie++ it is now mandatory to use the -u option when running as
+    root.
+
+  * Made bonnie++ not change it's command-line.
+
+  * Documented the K and G suffixes for sizes on the command-line.
+
+  * Now the CPU time field also displays as "+++" if the elapsed time is < 1s.
+
+  * Fixed the machine-name broken-ness from 1.00b, and made the machine name
+    default to the nodename as reported by utsname() (also the output of
+    `hostname` or `uname -n`).
+
+  * Now uses sysconf() to check the ram size, you can use -r to over-ride it.
+    Also the default file size for IO tests will be twice the reported RAM
+    size or 200M (whichever is larger).
+
+  * Now Bonnie++ handles ^C from the keyboard, the XCPU and XFSZ (excessive CPU
+    and excessive file size) flags and aborts the program cleanly removing all
+    files when it receives them.  Also ignores SIGHUP.
+
+  * Added AC_PROG_CC to configure.in so that it can compile on systems with
+    strange C compiler setups.
+
+ -- Russell Coker <russell@coker.com.au>  Fri, 08 Sep 2000 08:22:47 +0200
+
 bonnie++ (1.00b) unstable; urgency=low
 
   * Added more warnings to the compile and removed assertions.  Made some

@@ -4,7 +4,9 @@ zcav \- program to test raw hard drive throughput.
 
 .SH SYNOPSIS
 .B zcav
-.I [-b block-size] [-c count] [-s max-size] [-w] [-l log-file] [-f] file-name
+.I [-b block-size] [-c count] [-s max-size] [-w]
+.I [-u uid-to-use:gid-to-use] [-g gid-to-use]
+.I [-l log-file] [-f] file-name
 .I [-l log-file [-f] file-name]...
 
 .SH "DESCRIPTION"
@@ -38,26 +40,52 @@ The output should be able to be easily graphed with
 which is what I use to view the results.
 
 .SH OPTIONS
+
 .TP
 .B -b
 the size of the blocks to read from disk (default 100M).
+
 .TP
 .B -c
 the number of times to read the entire disk.
+
 .TP
 .B -s
 the maximum amount of data (in megs) to read from a disk, useful if you want to
 quickly test the start of a large drive.
+
 .TP
 .B -w
 waiting mode. This means that after reading a block a thread will wait for
 threads reading from other drives. Also the amount of data read from each drive
 will be the same.
+
 .TP
 .B -f
 the file-name for the input data. This isn't needed except on well configured
 systems that have a recent Glibc where you can specify the file name without
 the -f flag.
+
+.TP
+.B -u
+user-id to use.  When running as root specify the UID to run the tests as, it
+is not recommended to use root, so if you want to run as root use
+.B -u root.
+Also if you want to specify the group to run as then use the
+.B user:group
+format.  If you specify a user by name but no group then the primary group of
+that user will be chosen.  If you specify a user by number and no group then
+the group will be
+.B nogroup.
+ 
+.TP
+.B -g
+group-id to use.  Same as using
+.B :group
+for the
+.B -u
+parameter, just a different way to specify it for compatibility with other
+programs.
 
 .SH AUTHOR
 This program, it's manual page, and the Debian package were written by

@@ -9,6 +9,7 @@ void usage()
 {
   fprintf(stderr
        , "Usage: zcav [-b block-size] [-c count] [-s max-size] [-w]\n"
+         "            [-u uid-to-use:gid-to-use] [-g gid-to-use]\n"
          "            [-l log-file] [-f] file-name\n"
          "            [-l log-file [-f] file-name]...\n"
          "\n"
@@ -185,9 +186,10 @@ int main(int argc, char *argv[])
   if(argc < 2)
     usage();
 
+  char *userName = NULL, *groupName = NULL;
   int c;
   const char *log = "-";
-  while(-1 != (c = getopt(argc, argv, "-c:b:f:l:s:w")) )
+  while(-1 != (c = getopt(argc, argv, "-c:b:f:g:l:s:u:w")) )
   {
     switch(char(c))
     {
@@ -203,6 +205,27 @@ int main(int argc, char *argv[])
       case 's':
         mz.setMaxSize(atoi(optarg));
       break;
+      case 'g':
+        if(groupName)
+          usage();
+        groupName = optarg;
+      break;
+      case 'u':
+      {
+        if(userName)
+          usage();
+        userName = strdup(optarg);
+        int i;
+        for(i = 0; userName[i] && userName[i] != ':'; i++);
+        if(userName[i] == ':')
+        {
+          if(groupName)
+            usage();
+          userName[i] = '\0';
+          groupName = &userName[i + 1];
+        }
+      }
+      break;
       case 'w':
         mz.setWait();
       break;
@@ -214,6 +237,13 @@ int main(int argc, char *argv[])
       default:
         usage();
     }
+  }
+  if(userName || groupName)
+  {
+    if(bon_setugid(userName, groupName))
+      return 1;
+    if(userName)
+      free(userName);
   }
 
   return mz.runit();

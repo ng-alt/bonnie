@@ -6,10 +6,11 @@ EXES=bonnie++ zcav
 
 CXX=@CXX@ -O2 -g -Wall -W -Wshadow -Wpointer-arith -Wcast-align -Wwrite-strings -DNDEBUG
 
-BONSRC=bon_io.cpp bon_file.cpp bon_time.cpp semaphore.cpp forkit.cpp
+BONSRC=bon_io.cpp bon_file.cpp bon_time.cpp semaphore.cpp forkit.cpp \
+ bon_suid.cpp
 BONOBJS=$(BONSRC:.cpp=.o)
 
-ZCAVSRC=thread.cpp zcav_io.cpp
+ZCAVSRC=thread.cpp zcav_io.cpp bon_suid.cpp
 ZCAVOBJS=$(ZCAVSRC:.cpp=.o)
 
 ALLOBJS=$(BONOBJS) $(ZCAVOBJS)
@@ -24,16 +25,16 @@ zcav: zcav.cpp $(ZCAVOBJS)
 
 install: $(EXES)
 	mkdir -p $(DESTDIR)/usr/bin $(DESTDIR)/usr/sbin
-	strip bonnie++ zcav
+	strip $(EXES)
 	cp $(SCRIPTS) $(DESTDIR)/usr/bin
-	cp zcav bonnie++ $(DESTDIR)/usr/sbin
+	cp $(EXES) $(DESTDIR)/usr/sbin
 
 %.o: %.cpp %.h bonnie.h
 	$(CXX) -c $<
 
 clean:
 	rm -f $(EXES) $(ALLOBJS) config.log
-	rm -rf build-stamp install-stamp debian/tmp err out
+	rm -rf build-stamp install-stamp debian/tmp
 
 realclean: clean
 	rm -f config.* Makefile bonnie.h debian/postinst.debhelper

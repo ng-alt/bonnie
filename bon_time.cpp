@@ -158,6 +158,14 @@ int BonTimer::print_cpu_stat(tests_t test)
       fprintf(m_fp, ",");
     return 0;
   }
+  if(m_delta[test].Elapsed < 1.0)
+  {
+    if(m_type == txt)
+      fprintf(m_fp, " +++");
+    else
+      fprintf(m_fp, ",+++");
+    return 0;
+  }
   double cpu = m_delta[test].CPU / m_delta[test].Elapsed * 100.0;
   if(m_type == txt)
   {
@@ -264,6 +272,7 @@ BonTimer::DoReport(CPCCHAR machine, int file_size, int directory_size
   m_file_size = file_size;
   m_directory_size = directory_size;
   m_chunk_size = chunk_size;
+  const int txt_machine_size = 20;
   if(m_file_size)
   {
     if(m_type == txt)
@@ -281,38 +290,39 @@ BonTimer::DoReport(CPCCHAR machine, int file_size, int directory_size
       fprintf(m_fp, "K/sec %%CP K/sec %%CP K/sec %%CP K/sec %%CP K/sec ");
       fprintf(m_fp, "%%CP  /sec %%CP\n");
     }
-    char size_buf[20];
-    if(m_chunk_size == DefaultChunkSize)
-    {
-      sprintf(size_buf, "%d", m_file_size);
-    }
+    char size_buf[1024];
+    if(m_file_size % 1024 == 0)
+      sprintf(size_buf, "%dG", m_file_size / 1024);
     else
+      sprintf(size_buf, "%d", m_file_size);
+    if(m_chunk_size != DefaultChunkSize)
     {
+      char *tmp = size_buf + strlen(size_buf);
       if(m_chunk_size >= 1024)
-        sprintf(size_buf, "%d:%dk", m_file_size, m_chunk_size / 1024);
+        sprintf(tmp, ":%dk", m_chunk_size / 1024);
       else
-        sprintf(size_buf, "%d:%d", m_file_size, m_chunk_size);
+        sprintf(tmp, ":%d", m_chunk_size);
     }
     char buf[4096];
     if(m_type == txt)
     {
       // copy machine name to buf
-      snprintf(buf, sizeof(buf) - 1, "%s               ", machine);
-      buf[sizeof(buf) - 1] = '\0';
+      //
+      snprintf(buf, txt_machine_size - 1, "%s                  ", machine);
+      buf[txt_machine_size - 1] = '\0';
       // set cur to point to a byte past where we end the machine name
       // size of the buf - size of the new data - 1 for the space - 1 for the
       // terminating zero on the string
-      char *cur = &buf[sizeof(buf) - strlen(size_buf) - 2];
+      char *cur = &buf[txt_machine_size - strlen(size_buf) - 2];
       *cur = ' '; // make cur a space
       cur++; // increment to where we store the size
       strcpy(cur, size_buf);  // copy the size in
+      fputs(buf, m_fp);
     }
     else
     {
-      snprintf(buf, sizeof(buf) - 1, "%s,%s", machine, size_buf);
-      buf[sizeof(buf) - 1] = '\0';
+      printf("%s,%s", machine, size_buf);
     }
-    fputs(buf, m_fp);
     print_io_stat(Putc);
     print_io_stat(FastWrite);
     print_io_stat(ReWrite);

@@ -35,8 +35,12 @@
 #include "bon_file.h"
 #include "bon_time.h"
 #include "semaphore.h"
+#include <pwd.h>
+#include <grp.h>
 #include <ctype.h>
 #include <string.h>
+#include <sys/utsname.h>
+#include <signal.h>
 
 void usage();
 
@@ -53,12 +57,13 @@ public:
   bool bufSync;
   int  chunk_bits;
   int chunk_size() const { return m_chunk_size; }
+  bool *doExit;
   void set_chunk_size(int size)
     { delete m_buf; m_buf = new char[size]; m_chunk_size = size; }
 
   char *buf() { return m_buf; }
 
-  CGlobalItems();
+  CGlobalItems(bool *exitFlag);
   ~CGlobalItems() { delete name; delete m_buf; }
 
   void decrement_and_wait(int nr_sem);
@@ -85,7 +90,7 @@ private:
   CGlobalItems & operator =(const CGlobalItems &f);
 };
 
-CGlobalItems::CGlobalItems()
+CGlobalItems::CGlobalItems(bool *exitFlag)
  : sem(SemKey, TestCount)
 {
   quiet = false;
@@ -98,6 +103,7 @@ CGlobalItems::CGlobalItems()
   m_chunk_size = DefaultChunkSize;
   m_buf = new char[m_chunk_size];
   chunk_bits = DefaultChunkBits;
+  doExit = exitFlag;
 }
 
 void CGlobalItems::decrement_and_wait(int nr_sem)
@@ -110,6 +116,17 @@ int TestDirOps(int directory_size, int max_size, int min_size
              , int num_directories, CGlobalItems &globals);
 int TestFileOps(int file_size, CGlobalItems &globals);
 
+static bool exitNow;
+
+void ctrl_c_handler(int sig)
+{
+  if(sig == SIGXCPU)
+    fprintf(stderr, "Exceeded CPU usage.\n");
+  else if(sig == SIGXFSZ)
+    fprintf(stderr, "exceeded file storage limits.\n");
+  exitNow = true;
+}
+
 int main(int argc, char *argv[])
 {
   int    file_size = DefaultFileSize;
@@ -119,20 +136,42 @@ int main(int argc, char *argv[])
   int    num_bonnie_procs = 0;
   int    num_directories = 1;
   int    count = -1;
-  const char * machine = "Unknown";
+  const char * machine = NULL;
+  char *userName = NULL, *groupName = NULL;
+  CGlobalItems globals(&exitNow);
+  bool setSize = false;
 
-  if(geteuid() == 0)
+  exitNow = false;
+
+  struct sigaction sa;
+  sa.sa_sigaction = NULL;
+  sa.sa_handler = ctrl_c_handler;
+  sa.sa_flags = SA_ONESHOT;
+  if(sigaction(SIGINT, &sa, NULL)
+   || sigaction(SIGXCPU, &sa, NULL)
+   || sigaction(SIGXFSZ, &sa, NULL))
   {
-    fprintf(stderr , "You shouldn't run this as root, if something goes wrong the results could be\n"
-           "very bad.  After a 30 second delay the program will execute as normal.\n"
-           "Press ^C now if you want to abort and run this from a regular account.\n");
-    sleep(30);
+    printf("Can't handle SIGINT.\n");
+    return 1;
+  }
+  sa.sa_handler = SIG_IGN;
+  if(sigaction(SIGHUP, &sa, NULL))
+  {
+    printf("Can't handle SIGHUP.\n");
+    return 1;
   }
 
-  CGlobalItems globals;
+#ifdef _SC_PHYS_PAGES
+  int page_size = sysconf(_SC_PAGESIZE);
+  int num_pages = sysconf(_SC_PHYS_PAGES);
+  if(page_size != -1 && num_pages != -1)
+  {
+    globals.ram = page_size/1024 * (num_pages/1024);
+  }
+#endif
 
   int int_c;
-  while(-1 != (int_c = getopt(argc, argv, "bd:fm:n:p:qr:s:x:y")) )
+  while(-1 != (int_c = getopt(argc, argv, "bd:fg:m:n:p:qr:s:u:x:y")) )
   {
     switch(char(int_c))
     {
@@ -170,7 +209,8 @@ int main(int argc, char *argv[])
       break;
       case 's':
       {
-        char *size = strtok(optarg, ":");
+        char *sbuf = strdup(optarg);
+        char *size = strtok(sbuf, ":");
         file_size = atoi(size);
         char c = size[strlen(size) - 1];
         if(c == 'g' || c == 'G')
@@ -183,6 +223,28 @@ int main(int argc, char *argv[])
           if(c == 'k' || c == 'K')
             tmp *= 1024;
           globals.set_chunk_size(tmp);
+        }
+        setSize = true;
+      }
+      break;
+      case 'g':
+        if(groupName)
+          usage();
+        groupName = optarg;
+      break;
+      case 'u':
+      {
+        if(userName)
+          usage();
+        userName = strdup(optarg);
+        int i;
+        for(i = 0; userName[i] && userName[i] != ':'; i++);
+        if(userName[i] == ':')
+        {
+          if(groupName)
+            usage();
+          userName[i] = '\0';
+          groupName = &userName[i + 1];
         }
       }
       break;
@@ -198,6 +260,32 @@ int main(int argc, char *argv[])
   }
   if(optind < argc)
     usage();
+
+  if(globals.ram && !setSize)
+  {
+    if(file_size < (globals.ram * 2))
+      file_size = globals.ram * 2;
+  }
+
+  if(machine == NULL)
+  {
+    struct utsname utsBuf;
+    if(uname(&utsBuf) != -1)
+      machine = utsBuf.nodename;
+  }
+
+  if(userName || groupName)
+  {
+    if(bon_setugid(userName, groupName))
+      return 1;
+    if(userName)
+      free(userName);
+  }
+  else if(geteuid() == 0)
+  {
+    fprintf(stderr, "You must use the \"-u\" switch when running as root.\n");
+    usage();
+  }
 
   if(num_bonnie_procs && globals.sync_bonnie)
     usage();
@@ -293,7 +381,9 @@ TestFileOps(int file_size, CGlobalItems &globals)
 
     if(globals.ram && file_size < globals.ram * 2)
     {
-      fprintf(stderr, "File size should be double RAM for good results.\n");
+      fprintf(stderr
+            , "File size should be double RAM for good results, RAM is %dM.\n"
+            , globals.ram);
       return 1;
     }
     // default is we have 1M / 8K * 200 chunks = 25600
@@ -303,6 +393,8 @@ TestFileOps(int file_size, CGlobalItems &globals)
     rc = file.open(globals.name, true, true);
     if(rc)
       return rc;
+    if(exitNow)
+      return EXIT_CTRL_C;
     globals.timer.timestamp();
 
     if(!globals.fast)
@@ -314,6 +406,8 @@ TestFileOps(int file_size, CGlobalItems &globals)
       {
         if(file.write_block_putc() == -1)
           return 1;
+        if(exitNow)
+          return EXIT_CTRL_C;
       }
       fflush(NULL);
       /*
@@ -335,6 +429,8 @@ TestFileOps(int file_size, CGlobalItems &globals)
     // for the number of chunks of file data
     for(i = 0; i < num_chunks; i++)
     {
+      if(exitNow)
+        return EXIT_CTRL_C;
       // for each chunk in the Unit
       buf[bufindex]++;
       bufindex = (bufindex + 1) % globals.chunk_size();
@@ -369,6 +465,8 @@ TestFileOps(int file_size, CGlobalItems &globals)
         return 1;
       if (file.write_block(PVOID(buf)) == -1)
         return io_error("re write(2)");
+      if(exitNow)
+        return EXIT_CTRL_C;
     }
     file.close();
     globals.timer.get_delta_t(ReWrite);
@@ -388,6 +486,8 @@ TestFileOps(int file_size, CGlobalItems &globals)
       {
         if(file.read_block_getc(buf) == -1)
           return 1;
+        if(exitNow)
+          return EXIT_CTRL_C;
       }
 
       file.close();
@@ -407,6 +507,8 @@ TestFileOps(int file_size, CGlobalItems &globals)
     { /* per block */
       if ((words = file.read_block(PVOID(buf))) == -1)
         return io_error("read(2)");
+      if(exitNow)
+        return EXIT_CTRL_C;
     } /* per block */
     file.close();
     globals.timer.get_delta_t(FastRead);
@@ -441,7 +543,7 @@ int
 TestDirOps(int directory_size, int max_size, int min_size
          , int num_directories, CGlobalItems &globals)
 {
-  COpenTest open_test(globals.chunk_size(), globals.bufSync);
+  COpenTest open_test(globals.chunk_size(), globals.bufSync, globals.doExit);
   if(!directory_size)
   {
     return 0;
@@ -506,7 +608,7 @@ usage()
     "              [-n number-to-stat[:max-size[:min-size][:num-directories]]]\n"
     "              [-m machine-name]\n"
     "              [-r ram-size-in-Mb]\n"
-    "              [-x number-of-tests]\n"
+    "              [-x number-of-tests] [-u uid-to-use:gid-to-use] [-g gid-to-use]\n"
     "              [-q] [-f] [-b] [-p processes | -y]\n"
     "\nVersion: " BON_VERSION "\n");
   exit(1);

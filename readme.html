@@ -12,9 +12,9 @@ the name "bonnie++" for my program which is based around his benchmark.<BR>
 Bonnie++ adds the facility to test more than 2G of storage on a 32bit
 machine, and tests for file creat(), stat(), unlink() operations.<BR>
 Also it has the option (via -t csv) to output in CSV spread-sheet format.
-The program csv2html.pl takes csv format data on stdin and writes a HTML
+The program bon_csv2html takes csv format data on stdin and writes a HTML
 file on standard output which has a nice display of all the data. The program
-csv2txt.pl takes csv format data on stdin and writes a formatted plain text
+bon_csv2txt takes csv format data on stdin and writes a formatted plain text
 version on stdout, this was originally written to work with 80 column braille
 displays, but can also work well in email.<P></LI>
 <LI><B>A note on blocking writes</B><BR>
@@ -33,7 +33,10 @@ create multiple files in the same directory and fork processes to access
 them (which is what version 2.0 will do). There is also need to perform tests
 such as determining whether access to an NFS server will load the system and
 slow down access to a local hard drive. <A HREF="c.kagerhuber@t-online.net">
-Christian
+Christian Kagerhuber</A> contributed the initial code to do semaphores so that
+several copies of Bonnie++ can be run in a synchronised fashion.  This means
+you can have 8 copies of Bonnie++ doing per-char reads to test out your 8CPU
+system!</LI>
 <LI><B>Summary of tests</B><BR>
 The first 6 tests are from the original Bonnie: Specifically, these are the
 types of filesystem activity that have been observed to be bottlenecks in

@@ -1,7 +1,7 @@
 #ifndef BONNIE
 #define BONNIE
 
-#define BON_VERSION "1.00b"
+#define BON_VERSION "1.00c"
 
 #include "port.h"
 
@@ -58,5 +58,6 @@ enum tests_t
 };
 
 int   io_error(CPCCHAR message, bool do_exit = false);
+int bon_setugid(const char * const user, const char * const group);
 
 #endif

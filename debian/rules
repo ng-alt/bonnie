@@ -56,7 +56,7 @@ binary-arch: build install
 #	dh_installemacsen
 #	dh_installpam
 #	dh_installinit
-	dh_installcron
+#	dh_installcron
 	dh_installmanpages
 #	dh_installinfo
 #	dh_undocumented
