@@ -40,6 +40,7 @@ void seeker(Fork *f, PVOID param, int)
 {
   struct report_s seeker_report;
   CFileOp *file = (CFileOp *)param;
+  seeker_report.StartTime = file->getTimer().get_cur_time();
   int num_chunks = file->chunks();
   if(file->reopen(false))
     exit(1);
@@ -305,20 +306,23 @@ int CFileOp::open(CPCCHAR basename, bool create, bool use_fopen)
 }
 
 CFileOp::CFileOp(BonTimer &timer, int file_size, int chunk_bits, bool use_sync)
- : m_chunk_bits(chunk_bits)
- , m_chunk_size(1 << m_chunk_bits)
- , m_chunks_per_file(Unit / m_chunk_size * IOFileSize)
- , m_timer(timer)
+ : m_timer(timer)
  , m_stream(NULL)
  , m_fd(NULL)
- , m_isopen(false), m_name(NULL)
+ , m_isopen(false)
+ , m_name(NULL)
  , m_sync(use_sync)
+ , m_chunk_bits(chunk_bits)
+ , m_chunk_size(1 << m_chunk_bits)
+ , m_chunks_per_file(Unit / m_chunk_size * IOFileSize)
+ , m_total_chunks(Unit / m_chunk_size * file_size)
+ , m_last_file_chunks(m_total_chunks % m_chunks_per_file)
+ , m_cur_pos(0)
+ , m_file_ind(0)
+ , m_file_size(file_size)
+ , m_num_files(m_file_size / IOFileSize + 1)
  , m_buf(new char[m_chunk_size])
 {
-  m_file_size = file_size;
-  m_total_chunks = Unit / m_chunk_size * file_size;
-  m_last_file_chunks = m_total_chunks % m_chunks_per_file;
-  m_num_files = m_file_size / IOFileSize + 1;
   if(m_last_file_chunks == 0)
   {
     m_last_file_chunks = m_chunks_per_file;

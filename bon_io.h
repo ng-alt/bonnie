@@ -27,25 +27,22 @@ public:
   int chunks() const { return m_total_chunks; }
 private:
   int m_open(CPCCHAR basename, int ind, bool create);
+
+  BonTimer &m_timer;
+  FILE **m_stream;
+  FILE_TYPE *m_fd;
+  bool m_isopen;
+  char *m_name;
+  bool m_sync;
   const int m_chunk_bits, m_chunk_size;
   int m_chunks_per_file, m_total_chunks;
   int m_last_file_chunks;
   int m_cur_pos;
   int m_file_ind;
-  BonTimer &m_timer;
-  FILE **m_stream;
-#ifdef OS2
-  HFILE *m_fd;
-#else
-  int *m_fd;
-#endif
-  int m_num_files;
   int m_file_size;
-  bool m_isopen;
-  char *m_name;
+  int m_num_files;
   CFileOp(const CFileOp &f);
   CFileOp & operator =(const CFileOp &f);
-  bool m_sync;
   char *m_buf;
 };
 

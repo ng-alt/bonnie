@@ -38,6 +38,8 @@ public:
   double time_so_far();
   void PrintHeader(FILE *fp);
   void Initialize();
+  static double get_cur_time();
+  static double get_cpu_use();
  
 private:
   int print_cpu_stat(tests_t test);
@@ -48,12 +50,14 @@ private:
   delta_s m_delta[TestCount];
   double m_last_cpustamp;
   double m_last_timestamp;
-  int m_basetime;
   RepType m_type;
   int m_file_size;
   int m_directory_size;
   int m_chunk_size;
   FILE *m_fp;
+
+  BonTimer(const BonTimer&);
+  BonTimer &operator=(const BonTimer&);
 };
 
 #endif

@@ -17,24 +17,76 @@
 #include <time.h>
 #include <string.h>
 
+#define TIMEVAL_TO_DOUBLE(XX) (double((XX).tv_sec) + double((XX).tv_usec) / 1000000.0)
 
 void BonTimer::timestamp()
 {
-  m_last_timestamp = time_so_far();
-  m_last_cpustamp = cpu_so_far();
+  m_last_timestamp = get_cur_time();
+  m_last_cpustamp = get_cpu_use();
+}
+
+double
+BonTimer::time_so_far()
+{
+  return get_cur_time() - m_last_timestamp;
+}
+
+double
+BonTimer::cpu_so_far()
+{
+  return get_cpu_use() - m_last_cpustamp;
+}
+
+double
+BonTimer::get_cur_time()
+{
+#ifdef OS2
+  ULONG count = 0;
+  ULONG rc = DosQuerySysInfo(QSV_MS_COUNT, QSV_MS_COUNT, &count, sizeof(count));
+  if(rc)
+    return 0.0;
+  return double(count)/1000.0;
+#else
+  struct timeval tp;
+ 
+  if (gettimeofday(&tp, static_cast<struct timezone *>(NULL)) == -1)
+    io_error("gettimeofday", true);
+  return TIMEVAL_TO_DOUBLE(tp);
+#endif
+}
+
+double
+BonTimer::get_cpu_use()
+{
+#ifdef OS2
+  double      busy_val, busy_val_prev;
+  double      intr_val, intr_val_prev;
+  CPUUTIL     CPUUtil;
+
+  ULONG rc = DosPerfSysCall(CMD_KI_RDCNT,(ULONG) &CPUUtil,0,0);
+  if(rc)
+    io_error("times", true);
+  return LL2F(CPUUtil.ulBusyHigh, CPUUtil.ulBusyLow)
+       + LL2F(CPUUtil.ulIntrHigh, CPUUtil.ulIntrLow);
+#else
+  struct rusage res_usage;
+
+  getrusage(RUSAGE_SELF, &res_usage);
+  return TIMEVAL_TO_DOUBLE(res_usage.ru_utime) + TIMEVAL_TO_DOUBLE(res_usage.ru_stime);
+#endif
 }
 
 void BonTimer::get_delta_t(tests_t test)
 {
-  m_delta[test].Elapsed = time_so_far() - m_last_timestamp;
-  m_delta[test].CPU = cpu_so_far() - m_last_cpustamp;
+  m_delta[test].Elapsed = time_so_far();
+  m_delta[test].CPU = cpu_so_far();
   timestamp();
 }
 
 void BonTimer::get_delta_report(report_s &rep)
 {
-  rep.EndTime = time_so_far();
-  rep.CPU = cpu_so_far() - m_last_cpustamp;
+  rep.EndTime = get_cur_time();
+  rep.CPU = cpu_so_far();
   timestamp();
 }
 
@@ -56,54 +108,10 @@ void BonTimer::add_delta_report(report_s &rep, tests_t test)
   m_delta[test].Elapsed = m_delta[test].LastStop - m_delta[test].FirstStart;
 }
 
-double
-BonTimer::cpu_so_far()
-{
-#ifdef OS2
-  double      busy_val, busy_val_prev;
-  double      intr_val, intr_val_prev;
-  CPUUTIL     CPUUtil;
-
-  ULONG rc = DosPerfSysCall(CMD_KI_RDCNT,(ULONG) &CPUUtil,0,0);
-  if(rc)
-    io_error("times", true);
-  return LL2F(CPUUtil.ulBusyHigh, CPUUtil.ulBusyLow)
-       + LL2F(CPUUtil.ulIntrHigh, CPUUtil.ulIntrLow);
-#else
-  struct rusage res_usage;
-
-  getrusage(RUSAGE_SELF, &res_usage);
-  return
-    double(res_usage.ru_utime.tv_sec) +
-      (double(res_usage.ru_utime.tv_usec) / 1000000.0) +
-        double(res_usage.ru_stime.tv_sec) +
-          (double(res_usage.ru_stime.tv_usec) / 1000000.0);
-#endif
-}
-
-double
-BonTimer::time_so_far()
-{
-#ifdef OS2
-  ULONG count = 0;
-  ULONG rc = DosQuerySysInfo(QSV_MS_COUNT, QSV_MS_COUNT, &count, sizeof(count));
-  if(rc)
-    return 0.0;
-  return double(count - m_basetime)/1000.0;
-#else
-  struct timeval tp;
-
-  if (gettimeofday(&tp, static_cast<struct timezone *>(NULL)) == -1)
-    io_error("gettimeofday", true);
-  return double(tp.tv_sec - m_basetime) +
-    (double(tp.tv_usec) / 1000000.0);
-#endif
-}
-
 BonTimer::BonTimer()
+ : m_type(txt)
 {
   Initialize();
-  m_type = txt;
 }
 
 void
@@ -114,11 +122,6 @@ BonTimer::Initialize()
     m_delta[i].CPU = 0.0;
     m_delta[i].Elapsed = 0.0;
   }
-#ifdef OS2
-  DosQuerySysInfo(QSV_MS_COUNT, QSV_MS_COUNT, &m_basetime, sizeof(m_basetime));
-#else
-  m_basetime = int(time(static_cast<time_t *>(NULL)));
-#endif
   timestamp();
 }
 
@@ -132,7 +135,7 @@ int BonTimer::print_cpu_stat(tests_t test)
       fprintf(m_fp, ",");
     return 0;
   }
-  if(m_delta[test].Elapsed < 1.0)
+  if(m_delta[test].Elapsed < MinTime)
   {
     if(m_type == txt)
       fprintf(m_fp, " +++");
@@ -157,7 +160,7 @@ int BonTimer::print_io_stat(tests_t test)
   {
     if(m_delta[test].Elapsed == 0.0)
       fprintf(m_fp, "      ");
-    else if(m_delta[test].Elapsed < 1.0)
+    else if(m_delta[test].Elapsed < MinTime)
       fprintf(m_fp, " +++++");
     else
       fprintf(m_fp, " %5d", stat);
@@ -167,7 +170,7 @@ int BonTimer::print_io_stat(tests_t test)
   {
     if(m_delta[test].Elapsed == 0.0)
       fprintf(m_fp, ",");
-    else if(m_delta[test].Elapsed < 1.0)
+    else if(m_delta[test].Elapsed < MinTime)
       fprintf(m_fp, ",+++++");
     else
       fprintf(m_fp, ",%d", stat);
@@ -183,7 +186,7 @@ int BonTimer::print_seek_stat(tests_t test)
   {
     if(m_delta[test].Elapsed == 0.0)
       fprintf(m_fp, "      ");
-    else if(m_delta[test].Elapsed < 1.0)
+    else if(m_delta[test].Elapsed < MinTime)
       fprintf(m_fp, " +++++");
     else
       fprintf(m_fp, " %5.1f", seek_stat);
@@ -192,7 +195,7 @@ int BonTimer::print_seek_stat(tests_t test)
   {
     if(m_delta[test].Elapsed == 0.0)
       fprintf(m_fp, ",");
-    else if(m_delta[test].Elapsed < 1.0)
+    else if(m_delta[test].Elapsed < MinTime)
       fprintf(m_fp, ",+++++");
     else
       fprintf(m_fp, ",%.1f", seek_stat);
@@ -209,7 +212,7 @@ int BonTimer::print_file_stat(tests_t test)
   {
     if(m_delta[test].Elapsed == 0.0)
       fprintf(m_fp, "      ");
-    else if(m_delta[test].Elapsed < 1.0)
+    else if(m_delta[test].Elapsed < MinTime)
       fprintf(m_fp, " +++++");
     else
       fprintf(m_fp, " %5d", stat);
@@ -218,7 +221,7 @@ int BonTimer::print_file_stat(tests_t test)
   {
     if(m_delta[test].Elapsed == 0.0)
       fprintf(m_fp, ",");
-    else if(m_delta[test].Elapsed < 1.0)
+    else if(m_delta[test].Elapsed < MinTime)
       fprintf(m_fp, ",+++++");
     else
       fprintf(m_fp, ",%d", stat);

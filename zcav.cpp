@@ -96,7 +96,7 @@ int main(int argc, char *argv[])
 
   if(max_loops < 1 || block_size < 1)
     usage();
-  printf("#loops: %d\n", max_loops);
+  printf("#loops: %d, version: %s\n", max_loops, BON_VERSION);
   printf("#block K/s time\n");
 
   int i;
@@ -145,8 +145,8 @@ int main(int argc, char *argv[])
         }
         count[i]++;
       }
+      fprintf(stderr, "Finished loop %d.\n", loops + 1);
     }
-    printf("loops: %d\n", max_loops);
     for(i = 0; count[i]; i++)
     {
       printavg(i, average(times[i], count[i]), block_size);
@@ -173,10 +173,10 @@ int main(int argc, char *argv[])
 void printavg(int position, double avg, int block_size)
 {
   double num_k = double(block_size * 1024);
-  if(avg < 1.0)
+  if(avg < MinTime)
     printf("#%d ++++ %f \n", position * block_size, avg);
   else
-    printf("%d %d %f\n", position, int(num_k / avg), avg);
+    printf("%d %d %f\n", position * block_size, int(num_k / avg), avg);
 }
 
 int compar(const void *a, const void *b)

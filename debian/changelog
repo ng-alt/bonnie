@@ -1,3 +1,31 @@
+bonnie++ (1.00f) unstable; urgency=low
+
+  * Fixed the bugs in timing of seeks.
+
+  * Changed the number of seeks from 8000 to 8192.
+
+  * Now the minimum time for a test that will be considered valid is 500ms (for
+    bonnie++ and zcav), it was previously 1000ms but I have been convinced that
+    system clocks are accurate enough for this.
+
+  * Changed the default number of files created for file creation tests from
+    30K to 16K, this change makes the test time bearable on obsolete file
+    systems like UFS but relies on the above change to work on ReiserFS on
+    Pentium4 class CPUs.
+
+  * Changed the default file size to 300M for IO tests, this reflects the
+    increase in RAM sizes over the last year.
+
+  * Added some more compile warnings and fixed some more trivial bugs.
+
+  * Made the loops: line in zcav output always be prefixed by a '#' for a
+    gnuplot comment.
+
+  * Made zcav correctly display the position in megabytes instead of block-size
+    units.
+
+ -- Russell Coker <russell@coker.com.au>  Mon, 27 Nov 2000 09:45:30 +0200
+
 bonnie++ (1.00e) unstable; urgency=low
 
   * Now exit on sync errors.

@@ -5,7 +5,7 @@ all: ${EXES}
 SCRIPTS=bon_csv2html bon_csv2txt
 
 prefix=@prefix@
-WFLAGS=-Wall -W -Wshadow -Wpointer-arith -Wcast-align -Wwrite-strings
+WFLAGS=-Wall -W -Wshadow -Wpointer-arith -Wcast-align -Wwrite-strings -Weffc++ -pedantic -ffor-scope
 CFLAGS=-O2 -g -DNDEBUG ${WFLAGS}
 CXX=@CXX@ ${CFLAGS}
 

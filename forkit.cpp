@@ -15,6 +15,9 @@
 
 
 Fork::Fork()
+ : m_read(-1)
+ , m_write(-1)
+ , m_numThreads(0)
 {
 }
 

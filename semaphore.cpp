@@ -1,13 +1,17 @@
 #include "port.h"
 #include "semaphore.h"
 #include <stdio.h>
-#include <errno.h>
 #include <unistd.h>
+#include <stdlib.h>
 
 Semaphore::Semaphore(int semKey, int numSems, int val)
+ : m_semid(0)
+ , m_semflg(IPC_CREAT | 0666)
+ , m_semopen(false)
+ , m_semKey(semKey)
+ , m_numSems(numSems)
 {
-  m_semKey = semKey; m_numSems = numSems;
-  m_semopen = false; m_semid = 0; m_semflg = IPC_CREAT | 0666;
+  m_arg.val = (0);
   if(val)
   {
     if(create(val))

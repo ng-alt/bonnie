@@ -91,19 +91,20 @@ private:
 };
 
 CGlobalItems::CGlobalItems(bool *exitFlag)
- : sem(SemKey, TestCount)
+ : quiet(false)
+ , fast(false)
+ , sync_bonnie(false)
+ , timer()
+ , ram(0)
+ , sem(SemKey, TestCount)
+ , name(NULL)
+ , bufSync(false)
+ , chunk_bits(DefaultChunkBits)
+ , doExit(exitFlag)
+ , m_chunk_size(DefaultChunkSize)
+ , m_buf(new char[m_chunk_size])
 {
-  quiet = false;
-  fast = false;
-  sync_bonnie = false;
-  ram = 0;
-  name = NULL;
   SetName(".");
-  bufSync = false;
-  m_chunk_size = DefaultChunkSize;
-  m_buf = new char[m_chunk_size];
-  chunk_bits = DefaultChunkBits;
-  doExit = exitFlag;
 }
 
 void CGlobalItems::decrement_and_wait(int nr_sem)

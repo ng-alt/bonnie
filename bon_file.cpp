@@ -19,18 +19,21 @@ CPCCHAR rand_chars = "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUV
 
 COpenTest::COpenTest(int chunk_size, bool use_sync, bool *doExit)
  : m_chunk_size(chunk_size)
+ , m_number(0)
+ , m_number_directories(1)
+ , m_max(0)
+ , m_min(0)
+ , m_size_range(0)
+ , m_dirname(NULL)
+ , m_file_name_buf(NULL)
+ , m_file_names(NULL)
+ , m_sync(use_sync)
+ , m_directoryHandles(NULL)
+ , m_dirIndex(NULL)
  , m_buf(new char[m_chunk_size])
+ , m_exit(doExit)
+ , m_sync_dir(true)
 {
-  m_number = 0;
-  m_number_directories = 1;
-  m_dirname = NULL;
-  m_file_name_buf = NULL;
-  m_file_names = NULL;
-  m_sync = use_sync;
-  m_directoryHandles = NULL;
-  m_dirIndex = NULL;
-  m_exit = doExit;
-  m_sync_dir = true;
 }
 
 void COpenTest::random_sort()
@@ -149,15 +152,15 @@ void COpenTest::make_names(bool do_random)
 
 int COpenTest::create_a_file(const char *filename, char *buf, int size, int dir)
 {
+  FILE_TYPE fd = 0;
 #ifdef OS2
-  HFILE fd = 0;
   ULONG action = 0;
   ULONG rc = DosOpen(filename, &fd, &action, 0, FILE_NORMAL
                    , OPEN_ACTION_CREATE_IF_NEW | OPEN_ACTION_REPLACE_IF_EXISTS
                    , OPEN_FLAGS_SEQUENTIAL | OPEN_SHARE_DENYNONE | OPEN_ACCESS_READWRITE
                    , NULL);
 #else
-  int fd = creat(filename, S_IRUSR | S_IWUSR);
+  fd = creat(filename, S_IRUSR | S_IWUSR);
 #endif
   if(fd == -1)
   {
@@ -493,8 +496,8 @@ int COpenTest::stat_file(CPCCHAR file)
   }
   if(st.st_size)
   {
+    FILE_TYPE fd = 0;
 #ifdef OS2
-    HFILE fd = 0;
     ULONG action = 0;
     ULONG rc = DosOpen(file, &fd, &action, 0, FILE_NORMAL
                      , OPEN_ACTION_FAIL_IF_NEW | OPEN_ACTION_OPEN_IF_EXISTS
@@ -503,7 +506,7 @@ int COpenTest::stat_file(CPCCHAR file)
     if(rc)
       fd = -1;
 #else
-    int fd = open(file, O_RDONLY);
+    fd = open(file, O_RDONLY);
 #endif
     if(fd == -1)
     {
