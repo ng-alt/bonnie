@@ -8,7 +8,7 @@ bonnie++ \- program to test hard drive performance.
 .I [-n number-to-stat(*1024)[:max-size[:min-size][:num-directories]]]
 .I [-m machine-name] [-r ram-size-in-Mb] [-x number-of-tests]
 .I [-u uid-to-use:gid-to-use] [-g gid-to-use]
-.I [-q] [-f] [-b] [-p processes | -y]
+.I [-q] [-f] [-b] [-p processes | -y p|s ]
 
 .SH "DESCRIPTION"
 This manual page documents briefly the
@@ -140,13 +140,16 @@ no write buffering.  fsync() after every write.
 number of processes to serve semaphores for.  This is used to create the
 semaphores for synchronising multiple Bonnie++ processes.  All the processes
 which are told to use the semaphore with
-.B -y
-will start each test at the same time.  Use the value -1 to delete the
-semaphore.
+.B -ys
+will start each test with synchronization.  Use "-p -1" to delete the semaphore.
 
 .TP
-.B -y
-wait for semaphore before each test.
+.B -y s|p
+perform synchronization before each test.  Option
+.B s
+for semaphores and option
+.B p
+for prompting.
 
 .P
 

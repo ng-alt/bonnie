@@ -1,16 +1,23 @@
+#include <stdlib.h>
+#include "thread.h"
+
+#ifdef NON_UNIX
 
 #ifdef OS2
 #define INCL_DOSPROCESS
 #else
+#include <io.h>
+#include <fcntl.h>
+#include <process.h>
+#endif
+
+#else
 #include <unistd.h>
 #include <time.h>
-#include <stdlib.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <pthread.h>
 #endif
-
-#include "thread.h"
 
 Thread::Thread()
  : m_read(-1)
@@ -44,10 +51,10 @@ Thread::~Thread()
 {
   if(m_threadNum == -1)
   {
-    close(m_parentRead);
-    close(m_parentWrite);
-    close(m_childRead);
-    close(m_childWrite);
+    file_close(m_parentRead);
+    file_close(m_parentWrite);
+    file_close(m_childRead);
+    file_close(m_childWrite);
     delete m_retVal;
   }
 }
@@ -55,8 +62,12 @@ Thread::~Thread()
 // for the benefit of this function and the new Thread class it may create
 // the Thread class must do nothing of note in it's constructor or it's
 // go() member function.
+#ifdef NON_UNIX
 #ifdef OS2
 VOID APIENTRY thread_func(ULONG param)
+#else
+void( __cdecl thread_func )( void *param)
+#endif
 #else
 PVOID thread_func(PVOID param)
 #endif
@@ -66,7 +77,7 @@ PVOID thread_func(PVOID param)
   thread->setRetVal(thread->action(td->param));
   delete thread;
   delete td;
-#ifndef OS2
+#ifndef NON_UNIX
   return NULL;
 #endif
 }
@@ -76,7 +87,11 @@ void Thread::go(PVOID param, int num)
   m_numThreads += num;
   FILE_TYPE control[2];
   FILE_TYPE feedback[2];
+#ifdef WIN32
+  if (_pipe(feedback, 256, _O_BINARY) || _pipe(control, 256, _O_BINARY))
+#else
   if (pipe(feedback) || pipe(control))
+#endif
   {
     fprintf(stderr, "Can't open pipes.\n");
     exit(1);
@@ -87,7 +102,7 @@ void Thread::go(PVOID param, int num)
   m_childWrite = feedback[1];
   m_read = m_parentRead;
   m_write = m_parentWrite;
-#ifndef OS2
+#ifndef NON_UNIX
   m_readPoll.events = POLLIN | POLLERR | POLLHUP | POLLNVAL;
   m_writePoll.events = POLLOUT | POLLERR | POLLHUP | POLLNVAL;
   m_readPoll.fd = m_parentRead;
@@ -108,11 +123,20 @@ void Thread::go(PVOID param, int num)
     td->f = this;
     td->param = param;
     td->threadNum = i;
+#ifdef NON_UNIX
 #ifdef OS2
     // yes I know I am casting a pointer to an unsigned long
     // it's the way you're supposed to do things in OS/2
     TID id = 0;
     if(DosCreateThread(&id, thread_func, ULONG(td), CREATE_READY, 32*1024))
+    {
+      fprintf(stderr, "Can't create a thread.\n");
+      exit(1);
+    }
+#else
+    unsigned long id = _beginthread(thread_func, 32*1024, td);
+    if(id == -1)
+#endif
     {
       fprintf(stderr, "Can't create a thread.\n");
       exit(1);
@@ -126,7 +150,7 @@ void Thread::go(PVOID param, int num)
     }
 #endif
   }
-#ifndef OS2
+#ifndef NON_UNIX
   if(pthread_attr_destroy(&attr))
     fprintf(stderr, "Can't destroy thread attributes.\n");
   m_readPoll.fd = m_read;
@@ -141,7 +165,7 @@ void Thread::setRetVal(int rc)
 
 int Thread::Read(PVOID buf, int size, int timeout)
 {
-#ifndef OS2
+#ifndef NON_UNIX
   if(timeout)
   {
     int rc = poll(&m_readPoll, 1, timeout * 1000);
@@ -159,7 +183,7 @@ int Thread::Read(PVOID buf, int size, int timeout)
   int rc = DosRead(m_read, buf, size, &actual);
   if(rc || actual != size)
 #else
-  if(size != read(m_read, buf, size) )
+  if(size != _read(m_read, buf, size) )
 #endif
   {
     fprintf(stderr, "Can't read data from ITC pipe.\n");
@@ -170,13 +194,12 @@ int Thread::Read(PVOID buf, int size, int timeout)
 
 int Thread::Write(PVOID buf, int size, int timeout)
 {
-#ifndef OS2
+#ifndef NON_UNIX
   if(timeout)
   {
     int rc = poll(&m_writePoll, 1, timeout * 1000);
     if(rc < 0)
     {
-perror("");
       fprintf(stderr, "Can't poll write ITC.\n");
       return -1;
     }

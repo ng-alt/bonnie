@@ -1,8 +1,12 @@
 #ifndef ZCAV_IO_H
 #define ZCAV_IO_H
+#include <vector>
 
 #include "bonnie.h"
-#include <vector.h>
+#include "duration.h"
+#ifdef WIN32
+using namespace std;
+#endif
 
 enum results
 {
@@ -48,7 +52,8 @@ private:
   FILE *m_log;
   bool m_logFile;
   int m_block_size;
-  const char *m_name;
+  char *m_name;
+  Duration m_dur;
 };
 
 #endif

@@ -1,21 +1,27 @@
+#include <stdlib.h>
 #include <fcntl.h>
 #include <sys/types.h>
+#include "bonnie.h"
+
+#ifdef NON_UNIX
 #ifdef OS2
-#define INCL_DOSPROCESS
-#define INCL_DOSFILEMGR
-#include <os2.h>
 #else
+#include <windows.h>
+#include <io.h>
+#endif
+
+#else
+
 #include <dirent.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include "sync.h"
 #endif
-#include <stdlib.h>
+
 #include <sys/stat.h>
 #include <string.h>
 
-#include "bonnie.h"
 #include "bon_io.h"
-#include "semaphore.h"
 #include "bon_time.h"
 
 CFileOp::~CFileOp()
@@ -29,7 +35,7 @@ CFileOp::~CFileOp()
       sprintf(&m_name[len], ".%03d", i);
       unlink(m_name);
     }
-    delete m_name;
+    free(m_name);
   }
   delete m_buf;
 }
@@ -47,7 +53,7 @@ CFileOp::CFileOp(int threadNum, CFileOp *parent)
  , m_stream(NULL)
  , m_fd(NULL)
  , m_isopen(false)
- , m_name(strdup(parent->m_name))
+ , m_name(PCHAR(malloc(strlen(parent->m_name) + 5)))
  , m_sync(parent->m_sync)
  , m_chunk_bits(parent->m_chunk_bits)
  , m_chunk_size(parent->m_chunk_size)
@@ -58,18 +64,21 @@ CFileOp::CFileOp(int threadNum, CFileOp *parent)
  , m_file_ind(parent->m_file_ind)
  , m_buf(new char[m_chunk_size])
 {
+  strcpy(m_name, parent->m_name);
 }
 
 int CFileOp::action(PVOID)
 {
   struct report_s seeker_report;
-  seeker_report.StartTime = m_timer.get_cur_time();
   if(reopen(false, false))
     return 1;
   char ticket;
   int rc;
   int lseek_count = 0;
-  m_timer.timestamp();
+  Duration dur, test_time;
+  CPU_Duration test_cpu;
+  test_time.getTime(&seeker_report.StartTime);
+  test_cpu.start();
   while((rc = Read(&ticket, 1, 0)) == 1 && ticket)
   {
     bool update;
@@ -77,8 +86,10 @@ int CFileOp::action(PVOID)
       update = true;
     else
       update = false;
+    dur.start();
     if(doseek(rand() % m_total_chunks, update) )
       return 1;
+    dur.stop();
   }
   if(rc != 1)
   {
@@ -86,29 +97,33 @@ int CFileOp::action(PVOID)
     return 1;
   }
   close();
-  m_timer.get_delta_report(seeker_report);
+  // seeker report is start and end times, CPU used, and latency
+  test_time.getTime(&seeker_report.EndTime);
+  seeker_report.CPU = test_cpu.stop();
+  seeker_report.Latency = dur.getMax();
   if(Write(&seeker_report, sizeof(seeker_report), 0) != sizeof(seeker_report))
   {
     fprintf(stderr, "Can't write report.\n");
     return 1;
   }
-printf("done\n");
   return 0;
 }
 
-int CFileOp::seek_test(bool quiet, Semaphore &s)
+int CFileOp::seek_test(bool quiet, Sync &s)
 {
-  char   seek_tickets[SeekProcCount + Seeks];
+  char seek_tickets[SeekProcCount + Seeks];
   int next;
-  for (next = 0; next < Seeks; next++)
+  for(next = 0; next < Seeks; next++)
     seek_tickets[next] = 1;
-  for ( ; next < (Seeks + SeekProcCount); next++)
+  for( ; next < (Seeks + SeekProcCount); next++)
     seek_tickets[next] = 0;
   go(NULL, SeekProcCount);
 
   sleep(3);
+#ifndef NON_UNIX
   if(s.decrement_and_wait(Lseek))
     return 1;
+#endif
   if(!quiet) fprintf(stderr, "start 'em...");
   if(Write(seek_tickets, sizeof(seek_tickets), 0) != int(sizeof(seek_tickets)) )
   {
@@ -194,7 +209,7 @@ int CFileOp::seek(int offset, int whence)
       rc = DosSetFilePtr(m_fd[m_file_ind], m_cur_pos << m_chunk_bits, FILE_BEGIN, &actual);
       if(rc != 0) rc = -1;
 #else
-      rc = lseek(m_fd[m_file_ind], m_cur_pos << m_chunk_bits, SEEK_SET);
+      rc = _lseek(m_fd[m_file_ind], m_cur_pos << m_chunk_bits, SEEK_SET);
 #endif
     }
     else
@@ -226,7 +241,7 @@ int CFileOp::read_block(PVOID buf)
     else
       rc = actual;
 #else
-    int rc = ::read(m_fd[m_file_ind], buf, m_chunk_size - total);
+    int rc = ::_read(m_fd[m_file_ind], buf, m_chunk_size - total);
 #endif
     m_cur_pos++;
     if(m_cur_pos >= m_chunks_per_file)
@@ -318,12 +333,13 @@ int CFileOp::write_block_putc()
     if(seek(0, SEEK_CUR) == -1)
       return -1;
   }
+  fflush(NULL);
   return 0;
 }
 
 int CFileOp::open(CPCCHAR basename, bool create, bool use_fopen)
 {
-  m_name = new char[strlen(basename) + 8];
+  m_name = PCHAR(malloc(strlen(basename) + 5));
   strcpy(m_name, basename);
   return reopen(create, use_fopen);
 }
@@ -401,23 +417,29 @@ int CFileOp::m_open(CPCCHAR basename, int ind, bool create)
   const char *fopen_mode;
   if(create)
   { /* create from scratch */
-#ifndef OS2
-    unlink(basename);
-#endif
-    fopen_mode = "w+";
+    _unlink(basename);
+    fopen_mode = "wb+";
 #ifdef OS2
     createFlag = OPEN_ACTION_CREATE_IF_NEW | OPEN_ACTION_REPLACE_IF_EXISTS;
 #else
     flags = O_RDWR | O_CREAT | O_EXCL;
+#ifdef WIN32
+    flags |= O_BINARY;
+#endif
+
 #endif
   }
   else
   {
-    fopen_mode = "r+";
+    fopen_mode = "rb+";
 #ifdef OS2
     createFlag = OPEN_ACTION_OPEN_IF_EXISTS;
 #else
     flags = O_RDWR;
+#ifdef WIN32
+    flags |= O_BINARY;
+#endif
+
 #endif
   }
   if(m_fd)
@@ -452,16 +474,12 @@ void CFileOp::close()
     return;
   for(int i = 0; i < m_num_files; i++)
   {
-    if(m_sync)
-      fflush(NULL);
+    fflush(NULL);
     if(m_stream && m_stream[i]) fclose(m_stream[i]);
     if(m_fd && m_fd[i] != -1)
     {
-      if(m_sync)
-      {
-        if(fsync(m_fd[i]))
-          fprintf(stderr, "Can't sync files.\n");
-      }
+      if(fsync(m_fd[i]))
+        fprintf(stderr, "Can't sync files.\n");
       file_close(m_fd[i]);
     }
   }

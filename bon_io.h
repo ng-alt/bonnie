@@ -3,7 +3,9 @@
 
 #include "bonnie.h"
 #include "thread.h"
-class Semaphore;
+#ifndef NON_UNIX
+class Sync;
+#endif
 class BonTimer;
 
 class CFileOp : public Thread
@@ -18,7 +20,7 @@ public:
   int read_block(PVOID buf);
   int seek(int offset, int whence);
   int doseek(long where, bool update);
-  int seek_test(bool quiet, Semaphore &s);
+  int seek_test(bool quiet, Sync &s);
   void close();
   // reopen a file, bools for whether the file should be unlink()'d and
   // creat()'d and for whether fopen should be used

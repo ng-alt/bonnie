@@ -1,14 +1,20 @@
+#include "zcav_io.h"
+
+#ifdef WIN32
+#include <io.h>
+#endif
+
+#ifndef NON_UNIX
 #include <unistd.h>
-#include <sys/time.h>
 #include <sys/resource.h>
+#include <sys/time.h>
+#endif
 #include <time.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <stdlib.h>
 #include <string.h>
-
-#include "zcav_io.h"
 
 ZcavRead::~ZcavRead()
 {
@@ -42,7 +48,7 @@ int ZcavRead::open(bool *finished, int block_size
     if(m_log == NULL)
     {
       fprintf(stderr, "Can't open %s\n", log);
-      ::close(m_fd);
+      file_close(m_fd);
       return 1;
     }
   }
@@ -101,13 +107,13 @@ int ZcavRead::read(int max_loops, int max_size, bool wait
           writeStatus(writeCom, eEND);
           return 1;
         }
-        m_times[i][0] = -1.0;
+        m_times[i][0] = 0;
         break;
       }
       if(wait)
       {
         if((!max_size || (i+1) < max_size)
-           && (loops == 0 || m_times[i+1][0] != -1.0))
+           && (loops == 0 || m_times[i+1][0] != 0))
         {
           if(writeStatus(writeCom, eBLOCK))
             return 1;
@@ -119,7 +125,7 @@ int ZcavRead::read(int max_loops, int max_size, bool wait
       if(wait)
       {
         char c;
-        if(::read(readCom, &c, 1) != 1)
+        if(::_read(readCom, &c, 1) != 1)
         {
           fprintf(stderr, "Read comms channel broken\n");
           return 1;
@@ -184,9 +190,9 @@ double average(double *array, int count)
   double total = 0.0;
   for(int i = skip; i < (count - skip); i++)
   {
-    total += array[i];
+    total += double(array[i]);
   }
-  return total / arr_items;
+  return total / double(arr_items);
 }
 
 // just like the read() system call but takes a (char *) and will not return
@@ -196,7 +202,7 @@ ssize_t ZcavRead::readall(int count)
   ssize_t total = 0;
   while(total != static_cast<ssize_t>(count) )
   {
-    ssize_t rc = ::read(m_fd, &m_buf[total], count - total);
+    ssize_t rc = ::_read(m_fd, &m_buf[total], count - total);
     if(rc == -1 || rc == 0)
       return -1;
     total += rc;
@@ -208,28 +214,14 @@ ssize_t ZcavRead::readall(int count)
 // amount of time elapsed in seconds.
 double ZcavRead::readmegs()
 {
-  struct timeval tp;
- 
-  if (gettimeofday(&tp, static_cast<struct timezone *>(NULL)) == -1)
-  {
-    fprintf(stderr, "Can't get time.\n");
-    return -1.0;
-  }
-  double start = double(tp.tv_sec) +
-    (double(tp.tv_usec) / 1000000.0);
+  m_dur.start();
 
   for(int i = 0; i < m_block_size; i++)
   {
     int rc = readall(meg);
     if(rc != meg)
-      return -1.0;
+      return 0;
   }
-  if (gettimeofday(&tp, static_cast<struct timezone *>(NULL)) == -1)
-  {
-    fprintf(stderr, "Can't get time.\n");
-    return -1.0;
-  }
-  return (double(tp.tv_sec) + (double(tp.tv_usec) / 1000000.0))
-        - start;
+  return m_dur.stop();
 }
 

@@ -1,56 +1,60 @@
-EXES=@exes@
+EXES=bonnie++ zcav bon_csv2html
 
-all: ${EXES}
+all: $(EXES)
 
 SCRIPTS=bon_csv2html bon_csv2txt
 
 prefix=@prefix@
-WFLAGS=-Wall -W -Wshadow -Wpointer-arith -Wcast-align -Wwrite-strings -Weffc++ -pedantic -ffor-scope
-CFLAGS=-O2 -g -DNDEBUG ${WFLAGS}
-CXX=@CXX@ ${CFLAGS}
-LFLAGS=@extra_ldflags@
+#MORE_WARNINGS=-Weffc++ -Wcast-align
+WFLAGS=-Wall -W -Wshadow -Wpointer-arith -Wwrite-strings -pedantic -ffor-scope $(MORE_WARNINGS)
+CFLAGS=-O2 -DNDEBUG $(WFLAGS) $(MORECFLAGS)
+CXX=@CXX@ $(CFLAGS)
+THREAD_LFLAGS=@thread_ldflags@
 
 INSTALL=@INSTALL@
 
-BONSRC=bon_io.cpp bon_file.cpp bon_time.cpp semaphore.cpp thread.cpp \
- bon_suid.cpp
-BONOBJS=${BONSRC:.cpp=.o}
+BONSRC=bon_io.cpp bon_file.cpp bon_time.cpp semaphore.cpp sync.cpp thread.cpp \
+ bon_suid.cpp duration.cpp
+BONOBJS=$(BONSRC:.cpp=.o)
 
 MAN1=bon_csv2html.1 bon_csv2txt.1
-MAN8=@man8@
+MAN8=bonnie++.8 zcav.8
 
-ZCAVSRC=thread.cpp zcav_io.cpp bon_suid.cpp
-ZCAVOBJS=${ZCAVSRC:.cpp=.o}
+ZCAVSRC=thread.cpp zcav_io.cpp bon_suid.cpp duration.cpp
+ZCAVOBJS=$(ZCAVSRC:.cpp=.o)
 
-ALLOBJS=${BONOBJS} ${ZCAVOBJS}
+ALLOBJS=$(BONOBJS) $(ZCAVOBJS)
 
-bonnie++: bonnie++.cpp ${BONOBJS}
-	${CXX} bonnie++.cpp -o bonnie++ ${BONOBJS} ${LFLAGS}
+bonnie++: bonnie++.cpp $(BONOBJS)
+	$(CXX) bonnie++.cpp -o bonnie++ $(BONOBJS) $(THREAD_LFLAGS)
 
-zcav: zcav.cpp ${ZCAVOBJS}
-	${CXX} zcav.cpp -o zcav ${ZCAVOBJS} ${LFLAGS}
+zcav: zcav.cpp $(ZCAVOBJS)
+	$(CXX) zcav.cpp -o zcav $(ZCAVOBJS) $(THREAD_LFLAGS)
 
-install-bin: ${EXES}
-	mkdir -p ${prefix}/bin ${prefix}/sbin
-	@INSTALL_PROGRAM@ @stripping@ ${EXES} ${prefix}/sbin
-	@INSTALL_PROGRAM@ ${SCRIPTS} ${prefix}/bin
+bon_csv2html: bon_csv2html.cpp
+	$(CXX) bon_csv2html.cpp -o bon_csv2html
+
+install-bin: $(EXES)
+	mkdir -p $(prefix)/bin $(prefix)/sbin
+	@INSTALL_PROGRAM@ @stripping@ $(EXES) $(prefix)/sbin
+	@INSTALL_PROGRAM@ $(SCRIPTS) $(prefix)/bin
 
 install: install-bin
 	mkdir -p @mandir@/man1 @mandir@/man8
-	@INSTALL_DATA@ ${MAN1} @mandir@/man1
-	@INSTALL_DATA@ ${MAN8} @mandir@/man8
+	@INSTALL_DATA@ $(MAN1) @mandir@/man1
+	@INSTALL_DATA@ $(MAN8) @mandir@/man8
 
 %.o: %.cpp %.h bonnie.h port.h
-	${CXX} -c $<
+	$(CXX) -c $<
 
 bon_suid.o: bon_suid.cpp bonnie.h port.h
-	${CXX} -c $<
+	$(CXX) -c $<
 
 clean:
-	rm -f ${EXES} ${ALLOBJS} build-stamp install-stamp
+	rm -f $(EXES) $(ALLOBJS) build-stamp install-stamp
 	rm -rf debian/tmp core debian/*.debhelper
 	rm -f debian/{substvars,files} config.log
 
 realclean: clean
-	rm -f config.* Makefile bonnie.h port.h bonnie++.spec
-	rm -f bon_csv2txt bon_csv2html bon_csv2html.1 sun/pkginfo
+	rm -f config.* Makefile bonnie++.spec
+	rm -f bon_csv2txt bon_csv2html.1 sun/pkginfo

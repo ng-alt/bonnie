@@ -17,6 +17,15 @@
  *  nature or kind.
  */
 
+#include <stdlib.h>
+#ifdef OS2
+#define INCL_DOSMISC
+#endif
+#include "bonnie.h"
+#ifdef NON_UNIX
+typedef char Sync;
+#include "getopt.h"
+
 #ifdef OS2
 #define INCL_DOSFILEMGR
 #define INCL_DOSMISC
@@ -24,23 +33,27 @@
 #define INCL_DOSPROCESS
 #include <os2.h>
 #else
+#include <process.h>
+#include <windows.h>
+#endif
+
+#else
 #include <sys/wait.h>
 #include <unistd.h>
-#endif
 #include <sys/time.h>
+#include <pwd.h>
+#include <grp.h>
+#include <sys/utsname.h>
+#include "sync.h"
+#endif
 #include <time.h>
-#include <stdlib.h>
-#include "bonnie.h"
 #include "bon_io.h"
 #include "bon_file.h"
 #include "bon_time.h"
-#include "semaphore.h"
-#include <pwd.h>
-#include <grp.h>
 #include <ctype.h>
 #include <string.h>
-#include <sys/utsname.h>
 #include <signal.h>
+#include <ctype.h>
 
 void usage();
 
@@ -52,7 +65,7 @@ public:
   bool sync_bonnie;
   BonTimer timer;
   int ram;
-  Semaphore sem;
+  Sync *syn;
   char *name;
   bool bufSync;
   int  chunk_bits;
@@ -64,7 +77,11 @@ public:
   char *buf() { return m_buf; }
 
   CGlobalItems(bool *exitFlag);
-  ~CGlobalItems() { delete name; delete m_buf; }
+  ~CGlobalItems() { delete name; delete m_buf;
+#ifndef NON_UNIX
+                    delete syn;
+#endif
+                  }
 
   void decrement_and_wait(int nr_sem);
 
@@ -77,10 +94,18 @@ public:
     DosQuerySysInfo(QSV_FOREGROUND_PROCESS, QSV_FOREGROUND_PROCESS
                   , &myPid, sizeof(myPid));
 #else
-    pid_t myPid = getpid();
+    pid_t myPid = _getpid();
 #endif
     sprintf(name, "%s/Bonnie.%d", path, int(myPid));
   }
+
+#ifndef NON_UNIX
+  void setSync(SYNC_TYPE type, int semKey = 0, int num_tests = 0)
+  {
+    syn = new Sync(type, semKey, num_tests);
+  }
+#endif
+
 private:
   int m_chunk_size;
   char *m_buf;
@@ -96,7 +121,7 @@ CGlobalItems::CGlobalItems(bool *exitFlag)
  , sync_bonnie(false)
  , timer()
  , ram(0)
- , sem(SemKey, TestCount)
+ , syn(NULL)
  , name(NULL)
  , bufSync(false)
  , chunk_bits(DefaultChunkBits)
@@ -109,8 +134,10 @@ CGlobalItems::CGlobalItems(bool *exitFlag)
 
 void CGlobalItems::decrement_and_wait(int nr_sem)
 {
-  if(sem.decrement_and_wait(nr_sem))
+#ifndef NON_UNIX
+  if(syn->decrement_and_wait(nr_sem))
     exit(1);
+#endif
 }
 
 int TestDirOps(int directory_size, int max_size, int min_size
@@ -119,6 +146,7 @@ int TestFileOps(int file_size, CGlobalItems &globals);
 
 static bool exitNow;
 
+#ifndef NON_UNIX
 void ctrl_c_handler(int sig)
 {
   if(sig == SIGXCPU)
@@ -127,6 +155,7 @@ void ctrl_c_handler(int sig)
     fprintf(stderr, "exceeded file storage limits.\n");
   exitNow = true;
 }
+#endif
 
 int main(int argc, char *argv[])
 {
@@ -138,12 +167,15 @@ int main(int argc, char *argv[])
   int    num_directories = 1;
   int    count = -1;
   const char * machine = NULL;
+#ifndef NON_UNIX
   char *userName = NULL, *groupName = NULL;
+#endif
   CGlobalItems globals(&exitNow);
   bool setSize = false;
 
   exitNow = false;
 
+#ifndef NON_UNIX
   struct sigaction sa;
   sa.sa_sigaction = NULL;
   sa.sa_handler = ctrl_c_handler;
@@ -161,6 +193,7 @@ int main(int argc, char *argv[])
     printf("Can't handle SIGHUP.\n");
     return 1;
   }
+#endif
 
 #ifdef _SC_PHYS_PAGES
   int page_size = sysconf(_SC_PAGESIZE);
@@ -170,9 +203,14 @@ int main(int argc, char *argv[])
     globals.ram = page_size/1024 * (num_pages/1024);
   }
 #endif
+#ifdef WIN32
+  MEMORYSTATUS ms;
+  GlobalMemoryStatus(&ms);
+  globals.ram = ms.dwTotalPhys / 1024 / 1024;
+#endif
 
   int int_c;
-  while(-1 != (int_c = getopt(argc, argv, "bd:fg:m:n:p:qr:s:u:x:y")) )
+  while(-1 != (int_c = getopt(argc, argv, "bd:fg:m:n:p:qr:s:u:x:y:")) )
   {
     switch(char(int_c))
     {
@@ -199,7 +237,7 @@ int main(int argc, char *argv[])
       break;
       case 'p':
         num_bonnie_procs = atoi(optarg);
-                        /* Set semaphore to # of bonnie++ procs 
+                        /* Set semaphore to # of bonnie++ procs
                            to synchronize */
       break;
       case 'q':
@@ -210,7 +248,7 @@ int main(int argc, char *argv[])
       break;
       case 's':
       {
-        char *sbuf = strdup(optarg);
+        char *sbuf = _strdup(optarg);
         char *size = strtok(sbuf, ":");
         file_size = atoi(size);
         char c = size[strlen(size) - 1];
@@ -228,6 +266,7 @@ int main(int argc, char *argv[])
         setSize = true;
       }
       break;
+#ifndef NON_UNIX
       case 'g':
         if(groupName)
           usage();
@@ -249,16 +288,32 @@ int main(int argc, char *argv[])
         }
       }
       break;
+#endif
       case 'x':
         count = atoi(optarg);
       break;
+#ifndef NON_UNIX
       case 'y':
                         /* tell procs to synchronize via previous
                            defined semaphore */
+        switch(tolower(optarg[0]))
+        {
+        case 's':
+          globals.setSync(eSem, SemKey, TestCount);
+        break;
+        case 'p':
+          globals.setSync(ePrompt);
+        break;
+        }
         globals.sync_bonnie = true;
       break;
+#endif
     }
   }
+#ifndef NON_UNIX
+  if(!globals.syn)
+    globals.setSync(eNone);
+#endif
   if(optind < argc)
     usage();
 
@@ -273,11 +328,23 @@ int main(int argc, char *argv[])
 
   if(machine == NULL)
   {
+#ifdef WIN32
+    char utsBuf[MAX_COMPUTERNAME_LENGTH + 2];
+    DWORD size = MAX_COMPUTERNAME_LENGTH + 1;
+    if(GetComputerName(utsBuf, &size))
+      machine = _strdup(utsBuf);
+#else
+#ifdef OS2
+    machine = "OS/2";
+#else
     struct utsname utsBuf;
     if(uname(&utsBuf) != -1)
       machine = utsBuf.nodename;
+#endif
+#endif
   }
 
+#ifndef NON_UNIX
   if(userName || groupName)
   {
     if(bon_setugid(userName, groupName))
@@ -290,27 +357,30 @@ int main(int argc, char *argv[])
     fprintf(stderr, "You must use the \"-u\" switch when running as root.\n");
     usage();
   }
+#endif
 
   if(num_bonnie_procs && globals.sync_bonnie)
     usage();
 
+#ifndef NON_UNIX
   if(num_bonnie_procs)
   {
     if(num_bonnie_procs == -1)
     {
-      return globals.sem.clear_sem();
+      return globals.syn->clear_sem();
     }
     else
     {
-      return globals.sem.create(num_bonnie_procs);
+      return globals.syn->create(num_bonnie_procs);
     }
   }
 
   if(globals.sync_bonnie)
   {
-    if(globals.sem.get_semid())
+    if(globals.syn->get_semid())
       return 1;
   }
+#endif
 
   if(file_size < 0 || directory_size < 0 || (!file_size && !directory_size) )
     usage();
@@ -335,12 +405,12 @@ int main(int argc, char *argv[])
     globals.timer.SetType(BonTimer::csv);
     globals.timer.PrintHeader(stdout);
   }
+  pid_t myPid = 0;
 #ifdef OS2
-    ULONG myPid = 0;
     DosQuerySysInfo(QSV_FOREGROUND_PROCESS, QSV_FOREGROUND_PROCESS
                   , &myPid, sizeof(myPid));
 #else
-  pid_t myPid = getpid();
+  myPid = _getpid();
 #endif
   srand(myPid ^ time(NULL));
   for(; count > 0 || count == -1; count--)
@@ -369,6 +439,7 @@ int main(int argc, char *argv[])
                               , num_directories, globals.chunk_size(), stdout);
     if(rc) return rc;
   }
+  return 0;
 }
 
 int
@@ -399,17 +470,21 @@ TestFileOps(int file_size, CGlobalItems &globals)
       return rc;
     if(exitNow)
       return EXIT_CTRL_C;
-    globals.timer.timestamp();
+    Duration dur;
 
+    globals.timer.start();
     if(!globals.fast)
     {
+      dur.reset();
       globals.decrement_and_wait(Putc);
       // Fill up a file, writing it a char at a time with the stdio putc() call
       if(!globals.quiet) fprintf(stderr, "Writing with putc()...");
       for(words = 0; words < num_chunks; words++)
       {
+        dur.start();
         if(file.write_block_putc() == -1)
           return 1;
+        dur.stop();
         if(exitNow)
           return EXIT_CTRL_C;
       }
@@ -419,16 +494,18 @@ TestFileOps(int file_size, CGlobalItems &globals)
        *  effort to force as much of the I/O out as we can
        */
       file.close();
-      globals.timer.get_delta_t(Putc);
+      globals.timer.stop_and_record(Putc);
+      globals.timer.add_latency(Putc, dur.getMax());
       if(!globals.quiet) fprintf(stderr, "done\n");
     }
     /* Write the whole file from scratch, again, with block I/O */
     if(file.reopen(true))
       return 1;
+    dur.reset();
     globals.decrement_and_wait(FastWrite);
     if(!globals.quiet) fprintf(stderr, "Writing intelligently...");
     memset(buf, 0, globals.chunk_size());
-    globals.timer.timestamp();
+    globals.timer.start();
     bufindex = 0;
     // for the number of chunks of file data
     for(i = 0; i < num_chunks; i++)
@@ -438,11 +515,14 @@ TestFileOps(int file_size, CGlobalItems &globals)
       // for each chunk in the Unit
       buf[bufindex]++;
       bufindex = (bufindex + 1) % globals.chunk_size();
+      dur.start();
       if(file.write_block(PVOID(buf)) == -1)
         return io_error("write(2)");
+      dur.stop();
     }
     file.close();
-    globals.timer.get_delta_t(FastWrite);
+    globals.timer.stop_and_record(FastWrite);
+    globals.timer.add_latency(FastWrite, dur.getMax());
     if(!globals.quiet) fprintf(stderr, "done\n");
 
 
@@ -454,12 +534,14 @@ TestFileOps(int file_size, CGlobalItems &globals)
       if(!globals.quiet) fprintf(stderr, "error in lseek(2) before rewrite\n");
       return 1;
     }
+    dur.reset();
     globals.decrement_and_wait(ReWrite);
     if(!globals.quiet) fprintf(stderr, "Rewriting...");
-    globals.timer.timestamp();
+    globals.timer.start();
     bufindex = 0;
     for(words = 0; words < num_chunks; words++)
     { // for each chunk in the file
+      dur.start();
       if (file.read_block(PVOID(buf)) == -1)
         return 1;
       bufindex = bufindex % globals.chunk_size();
@@ -469,33 +551,38 @@ TestFileOps(int file_size, CGlobalItems &globals)
         return 1;
       if (file.write_block(PVOID(buf)) == -1)
         return io_error("re write(2)");
+      dur.stop();
       if(exitNow)
         return EXIT_CTRL_C;
     }
     file.close();
-    globals.timer.get_delta_t(ReWrite);
+    globals.timer.stop_and_record(ReWrite);
+    globals.timer.add_latency(ReWrite, dur.getMax());
     if(!globals.quiet) fprintf(stderr, "done\n");
-
 
     if(!globals.fast)
     {
       // read them all back with getc()
       if(file.reopen(false, true))
         return 1;
+      dur.reset();
       globals.decrement_and_wait(Getc);
       if(!globals.quiet) fprintf(stderr, "Reading with getc()...");
-      globals.timer.timestamp();
+      globals.timer.start();
 
       for(words = 0; words < num_chunks; words++)
       {
+        dur.start();
         if(file.read_block_getc(buf) == -1)
           return 1;
+        dur.stop();
         if(exitNow)
           return EXIT_CTRL_C;
       }
 
       file.close();
-      globals.timer.get_delta_t(Getc);
+      globals.timer.stop_and_record(Getc);
+      globals.timer.add_latency(Getc, dur.getMax());
       if(!globals.quiet) fprintf(stderr, "done\n");
     }
 
@@ -504,22 +591,26 @@ TestFileOps(int file_size, CGlobalItems &globals)
       return 1;
     if (file.seek(0, SEEK_SET) == -1)
       return io_error("lseek before read");
+    dur.reset();
     globals.decrement_and_wait(FastRead);
     if(!globals.quiet) fprintf(stderr, "Reading intelligently...");
-    globals.timer.timestamp();
+    globals.timer.start();
     for(i = 0; i < num_chunks; i++)
     { /* per block */
+      dur.start();
       if ((words = file.read_block(PVOID(buf))) == -1)
         return io_error("read(2)");
+      dur.stop();
       if(exitNow)
         return EXIT_CTRL_C;
     } /* per block */
     file.close();
-    globals.timer.get_delta_t(FastRead);
+    globals.timer.stop_and_record(FastRead);
+    globals.timer.add_latency(FastRead, dur.getMax());
     if(!globals.quiet) fprintf(stderr, "done\n");
 
-    globals.timer.timestamp();
-    if(file.seek_test(globals.quiet, globals.sem))
+    globals.timer.start();
+    if(file.seek_test(globals.quiet, *globals.syn))
       return 1;
 
     /*

@@ -1,6 +1,8 @@
 #include "port.h"
 #include "semaphore.h"
+#ifndef NON_UNIX
 #include <unistd.h>
+#endif
 #include <stdlib.h>
 
 Semaphore::Semaphore(int semKey, int numSems, int val)

@@ -1,11 +1,11 @@
 #ifndef THREAD_H
 #define THREAD_H
 
-#ifndef OS2
+#include "port.h"
+
+#ifndef NON_UNIX
 #include <sys/poll.h>
 #endif
-
-#include "port.h"
 
 class Thread;
 
@@ -56,7 +56,7 @@ private:
 
   int m_threadNum;
 
-#ifndef OS2
+#ifndef NON_UNIX
   pollfd m_readPoll;
   pollfd m_writePoll;
 #endif
@@ -71,8 +71,12 @@ private:
   Thread & operator =(const Thread &f);
 
 
+#ifdef NON_UNIX
 #ifdef OS2
 friend VOID APIENTRY thread_func(ULONG param);
+#else
+friend void( __cdecl thread_func )( void *param);
+#endif
 #else
 friend PVOID thread_func(PVOID param);
 #endif

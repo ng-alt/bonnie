@@ -1,110 +1,53 @@
-#include <sys/time.h>
 #ifdef OS2
 #define INCL_DOSFILEMGR
 #define INCL_BASE
-#include <os2.h>
-#include "os2-perfutil.h"
-/*
-   Convert 8-byte (low, high) time value to double
-*/
-#define LL2F(high, low) (4294967296.0*(high)+(low))
-#else
-#include <unistd.h>
-#include <sys/resource.h>
+#define INCL_DOSMISC
 #endif
+
+#include <stdlib.h>
+
 #include "bon_time.h"
+#include "duration.h"
 #include <time.h>
 #include <string.h>
 
-#define TIMEVAL_TO_DOUBLE(XX) (double((XX).tv_sec) + double((XX).tv_usec) / 1000000.0)
-
-void BonTimer::timestamp()
-{
-  m_last_timestamp = get_cur_time();
-  m_last_cpustamp = get_cpu_use();
-}
-
-double
-BonTimer::time_so_far()
-{
-  return get_cur_time() - m_last_timestamp;
-}
-
-double
-BonTimer::cpu_so_far()
-{
-  return get_cpu_use() - m_last_cpustamp;
-}
-
-double
-BonTimer::get_cur_time()
-{
-#ifdef OS2
-  ULONG count = 0;
-  ULONG rc = DosQuerySysInfo(QSV_MS_COUNT, QSV_MS_COUNT, &count, sizeof(count));
-  if(rc)
-    return 0.0;
-  return double(count)/1000.0;
-#else
-  struct timeval tp;
- 
-  if (gettimeofday(&tp, static_cast<struct timezone *>(NULL)) == -1)
-    io_error("gettimeofday", true);
-  return TIMEVAL_TO_DOUBLE(tp);
+#ifdef WIN32
+#include <sys/types.h>
+#include <sys/timeb.h>
 #endif
-}
 
-double
-BonTimer::get_cpu_use()
-{
-#ifdef OS2
-  double      busy_val, busy_val_prev;
-  double      intr_val, intr_val_prev;
-  CPUUTIL     CPUUtil;
-
-  ULONG rc = DosPerfSysCall(CMD_KI_RDCNT,(ULONG) &CPUUtil,0,0);
-  if(rc)
-    io_error("times", true);
-  return LL2F(CPUUtil.ulBusyHigh, CPUUtil.ulBusyLow)
-       + LL2F(CPUUtil.ulIntrHigh, CPUUtil.ulIntrLow);
-#else
-  struct rusage res_usage;
-
-  getrusage(RUSAGE_SELF, &res_usage);
-  return TIMEVAL_TO_DOUBLE(res_usage.ru_utime) + TIMEVAL_TO_DOUBLE(res_usage.ru_stime);
+#ifndef NON_UNIX
+#include <sys/time.h>
+#include <unistd.h>
+#include <algo.h>
 #endif
-}
 
-void BonTimer::get_delta_t(tests_t test)
+void BonTimer::start()
 {
-  m_delta[test].Elapsed = time_so_far();
-  m_delta[test].CPU = cpu_so_far();
-  timestamp();
+  m_dur.start();
+  m_cpu_dur.start();
 }
-
-void BonTimer::get_delta_report(report_s &rep)
+void BonTimer::stop_and_record(tests_t test)
 {
-  rep.EndTime = get_cur_time();
-  rep.CPU = cpu_so_far();
-  timestamp();
+  m_delta[test].Elapsed = m_dur.stop();
+  m_delta[test].CPU = m_cpu_dur.stop();
 }
 
 void BonTimer::add_delta_report(report_s &rep, tests_t test)
 {
-  if(m_delta[test].CPU == 0.0)
+  if(m_delta[test].FirstStart == 0.0)
   {
     m_delta[test].FirstStart = rep.StartTime;
     m_delta[test].LastStop = rep.EndTime;
   }
   else
   {
-    if(rep.StartTime < m_delta[test].FirstStart)
-      m_delta[test].FirstStart = rep.StartTime;
-    if(rep.EndTime > m_delta[test].LastStop)
-      m_delta[test].LastStop = rep.EndTime;
+    m_delta[test].FirstStart = __min(m_delta[test].FirstStart, rep.StartTime);
+    m_delta[test].LastStop = __max(m_delta[test].LastStop, rep.EndTime);
   }
   m_delta[test].CPU += rep.CPU;
   m_delta[test].Elapsed = m_delta[test].LastStop - m_delta[test].FirstStart;
+  m_delta[test].Latency = __max(m_delta[test].Latency, rep.Latency);
 }
 
 BonTimer::BonTimer()
@@ -120,19 +63,28 @@ BonTimer::Initialize()
   {
     m_delta[i].CPU = 0.0;
     m_delta[i].Elapsed = 0.0;
+    m_delta[i].Latency = 0.0;
   }
-  timestamp();
+}
+
+void
+BonTimer::add_latency(tests_t test, double t)
+{
+  m_delta[test].Latency = __max(m_delta[test].Latency, t);
 }
 
 int BonTimer::print_cpu_stat(tests_t test)
 {
+#ifndef WIN32
   if(m_delta[test].Elapsed == 0.0)
   {
+#endif
     if(m_type == txt)
       fprintf(m_fp, "    ");
     else
       fprintf(m_fp, ",");
     return 0;
+#ifndef WIN32
   }
   if(m_delta[test].Elapsed < MinTime)
   {
@@ -150,6 +102,7 @@ int BonTimer::print_cpu_stat(tests_t test)
   else
     fprintf(m_fp, ",%d", (int)cpu);
   return 0;
+#endif
 }
 
 int BonTimer::print_io_stat(tests_t test)
@@ -229,11 +182,51 @@ int BonTimer::print_file_stat(tests_t test)
   return 0;
 }
 
+int BonTimer::print_latency(tests_t test)
+{
+  char buf[10];
+  if(m_delta[test].Latency == 0.0)
+  {
+    buf[0] = '\0';
+  }
+  else
+  {
+    if(m_delta[test].Latency > 99.999999)
+      _snprintf(buf
+#ifndef OS2
+, sizeof(buf)
+#endif
+              , "%ds", int(m_delta[test].Latency));
+    else if(m_delta[test].Latency > 0.099999)
+      _snprintf(buf
+#ifndef OS2
+, sizeof(buf)
+#endif
+              , "%dms", int(m_delta[test].Latency * 1000.0));
+    else
+      _snprintf(buf
+#ifndef OS2
+, sizeof(buf)
+#endif
+              , "%dus", int(m_delta[test].Latency * 1000000.0));
+  }
+  if(m_type == txt)
+  {
+    fprintf(m_fp, " %9s", buf);
+  }
+  else
+  {
+    fprintf(m_fp, ",%s", buf);
+  }
+  return 0;
+}
+
 void
 BonTimer::PrintHeader(FILE *fp)
 {
   fprintf(fp, "format_version,bonnie_version,name,file_size,chunk_size,putc,putc_cpu,put_block,put_block_cpu,rewrite,rewrite_cpu,getc,getc_cpu,get_block,get_block_cpu,seeks,seeks_cpu");
   fprintf(fp, ",num_files,max_size,min_size,num_dirs,seq_create,seq_create_cpu,seq_stat,seq_stat_cpu,seq_del,seq_del_cpu,ran_create,ran_create_cpu,ran_stat,ran_stat_cpu,ran_del,ran_del_cpu");
+  fprintf(fp, ",putc_latency,put_block_latency,rewrite_latency,getc_latency,get_block_latency,seeks_latency,seq_create_latency,seq_stat_latency,seq_del_latency,ran_create_latency,ran_stat_latency,ran_del_latency");
   fprintf(fp, "\n");
   fflush(NULL);
 }
@@ -243,6 +236,7 @@ BonTimer::DoReport(CPCCHAR machine, int file_size, int directory_size
                  , int max_size, int min_size, int num_directories
                  , int chunk_size, FILE *fp)
 {
+  int i;
   m_fp = fp;
   m_file_size = file_size;
   m_directory_size = directory_size;
@@ -290,7 +284,11 @@ BonTimer::DoReport(CPCCHAR machine, int file_size, int directory_size
     {
       // copy machine name to buf
       //
-      snprintf(buf, txt_machine_size - 1, "%s                  ", machine);
+      _snprintf(buf
+#ifndef OS2
+, txt_machine_size - 1
+#endif
+              , "%s                  ", machine);
       buf[txt_machine_size - 1] = '\0';
       // set cur to point to a byte past where we end the machine name
       // size of the buf - size of the new data - 1 for the space - 1 for the
@@ -305,14 +303,15 @@ BonTimer::DoReport(CPCCHAR machine, int file_size, int directory_size
     {
       printf("2," BON_VERSION ",%s,%s", machine, size_buf);
     }
-    print_io_stat(Putc);
-    print_io_stat(FastWrite);
-    print_io_stat(ReWrite);
-    print_io_stat(Getc);
-    print_io_stat(FastRead);
-    print_seek_stat(Lseek);
+    for(i = Putc; i <= Lseek; i++)
+      print_io_stat(tests_t(i));
     if(m_type == txt)
+    {
+      fprintf(m_fp, "\nLatency          ");
+      for(i = Putc; i <= Lseek; i++)
+        print_latency(tests_t(i));
       fprintf(m_fp, "\n");
+    }
   }
   else if(m_type == csv)
   {
@@ -404,18 +403,25 @@ BonTimer::DoReport(CPCCHAR machine, int file_size, int directory_size
     {
       fprintf(m_fp, ",%s", buf);
     }
-    print_file_stat(CreateSeq);
-    print_file_stat(StatSeq);
-    print_file_stat(DelSeq);
-    print_file_stat(CreateRand);
-    print_file_stat(StatRand);
-    print_file_stat(DelRand);
-    fprintf(m_fp, "\n");
+    for(i = CreateSeq; i < TestCount; i++)
+      print_file_stat(tests_t(i));
+    if(m_type == txt)
+    {
+      fprintf(m_fp, "\nLatency          ");
+      for(i = CreateSeq; i < TestCount; i++)
+        print_latency(tests_t(i));
+    }
   }
   else if(m_type == csv)
   {
-    fprintf(m_fp, ",,,,,,,,,,,,,\n");
+    fprintf(m_fp, ",,,,,,,,,,,,,,,,");
   }
+  if(m_type == csv)
+  {
+    for(i = Putc; i < TestCount; i++)
+      print_latency(tests_t(i));
+  }
+  fprintf(m_fp, "\n");
   fflush(stdout);
   return 0;
 }

@@ -1,7 +1,13 @@
+#include "port.h"
+#ifndef WIN32
 #include <unistd.h>
+#endif
 
 #include "zcav_io.h"
 #include "thread.h"
+#ifdef NON_UNIX
+#include "getopt.h"
+#endif
 
 #define TOO_MANY_LOOPS 100
 
@@ -9,7 +15,9 @@ void usage()
 {
   fprintf(stderr
        , "Usage: zcav [-b block-size] [-c count] [-s max-size] [-w]\n"
+#ifndef NON_UNIX
          "            [-u uid-to-use:gid-to-use] [-g gid-to-use]\n"
+#endif
          "            [-l log-file] [-f] file-name\n"
          "            [-l log-file [-f] file-name]...\n"
          "\n"
@@ -72,6 +80,9 @@ private:
 
   int m_block_size, m_max_loops, m_max_size;
   bool m_wait;
+
+  MultiZcav(const MultiZcav &m);
+  MultiZcav & operator =(const MultiZcav &m);
 };
 
 MultiZcav::MultiZcav()
@@ -186,10 +197,16 @@ int main(int argc, char *argv[])
   if(argc < 2)
     usage();
 
+#ifndef NON_UNIX
   char *userName = NULL, *groupName = NULL;
+#endif
   int c;
   const char *log = "-";
-  while(-1 != (c = getopt(argc, argv, "-c:b:f:g:l:s:u:w")) )
+  while(-1 != (c = getopt(argc, argv, "-c:b:f:l:s:w"
+#ifndef NON_UNIX
+                                     "u:g:"
+#endif
+                          )) )
   {
     switch(char(c))
     {
@@ -205,6 +222,7 @@ int main(int argc, char *argv[])
       case 's':
         mz.setMaxSize(atoi(optarg));
       break;
+#ifndef NON_UNIX
       case 'g':
         if(groupName)
           usage();
@@ -225,6 +243,7 @@ int main(int argc, char *argv[])
           groupName = &userName[i + 1];
         }
       }
+#endif
       break;
       case 'w':
         mz.setWait();
@@ -238,6 +257,7 @@ int main(int argc, char *argv[])
         usage();
     }
   }
+#ifndef NON_UNIX
   if(userName || groupName)
   {
     if(bon_setugid(userName, groupName))
@@ -245,6 +265,7 @@ int main(int argc, char *argv[])
     if(userName)
       free(userName);
   }
+#endif
 
   return mz.runit();
 }

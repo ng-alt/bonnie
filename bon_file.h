@@ -35,7 +35,9 @@ private:
   char *m_file_name_buf; // buffer to store all file names
   char **m_file_names; // pointer to entries in m_file_name_buf
   bool m_sync; // do we sync after every significant operation?
+#ifndef NON_UNIX
   FILE_TYPE *m_directoryHandles; // handles to the directories for m_sync
+#endif
   int *m_dirIndex; // which directory we are in
   char *m_buf;
   bool *m_exit;

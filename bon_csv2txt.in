@@ -20,7 +20,7 @@
 sub IOHeader
 {
   my $version = '@version@';
-print "Version  $version      ------Sequential Output------ --Sequential Input- --Random-\n";
+printf(STDOUT "Version %9s   ------Sequential Output------ --Sequential Input- --Random-\n", $version);
 print "                    -Per Chr- --Block-- -Rewrite- -Per Chr- --Block-- --Seeks--\n";
 print "Machine        Size K/sec %CP K/sec %CP K/sec %CP K/sec %CP K/sec %CP  /sec %CP\n";
 }
@@ -36,7 +36,8 @@ sub process
 {
   my($line) = @_;
 
-  chop($line);
+  chomp($line);
+  $line =~ s/\r//;
   my @arr = split(',', $line);
   if($arr[0] ne '2')
   {
@@ -57,6 +58,10 @@ sub process
   if(join('', @ioline) ne "")
   {
     $io[$iocount] = $name . "," . join(',', @ioline);
+    if($#arr > 33)
+    {
+      $io[$iocount] .= "," . join(',', @arr[33..38]);
+    }
     $iocount++;
   }
 
@@ -79,6 +84,10 @@ sub process
   if(join('', @fileline) ne "")
   {
     $file[$filecount] = $name . "," . join(',', @fileline);
+    if($#arr > 39)
+    {
+      $file[$filecount] .= "," . join(',', @arr[39..$#arr]);
+    }
     $filecount++;
   }
 }
@@ -97,8 +106,12 @@ sub printFileData
     $desc .= " " . $size;
     printf(STDOUT "%19s %5s %3s %5s %3s %5s %3s %5s %3s %5s %3s %5s %3s\n"
          , $desc, $arr[2], $arr[3], $arr[4], $arr[5], $arr[6], $arr[7]
-         , $arr[8], $arr[9], $arr[10], $arr[11], $arr[12], $arr[13]
-         , $arr[14], $arr[15]);
+         , $arr[8], $arr[9], $arr[10], $arr[11], $arr[12], $arr[13]);
+    if($#arr > 13 && join("", @arr[14..$#arr]) ne "")
+    {
+      printf(STDOUT "Latency           %9s %9s %9s %9s %9s %9s\n"
+           , $arr[14], $arr[15], $arr[16], $arr[17], $arr[18], $arr[19]);
+    }
   }
 }
 
@@ -115,8 +128,12 @@ sub printIOData
     $desc .= " " . $size;
     printf(STDOUT "%19s %5s %3s %5s %3s %5s %3s %5s %3s %5s %3s %5s %3s\n"
          , $desc, $arr[2], $arr[3], $arr[4], $arr[5], $arr[6], $arr[7]
-         , $arr[8], $arr[9], $arr[10], $arr[11], $arr[12], $arr[13]
-         , $arr[14], $arr[15]);
+         , $arr[8], $arr[9], $arr[10], $arr[11], $arr[12], $arr[13]);
+    if($#arr > 13 && join("", @arr[14..$#arr]) ne "")
+    {
+      printf(STDOUT "Latency           %9s %9s %9s %9s %9s %9s\n"
+           , $arr[14], $arr[15], $arr[16], $arr[17], $arr[18], $arr[19]);
+    }
   }
 }
 

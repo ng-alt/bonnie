@@ -1,6 +1,7 @@
 #ifndef SEMAPHORE_H
 #define SEMAPHORE_H
 
+#ifndef NON_UNIX
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/sem.h>
@@ -13,6 +14,7 @@ union semun
   unsigned short int *array;  /* array for GETALL, SETALL */
   struct seminfo *__buf;      /* buffer for IPC_INFO */
 };
+#endif
 #endif
 
 class Semaphore
