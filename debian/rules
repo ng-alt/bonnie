@@ -14,7 +14,7 @@ build-stamp:
 
 	
 	# Add here commands to compile the package.
-	./configure
+	./configure --prefix=`pwd`/debian/tmp/usr --mandir=`pwd`/debian/tmp/usr/share/man
 	$(MAKE)
 
 	touch build-stamp
@@ -36,7 +36,7 @@ install: build
 	dh_installdirs
 
 	# Add here commands to install the package into debian/tmp.
-	$(MAKE) install DESTDIR=`pwd`/debian/tmp
+	$(MAKE) install-bin
 
 	touch install-stamp
 

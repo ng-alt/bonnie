@@ -1,3 +1,4 @@
+#include "port.h"
 #include "semaphore.h"
 #include <stdio.h>
 #include <errno.h>

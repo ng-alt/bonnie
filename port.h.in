@@ -1,8 +1,9 @@
 #ifndef PORT_H
 #define PORT_H
 
-#if defined(_AIX) && !defined(__GNUC__)
-#define bool int
+@semun@
+@bool@
+#if @true_false@
 #define false 0
 #define true 1
 #endif

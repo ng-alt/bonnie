@@ -19,9 +19,9 @@
 
 sub IOHeader
 {
-print "Version  1.00c      ------Sequential Output------ --Sequential Input- --Random-\n";
+print "Version  1.00d      ------Sequential Output------ --Sequential Input- --Random-\n";
 print "                    -Per Chr- --Block-- -Rewrite- -Per Chr- --Block-- --Seeks--\n";
-print "Machine          MB K/sec %CP K/sec %CP K/sec %CP K/sec %CP K/sec %CP  /sec %CP\n";
+print "Machine        Size K/sec %CP K/sec %CP K/sec %CP K/sec %CP K/sec %CP  /sec %CP\n";
 }
 
 sub FileHeader
@@ -65,15 +65,12 @@ sub printFileData
   for($i = 0; $i < $filecount; $i++)
   {
     @arr = split(/,/,$file[$i]);
-    my $name = substr($arr[0],0,10);
     my $size = $arr[1];
     $size =~ s/:0:0:/\//;
-    if(length($name) + length($size) > 17)
-    {
-      $name = substr($name, 0, 17 - length($size));
-    }
-    $desc = sprintf("%s %s", $name, $size);
-    printf(STDOUT "%-19s %5s %3s %5s %3s %5s %3s %5s %3s %5s %3s %5s %3s\n"
+    my $desc = $arr[0] . "                   ";
+    $desc = substr($desc, 0, 18 - length($size) );
+    $desc .= " " . $size;
+    printf(STDOUT "%19s %5s %3s %5s %3s %5s %3s %5s %3s %5s %3s %5s %3s\n"
          , $desc, $arr[2], $arr[3], $arr[4], $arr[5], $arr[6], $arr[7]
          , $arr[8], $arr[9], $arr[10], $arr[11], $arr[12], $arr[13]
          , $arr[14], $arr[15]);
@@ -87,10 +84,12 @@ sub printIOData
   for($i = 0; $i < $iocount; $i++)
   {
     @arr = split(/,/,$io[$i]);
-    my $name = substr($arr[0],0,10);
     my $size = $arr[1];
-    printf(STDOUT "%10s %8s %5s %3s %5s %3s %5s %3s %5s %3s %5s %3s %5s %3s\n"
-         , $name, $size, $arr[2], $arr[3], $arr[4], $arr[5], $arr[6], $arr[7]
+    my $desc = $arr[0] . "                   ";
+    $desc = substr($desc, 0, 18 - length($size) );
+    $desc .= " " . $size;
+    printf(STDOUT "%19s %5s %3s %5s %3s %5s %3s %5s %3s %5s %3s %5s %3s\n"
+         , $desc, $arr[2], $arr[3], $arr[4], $arr[5], $arr[6], $arr[7]
          , $arr[8], $arr[9], $arr[10], $arr[11], $arr[12], $arr[13]
          , $arr[14], $arr[15]);
   }

@@ -1,0 +1,6 @@
+PKG=bonnie++
+ARCH=sparc
+VERSION=1.00d
+CATEGORY=application
+NAME=Bonnie++ hard drive benchmark
+MAXINST=1

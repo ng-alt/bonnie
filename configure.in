@@ -1,12 +1,20 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(bonnie++.cpp)
 
-dnl AM_CONFIG_HEADER(config.h)
+AC_ARG_ENABLE(stripping,
+      [  --disable-stripping  disables stripping of installed binaries],
+      STRIPPING=$strippingval, STRIPPING=no)
+AC_SUBST(stripping)
+if [[ ! "$STRIPPING" = "no" ]]; then
+  stripping=""
+else
+  stripping="-s"
+fi
 
 dnl Checks for programs.
-AC_PROG_CC
+AC_LANG_CPLUSPLUS
 AC_PROG_CXX
-AC_PROG_CPP
+AC_PROG_CXXCPP
 AC_PROG_INSTALL
 
 dnl Checks for typedefs, structures, and compiler characteristics.
@@ -14,11 +22,24 @@ AC_C_CONST
 AC_TYPE_SIZE_T
 
 AC_SUBST(semun)
-AC_TRY_COMPILE(#include <sys/sem.h>
+AC_TRY_COMPILE(#include <sys/types.h>
+#include <sys/ipc.h>
+#include <sys/sem.h>
     , union semun sem; , semun="yes")
 if [[ -n "$semun" ]]; then
    semun="#define SEMUN_IN_SEM_H"
 fi
+AC_SUBST(bool)
+AC_TRY_COMPILE([], [bool var;] , , bool="typedef bool char;")
+AC_SUBST(true_false)
+AC_TRY_COMPILE(, [char c = true; char d = false;
+] , true_false="0", true_false="1")
+
+AC_SUBST(exes)
+AC_SUBST(man8)
+exes="bonnie++"
+man8="bonnie++.8"
+AC_CHECK_HEADERS(vector.h, exes="$exes zcav" man8="$man8 zcav.8", echo "STL not installed so no ZCAV!")
 
 dnl AC_SUBST(o_large_file)
 dnl AC_TRY_COMPILE([#include <sys/types.h>
@@ -36,4 +57,4 @@ dnl fi
 
 dnl Checks for library functions.
 
-AC_OUTPUT(Makefile bonnie.h)
+AC_OUTPUT(Makefile port.h)

@@ -1,12 +1,10 @@
 #ifndef BONNIE
 #define BONNIE
 
-#define BON_VERSION "1.00c"
+#define BON_VERSION "1.00d"
 
 #include "port.h"
 
-@semun@
-// @o_large_file@
 #define SemKey 4711
 #define NumSems TestCount
 // million files (7) + up to 12 random extra chars

@@ -1,3 +1,38 @@
+bonnie++ (1.00d) unstable; urgency=low
+
+  * Use SA_RESETHAND instead of SA_ONESHOT for the benefit of Solaris.
+
+  * Added a specific rule for bon_suid.cpp as it doesn't have a header file.
+
+  * Added --prefix support to the ./configure , also made the default prefix
+    be /usr/local instead of /usr .
+
+  * Changed the autoconf support for checking for C++ slightly.  It should
+    now work better for some strange setups and work the same for everyone
+    else (I hope).
+
+  * Made the autoconf tests for semaphore headers work correctly, now it
+    should compile on *BSD.
+
+  * Added --disable-stripping option for ./configure if you don't want binaries
+    stripped.
+
+  * Added autoconf checking for bool, now it should compile on AIX using ICC
+    without any special options!
+
+  * Reverted zcav to the 1.00a version and then added the code for -u, -g, and
+    the fix for large numbers of data points.  The multi-threaded zcav code
+    will go into 1.90 (the pre-2.00 tree).
+    Bonnie++ versions < 1.90 will never again have threading code.
+
+  * Made bon_csv2txt use every available character for the description.
+
+  * Made it install man pages by default.
+
+  * Added sun package support - "make -C sun"!
+
+ -- Russell Coker <russell@coker.com.au>  Thu, 28 Sep 2000 16:22:15 +0200
+
 bonnie++ (1.00c) unstable; urgency=low
 
   * Closes:#53545

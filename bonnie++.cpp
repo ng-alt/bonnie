@@ -146,7 +146,7 @@ int main(int argc, char *argv[])
   struct sigaction sa;
   sa.sa_sigaction = NULL;
   sa.sa_handler = ctrl_c_handler;
-  sa.sa_flags = SA_ONESHOT;
+  sa.sa_flags = SA_RESETHAND;
   if(sigaction(SIGINT, &sa, NULL)
    || sigaction(SIGXCPU, &sa, NULL)
    || sigaction(SIGXFSZ, &sa, NULL))
@@ -265,6 +265,9 @@ int main(int argc, char *argv[])
   {
     if(file_size < (globals.ram * 2))
       file_size = globals.ram * 2;
+    // round up to the nearest gig
+    if(file_size % 1024 > 512)
+      file_size = file_size + 1024 - (file_size % 1024);
   }
 
   if(machine == NULL)
@@ -625,20 +628,4 @@ io_error(CPCCHAR message, bool do_exit)
     exit(1);
   return(1);
 }
-
-#ifdef SysV
-static char randseed[32];
-
-void
-srandom(int seed)
-{
-  sprintf(randseed, "%06d", seed);
-}
-
-long
-random()
-{
-  return nrand48(randseed);
-}
-#endif
 

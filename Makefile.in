@@ -1,41 +1,54 @@
+EXES=@exes@
 
-all: bonnie++
+all: ${EXES}
 
 SCRIPTS=bon_csv2html bon_csv2txt
-EXES=bonnie++ zcav
 
-CXX=@CXX@ -O2 -g -Wall -W -Wshadow -Wpointer-arith -Wcast-align -Wwrite-strings -DNDEBUG
+prefix=@prefix@
+WFLAGS=-Wall -W -Wshadow -Wpointer-arith -Wcast-align -Wwrite-strings
+CFLAGS=-O2 -g -DNDEBUG ${WFLAGS}
+CXX=@CXX@ ${CFLAGS}
+
+INSTALL=@INSTALL@
 
 BONSRC=bon_io.cpp bon_file.cpp bon_time.cpp semaphore.cpp forkit.cpp \
  bon_suid.cpp
-BONOBJS=$(BONSRC:.cpp=.o)
+BONOBJS=${BONSRC:.cpp=.o}
 
-ZCAVSRC=thread.cpp zcav_io.cpp bon_suid.cpp
-ZCAVOBJS=$(ZCAVSRC:.cpp=.o)
+MAN1=bon_csv2html.1 bon_csv2txt.1
+MAN8=@man8@
 
-ALLOBJS=$(BONOBJS) $(ZCAVOBJS)
+ZCAVSRC=bon_suid.cpp
+ZCAVOBJS=${ZCAVSRC:.cpp=.o}
 
-all: $(EXES)
+ALLOBJS=${BONOBJS} ${ZCAVOBJS}
 
-bonnie++: bonnie++.cpp $(BONOBJS)
-	$(CXX) bonnie++.cpp -o bonnie++ $(BONOBJS) $(LFLAGS)
+bonnie++: bonnie++.cpp ${BONOBJS}
+	${CXX} bonnie++.cpp -o bonnie++ ${BONOBJS} ${LFLAGS}
 
-zcav: zcav.cpp $(ZCAVOBJS)
-	$(CXX) zcav.cpp -o zcav $(ZCAVOBJS) $(LFLAGS) -lpthread
+zcav: zcav.cpp ${ZCAVOBJS}
+	${CXX} zcav.cpp -o zcav ${ZCAVOBJS} ${LFLAGS}
 
-install: $(EXES)
-	mkdir -p $(DESTDIR)/usr/bin $(DESTDIR)/usr/sbin
-	strip $(EXES)
-	cp $(SCRIPTS) $(DESTDIR)/usr/bin
-	cp $(EXES) $(DESTDIR)/usr/sbin
+install-bin: ${EXES}
+	mkdir -p ${prefix}/bin ${prefix}/sbin
+	@INSTALL_PROGRAM@ @stripping@ ${EXES} ${prefix}/sbin
+	@INSTALL_PROGRAM@ ${SCRIPTS} ${prefix}/bin
 
-%.o: %.cpp %.h bonnie.h
-	$(CXX) -c $<
+install: install-bin
+	mkdir -p @mandir@/man1 @mandir@/man8
+	@INSTALL_DATA@ ${MAN1} @mandir@/man1
+	@INSTALL_DATA@ ${MAN8} @mandir@/man8
+
+%.o: %.cpp %.h bonnie.h port.h
+	${CXX} -c $<
+
+bon_suid.o: bon_suid.cpp bonnie.h port.h
+	${CXX} -c $<
 
 clean:
-	rm -f $(EXES) $(ALLOBJS) config.log
-	rm -rf build-stamp install-stamp debian/tmp
+	rm -f ${EXES} ${ALLOBJS} build-stamp install-stamp
+	rm -rf debian/tmp core debian/*.debhelper
+	rm -f debian/{substvars,files} config.log
 
 realclean: clean
-	rm -f config.* Makefile bonnie.h debian/postinst.debhelper
-	rm -f debian/prerm.debhelper debian/substvars debian/files
+	rm -f config.* Makefile port.h

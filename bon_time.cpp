@@ -11,12 +11,7 @@
 #define LL2F(high, low) (4294967296.0*(high)+(low))
 #else
 #include <unistd.h>
-#ifdef SysV
-#include <limits.h>
-#include <sys/times.h>
-#else
 #include <sys/resource.h>
-#endif
 #endif
 #include "bon_time.h"
 #include <time.h>
@@ -75,15 +70,6 @@ BonTimer::cpu_so_far()
   return LL2F(CPUUtil.ulBusyHigh, CPUUtil.ulBusyLow)
        + LL2F(CPUUtil.ulIntrHigh, CPUUtil.ulIntrLow);
 #else
-#ifdef SysV
-  struct tms tms;
-
-  if (times(&tms) == -1)
-    io_error("times", true);
-  return ((double) tms.tms_utime) / ((double) CLK_TCK) +
-    ((double) tms.tms_stime) / ((double) CLK_TCK);
-
-#else
   struct rusage res_usage;
 
   getrusage(RUSAGE_SELF, &res_usage);
@@ -92,7 +78,6 @@ BonTimer::cpu_so_far()
       (double(res_usage.ru_utime.tv_usec) / 1000000.0) +
         double(res_usage.ru_stime.tv_sec) +
           (double(res_usage.ru_stime.tv_usec) / 1000000.0);
-#endif
 #endif
 }
 
@@ -106,23 +91,12 @@ BonTimer::time_so_far()
     return 0.0;
   return double(count - m_basetime)/1000.0;
 #else
-#ifdef SysV
-  int        val;
-  struct tms tms;
-
-  if ((val = times(&tms)) == -1)
-    io_error("times", true);
-
-  return ((double) val) / ((double) CLK_TCK);
-
-#else
   struct timeval tp;
 
   if (gettimeofday(&tp, static_cast<struct timezone *>(NULL)) == -1)
     io_error("gettimeofday", true);
   return double(tp.tv_sec - m_basetime) +
     (double(tp.tv_usec) / 1000000.0);
-#endif
 #endif
 }
 
@@ -284,9 +258,9 @@ BonTimer::DoReport(CPCCHAR machine, int file_size, int directory_size
       fprintf(m_fp,
         "-Per Chr- --Block-- -Rewrite- -Per Chr- --Block-- --Seeks--\n");
       if(m_chunk_size == DefaultChunkSize)
-        fprintf(m_fp, "Machine          MB ");
+        fprintf(m_fp, "Machine        Size ");
       else
-        fprintf(m_fp, "Machine     MB:chnk ");
+        fprintf(m_fp, "Machine   Size:chnk ");
       fprintf(m_fp, "K/sec %%CP K/sec %%CP K/sec %%CP K/sec %%CP K/sec ");
       fprintf(m_fp, "%%CP  /sec %%CP\n");
     }
@@ -294,7 +268,7 @@ BonTimer::DoReport(CPCCHAR machine, int file_size, int directory_size
     if(m_file_size % 1024 == 0)
       sprintf(size_buf, "%dG", m_file_size / 1024);
     else
-      sprintf(size_buf, "%d", m_file_size);
+      sprintf(size_buf, "%dM", m_file_size);
     if(m_chunk_size != DefaultChunkSize)
     {
       char *tmp = size_buf + strlen(size_buf);

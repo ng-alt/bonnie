@@ -1,6 +1,6 @@
 Summary: A program for benchmarking hard drives and filesystems
 Name: bonnie++
-Version: 1.00c
+Version: 1.00d
 Release: 1
 Copyright: GPL
 Group: Utilities/Benchmarking
@@ -15,7 +15,7 @@ tests of hard drive and file system performance.
 %setup -q
 
 %build
-configure --prefix=${RPM_BUILD_ROOT}
+./configure --prefix=${RPM_BUILD_ROOT}
 make 
 
 %install
