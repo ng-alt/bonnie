@@ -50,8 +50,9 @@ enum tests_t
   TestCount
 };
 
-int   io_error(CPCCHAR message, bool do_exit = false);
+int io_error(CPCCHAR message, bool do_exit = false);
 int bon_setugid(CPCCHAR user, CPCCHAR group, bool quiet);
+unsigned int size_from_str(CPCCHAR str, CPCCHAR conv);
 
 typedef enum
 {

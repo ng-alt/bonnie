@@ -1,3 +1,14 @@
+bonnie++ (1.93) unstable; urgency=low
+
+  * Updated to latest debian standards version and follow the latest Debian
+    policy on stripping and debug generation.
+
+  * Removed optind=0 because it caused problems on BSD.
+
+  * Added new test program getc_putc for per char IO.
+
+ -- Russell Coker <russell@coker.com.au>  Sun,  9 Dec 2001 15:52:00 +0100
+
 bonnie++ (1.92b) unstable; urgency=low
 
   * Fixed a buffer overflow in the random number management code.

@@ -1,7 +1,7 @@
 #ifndef BONNIE
 #define BONNIE
 
-#define BON_VERSION "1.92b"
+#define BON_VERSION "1.93"
 #define CSV_VERSION "1.92b"
 
 #include "port.h"
@@ -50,8 +50,9 @@ enum tests_t
   TestCount
 };
 
-int   io_error(CPCCHAR message, bool do_exit = false);
+int io_error(CPCCHAR message, bool do_exit = false);
 int bon_setugid(CPCCHAR user, CPCCHAR group, bool quiet);
+unsigned int size_from_str(CPCCHAR str, CPCCHAR conv);
 
 typedef enum
 {

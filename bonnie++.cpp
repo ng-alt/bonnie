@@ -171,25 +171,6 @@ void ctrl_c_handler(int sig)
 }
 #endif
 
-unsigned int size_from_str(CPCCHAR str, CPCCHAR conv)
-{
-  const unsigned int mult[3] = { 1<<10 , 1<<20, 1<<30 };
-  unsigned int size = atoi(str);
-  char c = tolower(str[strlen(str) - 1]);
-  if(conv)
-  {
-    for(int i = 0; conv[i] != '\0' && i < 3; i++)
-    {
-      if(c == conv[i])
-      {
-        size *= mult[i];
-        return size;
-      }
-    }
-  }
-  return size;
-}
-
 int main(int argc, char *argv[])
 {
   int    file_size = DefaultFileSize;
@@ -330,7 +311,7 @@ int main(int argc, char *argv[])
 #ifdef _LARGEFILE64_SOURCE
         file_size = size_from_str(size, "gt");
 #else
-        file_size = size_from_str(size, "gt");
+        file_size = size_from_str(size, "g");
 #endif
         size = strtok(NULL, "");
         if(size)

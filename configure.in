@@ -1,7 +1,7 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(bonnie++.cpp)
 AC_SUBST(version)
-version="1.92b"
+version="1.93"
 AC_SUBST(csv_version)
 csv_version="1.92b"
 
@@ -14,9 +14,23 @@ if [[ ! "$STRIPPING" = "no" ]]; then
 else
   stripping="-s"
 fi
+echo $DEB_BUILD_OPTIONS | grep -q nostrip
+if [[ "$?" = "0" ]]; then
+  stripping=""
+fi
+
+AC_SUBST(debug)
+AC_ARG_ENABLE(debug,
+      [  --with-debug  enables debug code generation for binaries],
+      debug=-g, debug="")
+echo $DEB_BUILD_OPTIONS | grep -q debug
+if [[ "$?" = "0" ]]; then
+  debug=-g
+fi
 
 dnl Checks for programs.
 AC_LANG_CPLUSPLUS
+AC_PROG_CC
 AC_PROG_CXX
 AC_PROG_CXXCPP
 AC_PROG_INSTALL
@@ -33,6 +47,7 @@ AC_TRY_COMPILE(#include <sys/types.h>
 if [[ -n "$semun" ]]; then
    semun="#define SEMUN_IN_SEM_H"
 fi
+
 AC_SUBST(bool)
 AC_TRY_COMPILE([], [bool var;] , , bool="typedef bool char;")
 AC_SUBST(true_false)
@@ -63,7 +78,6 @@ void * thread_func(void * param) { return NULL; }
      pthread_create(&thread_info, &attr, &thread_func, NULL);]
   , thread_ldflags="-lpthread"
   , thread_ldflags="-pthread")
-
 
 AC_SUBST(large_file)
 AC_TRY_RUN([#ifndef _LARGEFILE64_SOURCE
