@@ -1,4 +1,3 @@
-#include <stdio.h>
 #include <unistd.h>
 #include <sys/time.h>
 #include <sys/resource.h>
@@ -96,18 +95,20 @@ int main(int argc, char *argv[])
 
   if(max_loops < 1 || block_size < 1)
     usage();
+  if(!file_name)
+    usage();
   printf("#loops: %d, version: %s\n", max_loops, BON_VERSION);
   printf("#block K/s time\n");
 
   int i;
   char *buf = new char[meg];
   int fd;
-  if(strcmp(argv[1], "-"))
+  if(strcmp(file_name, "-"))
   {
-    fd = open(argv[1], O_RDONLY);
+    fd = open(file_name, O_RDONLY);
     if(fd == -1)
     {
-      printf("Can't open %s\n", argv[1]);
+      printf("Can't open %s\n", file_name);
       return 1;
     }
   }

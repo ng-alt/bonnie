@@ -1,6 +1,5 @@
 #include "port.h"
 #include "semaphore.h"
-#include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
 

@@ -1,3 +1,24 @@
+bonnie++ (1.00g) unstable; urgency=low
+
+  * Fixed a bug in zcav that prevented it working with parameters other than
+    the file name.
+
+  * Updated to standards version 3.2.1.
+
+  * Closes:#70331
+    Fixed this a couple of versions ago.
+
+  * Fixed these bugs ages ago but being a sponsored package had confused the
+    bug tracker:
+    Closes:#53545
+    Closes:#53546
+    Closes:#61925
+    Closes:#64995
+
+  * Back-ported some extra error handling from 1.90c.
+
+ -- Russell Coker <russell@coker.com.au>  Mon, 1 Jan 2001 14:29:32 +1100
+
 bonnie++ (1.00f) unstable; urgency=low
 
   * Fixed the bugs in timing of seeks.

@@ -1,6 +1,8 @@
 #ifndef PORT_H
 #define PORT_H
 
+#include <stdio.h>
+
 @semun@
 @bool@
 #if @true_false@
@@ -31,6 +33,8 @@ typedef HFILE FILE_TYPE;
 #define make_directory(XX) mkdir(XX, S_IRWXU)
 typedef int FILE_TYPE;
 #endif
+typedef FILE_TYPE *PFILE_TYPE;
+//typedef FILE *PFILE;
 
 #endif
 

@@ -3,6 +3,7 @@
 
 #define BON_VERSION "@version@"
 
+@stl@
 #include "port.h"
 
 #define SemKey 4711
@@ -32,27 +33,28 @@
 // 3 digits
 #define MaxIOFiles 1000
 
-typedef const char * CPCHAR;
+typedef const char * PCCHAR;
 typedef char * PCHAR;
-typedef const char * const CPCCHAR;
+typedef PCHAR const CPCHAR;
+typedef PCCHAR const CPCCHAR;
 typedef void * PVOID;
-typedef const void * CPVOID;
-typedef const void * const CPCVOID;
+typedef PVOID const CPVOID;
+typedef const CPVOID CPCVOID;
 
 enum tests_t
 {
-  Putc,
-  ReWrite,
+  Putc = 0,
   FastWrite,
+  ReWrite,
   Getc,
   FastRead,
   Lseek,
-  CreateRand,
   CreateSeq,
-  StatRand,
   StatSeq,
-  DelRand,
   DelSeq,
+  CreateRand,
+  StatRand,
+  DelRand,
   TestCount
 };
 

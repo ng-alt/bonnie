@@ -1,4 +1,3 @@
-#include <stdio.h>
 #include <sys/time.h>
 #ifdef OS2
 #define INCL_DOSFILEMGR
@@ -16,6 +15,12 @@
 #include "bon_time.h"
 #include <time.h>
 #include <string.h>
+#ifdef USE_STL
+#include <algo.h>
+#else
+#define min(XX,YY) ((XX) < (YY) ? (XX) : (YY))
+#define max(XX,YY) ((XX) > (YY) ? (XX) : (YY))
+#endif
 
 #define TIMEVAL_TO_DOUBLE(XX) (double((XX).tv_sec) + double((XX).tv_usec) / 1000000.0)
 
@@ -99,10 +104,8 @@ void BonTimer::add_delta_report(report_s &rep, tests_t test)
   }
   else
   {
-    if(rep.StartTime < m_delta[test].FirstStart)
-      m_delta[test].FirstStart = rep.StartTime;
-    if(rep.EndTime > m_delta[test].LastStop)
-      m_delta[test].LastStop = rep.EndTime;
+    m_delta[test].FirstStart = min(m_delta[test].FirstStart, rep.StartTime);
+    m_delta[test].LastStop = max(m_delta[test].LastStop, rep.EndTime);
   }
   m_delta[test].CPU += rep.CPU;
   m_delta[test].Elapsed = m_delta[test].LastStop - m_delta[test].FirstStart;

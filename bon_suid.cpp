@@ -1,8 +1,8 @@
 #include <pwd.h>
 #include <grp.h>
 #include <sys/types.h>
-#include <stdio.h>
 #include <unistd.h>
+#include <stdio.h>
 
 int bon_setugid(const char * const userName, const char * const groupName)
 {

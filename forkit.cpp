@@ -11,8 +11,6 @@
 
 #include "forkit.h"
 
-#include <stdio.h>
-
 
 Fork::Fork()
  : m_read(-1)

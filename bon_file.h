@@ -1,7 +1,6 @@
 #ifndef BON_IO
 #define BON_IO
 
-#include <stdio.h>
 #include "bonnie.h"
 class BonTimer;
 

@@ -70,11 +70,13 @@ COpenTest::~COpenTest()
       for(i = 0; i < m_number_directories; i++)
       {
         sprintf(buf, "%03d", i);
-        rmdir(buf);
+        if(rmdir(buf))
+          io_error("rmdir");
       }
     }
     chdir("..");
-    rmdir(m_dirname);
+    if(rmdir(m_dirname))
+      io_error("rmdir");
     delete m_dirname;
   }
   if(m_directoryHandles)
@@ -372,7 +374,11 @@ int COpenTest::delete_random(BonTimer &timer)
       {
         close(m_directoryHandles[i]);
       }
-      rmdir(buf);
+      if(rmdir(buf))
+      {
+        io_error("rmdir");
+        return -1;
+      }
     }
   }
   else
@@ -383,7 +389,11 @@ int COpenTest::delete_random(BonTimer &timer)
     }
   }
   chdir("..");
-  rmdir(m_dirname);
+  if(rmdir(m_dirname))
+  {
+    io_error("rmdir");
+    return -1;
+  }
   delete m_dirname;
   m_dirname = NULL;
   timer.get_delta_t(DelRand);
@@ -470,11 +480,19 @@ int COpenTest::delete_sequential(BonTimer &timer)
     if(m_number_directories != 1)
     {
       chdir("..");
-      rmdir(buf);
+      if(rmdir(buf))
+      {
+        io_error("rmdir");
+        return -1;
+      }
     }
   }
   chdir("..");
-  rmdir(m_dirname);
+  if(rmdir(m_dirname))
+  {
+    io_error("rmdir");
+    return -1;
+  }
   delete m_dirname;
   m_dirname = NULL;
   if(count != m_number)

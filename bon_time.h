@@ -2,7 +2,6 @@
 #define BON_TIME_H
 
 #include "bonnie.h"
-#include <stdio.h>
 
 struct report_s
 {

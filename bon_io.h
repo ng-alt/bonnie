@@ -1,7 +1,6 @@
 #ifndef BON_FILE
 #define BON_FILE
 
-#include <stdio.h>
 #include "bonnie.h"
 class Semaphore;
 class BonTimer;
