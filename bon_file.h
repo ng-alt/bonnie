@@ -40,6 +40,7 @@ private:
   int *m_dirIndex; // which directory we are in
   char *m_buf;
   bool *m_exit;
+  bool m_sync_dir;
 
   void random_sort();
 

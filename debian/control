@@ -3,16 +3,16 @@ Section: utils
 Priority: optional
 Maintainer: Russell Coker <russell@coker.com.au>
 Standards-Version: 2.5.1
+Build-Depends: debhelper
 
 Package: bonnie++
 Architecture: any
 Depends: ${shlibs:Depends}
-Build-Depends: debhelper
 Conflicts: zcav
 Replaces: zcav
 Provides: zcav
-Description: This is Russell Coker's hard drive bottleneck testing program,
- it is called Bonnie++ because it was based on the Bonnie program.  This
+Description: Hard drive bottleneck testing benchmark suite.
+ It is called Bonnie++ because it was based on the Bonnie program.  This
  program also tests performance with creating large numbers of files.
  Now includes zcav raw-read test program.  A modern hard drive will have more
  sectors in the outer tracks because they are longer.  The hard drive will

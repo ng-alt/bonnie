@@ -51,4 +51,4 @@ clean:
 	rm -f debian/{substvars,files} config.log
 
 realclean: clean
-	rm -f config.* Makefile port.h
+	rm -f config.* Makefile bonnie.h port.h bonnie++.spec bon_csv2html bon_csv2txt sun/pkginfo

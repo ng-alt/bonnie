@@ -1,3 +1,17 @@
+bonnie++ (1.00e) unstable; urgency=low
+
+  * Now exit on sync errors.
+
+  * When directory can't be synced it will display one warning and not try to
+    sync again.
+
+  * Stopped it crashing when there is only one directory to be synced.
+
+  * Made the version number managed by autoconf so I don't release it with
+    inconsistant version numbers again!
+
+ -- Russell Coker <russell@coker.com.au>  Thu, 9 Nov 2000 03:26:15 +0200
+
 bonnie++ (1.00d) unstable; urgency=low
 
   * Use SA_RESETHAND instead of SA_ONESHOT for the benefit of Solaris.

@@ -30,6 +30,7 @@ COpenTest::COpenTest(int chunk_size, bool use_sync, bool *doExit)
   m_directoryHandles = NULL;
   m_dirIndex = NULL;
   m_exit = doExit;
+  m_sync_dir = true;
 }
 
 void COpenTest::random_sort()
@@ -125,9 +126,9 @@ void COpenTest::make_names(bool do_random)
     {
       sprintf(buf, "%03d/", directory_num);
       buf += strlen(buf);
-      if(m_sync)
-        m_dirIndex[i] = directory_num;
     }
+    if(m_sync)
+      m_dirIndex[i] = directory_num;
     names_in_dir++;
     if(names_in_dir > names_per_directory)
     {
@@ -187,8 +188,16 @@ int COpenTest::create_a_file(const char *filename, char *buf, int size, int dir)
   }
   if(m_sync)
   {
-    if(fsync(fd) || fsync(m_directoryHandles[dir]))
+    if(fsync(fd))
+    {
       fprintf(stderr, "Can't sync file.\n");
+      return -1;
+    }
+    if(m_sync_dir && fsync(m_directoryHandles[dir]))
+    {
+      fprintf(stderr, "Can't sync directory, turning off dir-sync.\n");
+      m_sync_dir = false;
+    }
   }
   file_close(fd);
   return 0;
@@ -210,7 +219,10 @@ int COpenTest::create_a_link(const char *original, const char *filename, int dir
     if(m_sync)
     {
       if(fsync(m_directoryHandles[dir]))
+      {
         fprintf(stderr, "Can't sync file.\n");
+        return -1;
+      }
     }
   }
   else
@@ -223,7 +235,10 @@ int COpenTest::create_a_link(const char *original, const char *filename, int dir
     if(m_sync)
     {
       if(fsync(m_directoryHandles[dir]))
+      {
         fprintf(stderr, "Can't sync file.\n");
+        return -1;
+      }
     }
   }
   return 0;
@@ -335,10 +350,13 @@ int COpenTest::delete_random(BonTimer &timer)
       fprintf(stderr, "Can't delete file %s\n", m_file_names[i]);
       return -1;
     }
-    if(m_sync)
+    if(m_sync && m_sync_dir)
     {
       if(fsync(m_directoryHandles[m_dirIndex[i]]))
-        fprintf(stderr, "Can't sync directory.\n");
+      {
+        fprintf(stderr, "Can't sync directory, turning off dir-sync.\n");
+        m_sync_dir = false;
+      }
     }
   }
   if(m_number_directories > 1)
@@ -427,10 +445,15 @@ int COpenTest::delete_sequential(BonTimer &timer)
           fprintf(stderr, "Can't delete file %s\n", file_ent->d_name);
           return -1;
         }
-        if(m_sync)
+
+
+        if(m_sync && m_sync_dir)
         {
           if(fsync(m_directoryHandles[i]))
-            fprintf(stderr, "Can't sync directory.\n");
+          {
+            fprintf(stderr, "Can't sync directory, turning off dir-sync.\n");
+            m_sync_dir = false;
+          }
         }
         count++;
       }

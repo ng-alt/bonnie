@@ -484,7 +484,10 @@ CFileOp::doseek(long where, bool update)
     if(m_sync)
     {
       if(fsync(m_fd[m_file_ind]))
+      {
         fprintf(stderr, "Can't sync file.\n");
+        return -1;
+      }
     }
   } /* update this block */
   return 0;
