@@ -1,3 +1,17 @@
+bonnie++ (1.01c) unstable; urgency=low
+
+  * Made the -d option to bonnie++ work with relative paths.  Now it does
+    chdir() to the specifed directory and proceeds as usual.
+
+ -- Russell Coker <russell@coker.com.au>  Fri, 25 May 2001 14:36:17 +0100
+
+bonnie++ (1.01b-1) unstable; urgency=low
+
+  * Compiled with GCC 2.95 for Debian.
+    Closes:#94349
+
+ -- Russell Coker <russell@coker.com.au>  Mon, 23 Apr 2001 9:20:00 +0100
+
 bonnie++ (1.01b) unstable; urgency=low
 
   * Made it remove the ./configure cache files before Debian package build.

@@ -1,14 +1,14 @@
 .TH bonnie++ 1 
-.SH NAME
+.SH "NAME"
 bonnie++ \- program to test hard drive performance.
 
-.SH SYNOPSIS
+.SH "SYNOPSIS"
 .B bonnie++
-.I [-d dir] [-s size(Mb)[:chunk-size(b)]]
-.I [-n number-to-stat(*1024)[:max-size[:min-size][:num-directories]]]
-.I [-m machine-name] [-r ram-size-in-Mb] [-x number-of-tests]
-.I [-u uid-to-use:gid-to-use] [-g gid-to-use]
-.I [-q] [-f] [-b] [-p processes | -y]
+.I [\-d dir] [\-s size(Mb)[:chunk\-size(b)]]
+.I [\-n number\-to\-stat(*1024)[:max\-size[:min\-size][:num\-directories]]]
+.I [\-m machine\-name] [\-r ram\-size\-in\-Mb] [\-x number\-of\-tests]
+.I [\-u uid\-to\-use:gid\-to\-use] [\-g gid\-to\-use]
+.I [\-q] [\-f] [\-b] [\-p processes | \-y]
 
 .SH "DESCRIPTION"
 This manual page documents briefly the
@@ -33,34 +33,34 @@ INN.
 All the details of the tests performed by Bonnie++ are contained in the file
 .BR /usr/share/doc/bonnie++/readme.html
 
-.SH OPTIONS
+.SH "OPTIONS"
 For Bonnie++ every option is of the form of a hyphen followed by a letter and
 then the next parameter contains the value.
 .TP
-.B -d
+.B \-d
 the directory to use for the tests.
 .TP
-.B -s
+.B \-s
 the size of the file(s) for IO performance measures in megabytes. If the size
 is greater than 1G then multiple files will be used to store the data, and
 each file will be up to 1G in size.  This parameter may include the chunk size
-seperated from the size by a colon.  The chunk-size is measured in bytes and
+seperated from the size by a colon.  The chunk\-size is measured in bytes and
 must be a power of two from 256 to 1048576.  NB You can specify the size in
-giga-bytes or the chunk-size in kilo-bytes if you add 'g' or 'k' to the end of
+giga\-bytes or the chunk\-size in kilo\-bytes if you add 'g' or 'k' to the end of
 the number respectively.
 
 If the specified size is 0 then this test will be skipped.
 .TP
-.B -n
+.B \-n
 the number of files for the file creation test. This is measured in multiples
-of 1024 files. This is because no-one will want to test less than 1024 files,
+of 1024 files. This is because no\-one will want to test less than 1024 files,
 and we need the extra space on braille displays.
 
 If the specified number is 0 then this test will be skipped.
 
 The default for this test is to test with 0 byte files. To use files of other
 sizes you can specify
-.B number:max:min:num-directories
+.B number:max:min:num\-directories
 where
 .B max
 is the maximum size and
@@ -70,42 +70,42 @@ maximum sizes are specified then every file will have a random size from the
 range
 .B min..max
 inclusive.  If you specify a number of directories then the files will be
-evenly distributed amoung that many sub-directories.
+evenly distributed amoung that many sub\-directories.
 
 If
 .B max
 is
-.B -1
+.B \-1
 then hard links will be created instead of files.
 If
 .B max
 is
-.B -2
+.B \-2
 then soft links will be created instead of files.
 
 
 .TP
-.B -m
-name of the machine - for display purposes only.
+.B \-m
+name of the machine \- for display purposes only.
 
 .TP
-.B -r
+.B \-r
 RAM size in megabytes. If you specify this the other parameters will be
 checked to ensure they make sense for a machine of that much RAM. If you read
 the documentation carefully you can work this out for yourself so it's not
 really necessary. If unsure then use it.
 
 .TP
-.B -x
+.B \-x
 number of test runs. This is useful if you want to perform more than one test.
 It will dump output continuously in CSV format until either the number of
 tests have been completed, or it is killed.
 
 .TP
-.B -u
-user-id to use.  When running as root specify the UID to use for the tests.  It
+.B \-u
+user\-id to use.  When running as root specify the UID to use for the tests.  It
 is not recommended to use root, so if you really want to run as root then use
-.B -u root.
+.B \-u root.
 Also if you want to specify the group to run as then use the
 .B user:group
 format.  If you specify a user by name but no group then the primary group of
@@ -114,53 +114,53 @@ the group will be
 .B nogroup.
 
 .TP
-.B -g
-group-id to use.  Same as using
+.B \-g
+group\-id to use.  Same as using
 .B :group
 for the
-.B -u
+.B \-u
 parameter, just a different way to specify it for compatibility with other
 programs.
 
 .TP
-.B -q
+.B \-q
 quiet mode. If specified then some of the extra informational messages will be
 suppressed.
 
 .TP
-.B -f
-fast mode, skips per-char IO tests.
+.B \-f
+fast mode, skips per\-char IO tests.
 
 .TP
-.B -b
+.B \-b
 no write buffering.  fsync() after every write.
 
 .TP
-.B -p
+.B \-p
 number of processes to serve semaphores for.  This is used to create the
 semaphores for synchronising multiple Bonnie++ processes.  All the processes
 which are told to use the semaphore with
-.B -y
-will start each test at the same time.  Use the value -1 to delete the
+.B \-y
+will start each test at the same time.  Use the value \-1 to delete the
 semaphore.
 
 .TP
-.B -y
+.B \-y
 wait for semaphore before each test.
 
 .P
 
-.SH OUTPUT
-The primary output is plain-text in 80 columns which is designed to fit well
+.SH "OUTPUT"
+The primary output is plain\-text in 80 columns which is designed to fit well
 when pasted into email and which will work well with Braille displays.
 .P
 The second type of output is CSV (Comma Seperated Values). This can easily be
-imported into any spread-sheet or database program. Also I have included
+imported into any spread\-sheet or database program. Also I have included
 the programs
 .B bon_csv2html
 and
 .B bon_csv2txt
-to convert CSV data to HTML and plain-ascii respectively.
+to convert CSV data to HTML and plain\-ascii respectively.
 .P
 For every test two numbers are reported, the amount of work done (higher
 numbers are better) and the percentage of CPU time taken to perform the work
@@ -169,7 +169,7 @@ the output will be displayed as "++++". This is because such a test result
 can't be calculated accurately due to rounding errors and I would rather
 display no result than a wrong result.
 
-.SH AUTHOR
+.SH "AUTHOR"
 This program, it's manual page, and the Debian package were written by
 Russell Coker <russell@coker.com.au>, parts of the program are based on the
 work of Tim Bray <tbray@textuality.com>.
@@ -178,7 +178,7 @@ The documentation, the Perl scripts, and all the code for testing the creation
 of thousands of files was written by Russell Coker, but the entire package is
 under joint copyright with Tim Bray.
 
-.SH SIGNALS
+.SH "SIGNALS"
 Handles SIGINT and does a cleanup (which may take some time), a second SIGINT
 or a SIGQUIT will cause it to immidiately die.
 .P
@@ -187,7 +187,7 @@ SIGXCPU and SIGXFSZ act like SIGINT.
 Ignores SIGHUP.
 
 
-.SH BUGS
+.SH "BUGS"
 The random file sizes will add up to different values for different test runs.
 I plan to add some code that checks the sum and ensures that the sum of the
 values will be the same on seperate runs.

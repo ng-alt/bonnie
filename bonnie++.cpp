@@ -184,7 +184,11 @@ int main(int argc, char *argv[])
         globals.bufSync = true;
       break;
       case 'd':
-        globals.SetName(optarg);
+        if(chdir(optarg))
+        {
+          fprintf(stderr, "Can't change to directory \"%s\".\n", optarg);
+          usage();
+        }
       break;
       case 'f':
         globals.fast = true;
