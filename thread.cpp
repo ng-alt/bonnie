@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include "thread.h"
+#include <stdio.h>
 
 #ifdef NON_UNIX
 
@@ -51,10 +52,10 @@ Thread::~Thread()
 {
   if(m_threadNum == -1)
   {
-    file_close(m_parentRead);
-    file_close(m_parentWrite);
-    file_close(m_childRead);
-    file_close(m_childWrite);
+    _close(m_parentRead);
+    _close(m_parentWrite);
+    _close(m_childRead);
+    _close(m_childWrite);
     delete m_retVal;
   }
 }

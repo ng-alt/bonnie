@@ -1,11 +1,16 @@
 #ifndef PORT_H
 #define PORT_H
 
-#include <stdio.h>
-
 @semun@
 @bool@
 @snprintf@
+@large_file@
+#ifdef _LARGEFILE64_SOURCE
+#define OFF_T_PRINTF "%lld"
+#else
+#define OFF_T_PRINTF "%d"
+#endif
+
 #if @true_false@
 #define false 0
 #define true 1
@@ -36,7 +41,7 @@ typedef ULONG TIMEVAL_TYPE;
 #define _rmdir(XX) DosDeleteDir(XX)
 #define _chdir(XX) DosSetCurrentDir(XX)
 #define _findclose DosFindClose
-#define file_close DosClose
+#define _close DosClose
 #define make_directory(XX) DosCreateDir(XX, NULL)
 typedef HFILE FILE_TYPE;
 #define pipe(XX) DosCreatePipe(&XX[0], &XX[1], 8 * 1024)
@@ -51,7 +56,6 @@ typedef int FILE_TYPE;
 #define S_IRUSR _S_IREAD
 #define S_IWUSR _S_IWRITE
 #define fsync _commit
-#define file_close _close
 #define make_directory _mkdir
 #define sync() {}
 #define HDIR long
@@ -68,20 +72,28 @@ typedef int pid_t;
 typedef struct timeval TIMEVAL_TYPE;
 #define _rmdir rmdir
 #define _chdir chdir
-#define _creat creat
 #define _getpid getpid
+
+#ifdef _LARGEFILE64_SOURCE
+#define OFF_TYPE off64_t
+#define _lseek lseek64
+#define _creat creat64
+#define _open open64
+#else
+#define OFF_TYPE off_t
 #define _lseek lseek
+#define _creat creat
+#define _open ::open
+#endif
+
 #define _sleep sleep
-#define file_close ::close
+#define _close ::close
 #define make_directory(XX) mkdir(XX, S_IRWXU)
 typedef int FILE_TYPE;
 #define __min min
 #define __max max
 #endif
 typedef FILE_TYPE *PFILE_TYPE;
-typedef FILE *PFILE;
-
-#endif
 
 #ifdef NO_SNPRINTF
 #define _snprintf sprintf
@@ -92,3 +104,14 @@ typedef FILE *PFILE;
 #endif
 
 #define EXIT_CTRL_C 5
+
+typedef const char * PCCHAR;
+typedef char * PCHAR;
+typedef PCHAR const CPCHAR;
+typedef PCCHAR const CPCCHAR;
+typedef void * PVOID;
+typedef PVOID const CPVOID;
+typedef const CPVOID CPCVOID;
+
+
+#endif

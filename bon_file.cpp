@@ -1,3 +1,4 @@
+#include "bonnie.h"
 #include <fcntl.h>
 #include <sys/types.h>
 #ifdef OS2
@@ -91,7 +92,7 @@ COpenTest::~COpenTest()
   if(m_directoryHandles)
   {
     for(i = 0; i < m_number_directories; i++)
-      file_close(m_directoryHandles[i]);
+      _close(m_directoryHandles[i]);
     delete m_directoryHandles;
   }
 #endif
@@ -221,7 +222,7 @@ int COpenTest::create_a_file(const char *filename, char *buf, int size, int dir)
     }
 #endif
   }
-  file_close(fd);
+  _close(fd);
   return 0;
 }
 
@@ -624,7 +625,7 @@ int COpenTest::stat_file(CPCCHAR file)
         return -1;
       }
     }
-    file_close(fd);
+    _close(fd);
   }
   return 0;
 }

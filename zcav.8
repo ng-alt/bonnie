@@ -1,13 +1,13 @@
 .TH zcav 1 
-.SH NAME
+.SH "NAME"
 zcav \- program to test raw hard drive throughput.
 
-.SH SYNOPSIS
+.SH "SYNOPSIS"
 .B zcav
-.I [-b block-size] [-c count] [-s max-size]
-.I [-u uid-to-use:gid-to-use] [-g gid-to-use]
-.I [-l log-file] [-f] file-name
-.I [-l log-file [-f] file-name]...
+.I [\-b block\-size] [\-c count] [\-s max\-size]
+.I [\-u uid\-to\-use:gid\-to\-use] [\-g gid\-to\-use]
+.I [\-l log\-file] [\-f] file\-name
+.I [\-l log\-file [\-f] file\-name]...
 
 .SH "DESCRIPTION"
 This manual page documents briefly the
@@ -23,8 +23,8 @@ these tracks generally have the lower track/sector numbers.
 This program tests the ZCAV performance of a hard drive, by reading the entire
 data on it a specified number of times. The file name given as the first
 parameter, it can be specified as
-.BR - ,
-for standard input. This file will be opened as read-only and in usual
+.BR \- ,
+for standard input. This file will be opened as read\-only and in usual
 operation it will be
 .BR /dev/hdX
 or
@@ -36,32 +36,32 @@ The output should be able to be easily graphed with
 .BR gnuplot
 which is what I use to view the results.
 
-.SH OPTIONS
+.SH "OPTIONS"
 
 .TP
-.B -b
+.B \-b
 the size of the blocks to read from disk (default 100M).
 
 .TP
-.B -c
+.B \-c
 the number of times to read the entire disk.
 
 .TP
-.B -s
+.B \-s
 the maximum amount of data (in megs) to read from a disk, useful if you want to
 quickly test the start of a large drive.
 
 .TP
-.B -f
-the file-name for the input data. This isn't needed on well configured
+.B \-f
+the file\-name for the input data. This isn't needed on well configured
 systems that have a recent Glibc where you can specify the file name without
-the -f flag.
+the \-f flag.
 
 .TP
-.B -u
-user-id to use.  When running as root specify the UID to run the tests as, it
+.B \-u
+user\-id to use.  When running as root specify the UID to run the tests as, it
 is not recommended to use root, so if you want to run as root use
-.B -u root.
+.B \-u root.
 Also if you want to specify the group to run as then use the
 .B user:group
 format.  If you specify a user by name but no group then the primary group of
@@ -70,15 +70,15 @@ the group will be
 .B nogroup.
  
 .TP
-.B -g
-group-id to use.  Same as using
+.B \-g
+group\-id to use.  Same as using
 .B :group
 for the
-.B -u
+.B \-u
 parameter, just a different way to specify it for compatibility with other
 programs.
 
-.SH AUTHOR
+.SH "AUTHOR"
 This program, it's manual page, and the Debian package were written by
 Russell Coker <russell@coker.com.au>.
 

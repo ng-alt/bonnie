@@ -16,13 +16,16 @@ typedef PCCHAR * PPCCHAR;
 PPCCHAR * props;
 
 // Print the start of the HTML file
-void header();
+// return the number of columns space in the middle
+int header();
 // Splits a line of text (CSV format) by commas and adds it to the list to
 // process later.  Doesn't keep any pointers to the buf...
 void read_in(CPCCHAR buf);
 // print line in the specified line from columns start..end as a line of a
 // HTML table
 void print_a_line(int num, int start, int end);
+// print a single item of data
+void print_item(int num, int item);
 // Print the end of the HTML file
 void footer();
 // Calculate the colors for backgrounds
@@ -31,11 +34,19 @@ void calc_vals();
 // range of values is 0..range_col and val is the value.  If reverse is set
 // then low values are green and high values are red.
 PCCHAR get_col(double range_col, double val, bool reverse, CPCCHAR extra);
-// 0 means don't do colors, 1 means speed, 2 means CPU, 3 means latency
-const int vals[MAX_ITEMS] =
-  { 0,0,0,0,0,1,2,1,2,1,2,1,2,1,2,1,2,
-    0,0,0,0,0,1,2,1,2,1,2,1,2,1,2,1,2,
-    3,3,3,3,3,3,3,3,3,3,3,3 };
+
+typedef enum { eNoCols, eSpeed, eCPU, eLatency } VALS_TYPE;
+const VALS_TYPE vals[MAX_ITEMS] =
+  { eNoCols,eNoCols,eNoCols,eNoCols,eNoCols,eSpeed,eCPU,eSpeed,eCPU,eSpeed,eCPU,eSpeed,eCPU,eSpeed,eCPU,eSpeed,eCPU,
+    eNoCols,eNoCols,eNoCols,eNoCols,eNoCols,eSpeed,eCPU,eSpeed,eCPU,eSpeed,eCPU,eSpeed,eCPU,eSpeed,eCPU,eSpeed,eCPU,
+    eLatency,eLatency,eLatency,eLatency,eLatency,eLatency,eLatency,eLatency,eLatency,eLatency,eLatency,eLatency };
+
+bool col_used[MAX_ITEMS];
+#define COL_DATA_CHUNK_SIZE 4
+#define COL_MAX_SIZE 18
+#define COL_MIN_SIZE 19
+#define COL_NUM_DIRS 20
+#define COL_FILE_CHUNK_SIZE 21
 
 void usage()
 {
@@ -44,7 +55,8 @@ void usage()
 
 int main(int argc, char **argv)
 {
-  header();
+  for(int i = 0; i < MAX_ITEMS; i++)
+    col_used[i] = false;
 
   char buf[1024];
 
@@ -86,16 +98,44 @@ int main(int argc, char **argv)
     }
   }
   calc_vals();
+  int mid_width = header();
   for(i = 0; i < data.size(); i++)
   {
+// First print the average speed line
     printf("<TR>");
-    print_a_line(i, 2, 33);
+    if(col_used[COL_DATA_CHUNK_SIZE] == true)
+    {
+      print_a_line(i, 2, 17);
+    }
+    else
+    {
+      print_a_line(i, 2, 3);
+      print_a_line(i, 5, 17);
+    }
+    if(col_used[COL_MAX_SIZE])
+      print_item(i, COL_MAX_SIZE);
+    if(col_used[COL_MIN_SIZE])
+      print_item(i, COL_MIN_SIZE);
+    if(col_used[COL_NUM_DIRS])
+      print_item(i, COL_NUM_DIRS);
+    if(col_used[COL_FILE_CHUNK_SIZE])
+      print_item(i, COL_FILE_CHUNK_SIZE);
+    print_a_line(i, 22, 33);
     printf("</TR>\n");
+// Now print the latency line
     printf("<TR>");
     print_a_line(i, 2, 2);
-    printf("<TD class=\"size\" bgcolor=\"#FFFFFF\">Latency</TD><TD></TD>");
+    printf("<TD class=\"size\" bgcolor=\"#FFFFFF\">Latency</TD>");
+    if(col_used[COL_DATA_CHUNK_SIZE] == true)
+      printf("<TD></TD>");
     print_a_line(i, 34, 39);
-    printf("<TD COLSPAN=2></TD><TD class=\"size\" bgcolor=\"#FFFFFF\" COLSPAN=2>Latency</TD>");
+    int bef_lat_width, lat_width = 1;
+    if(mid_width > 1)
+      lat_width = 2;
+    bef_lat_width = mid_width - lat_width;
+    if(bef_lat_width)
+      printf("<TD COLSPAN=%d></TD>", bef_lat_width);
+    printf("<TD class=\"size\" bgcolor=\"#FFFFFF\" COLSPAN=%d>Latency</TD>", lat_width);
     print_a_line(i, 40, 45);
     printf("</TR>\n");
   }
@@ -124,21 +164,29 @@ void calc_vals()
   {
     switch(vals[column_ind])
     {
-    case 2:
+    case eNoCols:
+      for(unsigned int row_ind = 0; row_ind < data.size(); row_ind++)
+      {
+        if(data[row_ind][column_ind] && strlen(data[row_ind][column_ind]))
+          col_used[column_ind] = true;
+      }
+    break;
+    case eCPU:
       // gotta add support for CPU vals.  This means sorting on previous-col
       // divided by this column.  If a test run takes twice the CPU but does
       // three times the work it should be green!  If it does half the work but
       // uses the same CPU it should be red!
     break;
-    case 1:
-    case 3:
+    case eSpeed:
+    case eLatency:
+    {
       for(unsigned int row_ind = 0; row_ind < data.size(); row_ind++)
       {
         arr[row_ind].val = 0.0;
         if(data[row_ind].size() <= column_ind
          || sscanf(data[row_ind][column_ind], "%lf", &arr[row_ind].val) == 0)
           arr[row_ind].val = 0.0;
-        if(vals[column_ind] == 3 && arr[row_ind].val != 0.0)
+        if(vals[column_ind] == eLatency && arr[row_ind].val != 0.0)
         {
           if(strstr(data[row_ind][column_ind], "ms"))
             arr[row_ind].val *= 1000.0;
@@ -185,7 +233,7 @@ void calc_vals()
           {
             bool reverse = false;
             PCCHAR extra = "";
-            if(vals[column_ind] != 1)
+            if(vals[column_ind] != eSpeed)
             {
               reverse = true;
               extra = " COLSPAN=2";
@@ -193,7 +241,7 @@ void calc_vals()
             props[arr[sort_ind].pos][column_ind]
                   = get_col(range_col, arr[sort_ind].val - min_col, reverse, extra);
           }
-          else if(vals[column_ind] != 1)
+          else if(vals[column_ind] != eSpeed)
           {
             props[arr[sort_ind].pos][column_ind] = "COLSPAN=2";
           }
@@ -203,14 +251,15 @@ void calc_vals()
       {
         for(unsigned int sort_ind = 0; sort_ind < data.size(); sort_ind++)
         {
-          if(vals[column_ind] != 1)
+          if(vals[column_ind] == eLatency)
           {
             props[sort_ind][column_ind] = "COLSPAN=2";
           }
         }
       }
-    break;
     }
+    break;
+    } // end switch
   }
 }
 
@@ -234,8 +283,20 @@ PCCHAR get_col(double range_col, double val, bool reverse, CPCCHAR extra)
 
 void heading(const char * const head);
 
-void header()
+int header()
 {
+  int vers_width = 2;
+  if(col_used[COL_DATA_CHUNK_SIZE] == true)
+    vers_width = 3;
+  int mid_width = 1;
+  if(col_used[COL_MAX_SIZE])
+    mid_width++;
+  if(col_used[COL_MIN_SIZE])
+    mid_width++;
+  if(col_used[COL_NUM_DIRS])
+    mid_width++;
+  if(col_used[COL_FILE_CHUNK_SIZE])
+    mid_width++;
   printf("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">"
 "<HTML>"
 "<HEAD><TITLE>Bonnie++ Benchmark results</TITLE>"
@@ -247,26 +308,36 @@ void header()
 "</STYLE>"
 "<BODY>"
 "<TABLE ALIGN=center BORDER=3 CELLPADDING=2 CELLSPACING=1>"
-"<TR><TD COLSPAN=3 class=\"header\"><FONT SIZE=+1><B>"
+"<TR><TD COLSPAN=%d class=\"header\"><FONT SIZE=+1><B>"
 "Version " BON_VERSION
 "</B></FONT></TD>"
 "<TD COLSPAN=6 class=\"header\"><FONT SIZE=+2><B>Sequential Output</B></FONT></TD>"
 "<TD COLSPAN=4 class=\"header\"><FONT SIZE=+2><B>Sequential Input</B></FONT></TD>"
 "<TD COLSPAN=2 ROWSPAN=2 class=\"header\"><FONT SIZE=+2><B>Random<BR>Seeks</B></FONT></TD>"
-"<TD COLSPAN=4 class=\"header\"></TD>"
+"<TD COLSPAN=%d class=\"header\"></TD>"
 "<TD COLSPAN=6 class=\"header\"><FONT SIZE=+2><B>Sequential Create</B></FONT></TD>"
 "<TD COLSPAN=6 class=\"header\"><FONT SIZE=+2><B>Random Create</B></FONT></TD>"
 "</TR>"
 "<TR><TD></TD>"
-"<TD>Size</TD><TD>Chunk Size</TD>");
+"<TD>Size</TD>", vers_width, mid_width);
+  if(col_used[COL_DATA_CHUNK_SIZE] == true)
+    printf("<TD>Chunk Size</TD>");
   heading("Per Char"); heading("Block"); heading("Rewrite");
   heading("Per Char"); heading("Block");
-  printf("<TD>Num Files</TD><TD>Max Size</TD><TD>Min Size</TD><TD>Num Dirs</TD>");
+  printf("<TD>Num Files</TD>");
+  if(col_used[COL_MAX_SIZE])
+    printf("<TD>Max Size</TD>");
+  if(col_used[COL_MIN_SIZE])
+    printf("<TD>Min Size</TD>");
+  if(col_used[COL_NUM_DIRS])
+    printf("<TD>Num Dirs</TD>");
+  if(col_used[COL_FILE_CHUNK_SIZE])
+    printf("<TD>Chunk Size</TD>");
   heading("Create"); heading("Read"); heading("Delete");
   heading("Create"); heading("Read"); heading("Delete");
   printf("</TR>");
 
-  printf("<TR><TD COLSPAN=3></TD>");
+  printf("<TR><TD COLSPAN=%d></TD>", vers_width);
 
   int i;
   CPCCHAR ksec_form = "<TD class=\"ksec\"><FONT SIZE=-2>%s/sec</FONT></TD>"
@@ -276,12 +347,13 @@ void header()
     printf(ksec_form, "K");
   }
   printf(ksec_form, "");
-  printf("<TD COLSPAN=4></TD>");
+  printf("<TD COLSPAN=%d></TD>", mid_width);
   for(i = 0; i < 6; i++)
   {
     printf(ksec_form, "");
   }
   printf("</TR>\n");
+  return mid_width;
 }
 
 void heading(const char * const head)
@@ -319,14 +391,16 @@ void read_in(CPCCHAR buf)
     free((void *)arr[0]);
     return;
   }
-
   data.push_back(arr);
 }
 
 void print_item(int num, int item)
 {
-  PCCHAR line_data = data[num][item];
-  if(!line_data) line_data = "";
+  PCCHAR line_data;
+  if(int(data[num].size()) > item)
+    line_data = data[num][item];
+  else
+    line_data = "";
   if(props[num][item])
     printf("<TD %s>%s</TD>", props[num][item], line_data);
   else

@@ -1,4 +1,5 @@
 #include "port.h"
+#include <stdio.h>
 #include "semaphore.h"
 #ifndef NON_UNIX
 #include <unistd.h>

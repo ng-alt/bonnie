@@ -17,12 +17,12 @@
  *  nature or kind.
  */
 
+#include "bonnie.h"
+
 #include <stdlib.h>
 #ifdef OS2
 #define INCL_DOSMISC
 #endif
-
-#include "bonnie.h"
 
 #ifdef NON_UNIX
 typedef char Sync;
@@ -68,7 +68,7 @@ class CGlobalItems
 {
 public:
   bool quiet;
-  int char_io_size;
+  int byte_io_size;
   bool sync_bonnie;
   BonTimer timer;
   int ram;
@@ -129,7 +129,7 @@ private:
 
 CGlobalItems::CGlobalItems(bool *exitFlag)
  : quiet(false)
- , char_io_size(DefaultCharIO)
+ , byte_io_size(DefaultByteIO)
  , sync_bonnie(false)
  , timer()
  , ram(0)
@@ -243,7 +243,7 @@ int main(int argc, char *argv[])
 #endif
 
   int int_c;
-  while(-1 != (int_c = getopt(argc, argv, "bd:f::g:m:n:p:qr:s:u:x:y:")) )
+  while(-1 != (int_c = getopt(argc, argv, "bd:f::g:l:m:n:p:qr:s:u:x:y:")) )
   {
     switch(char(int_c))
     {
@@ -259,9 +259,9 @@ int main(int argc, char *argv[])
       break;
       case 'f':
         if(optarg)
-          globals.char_io_size = atoi(optarg);
+          globals.byte_io_size = atoi(optarg);
         else
-          globals.char_io_size = 0;
+          globals.byte_io_size = 0;
       break;
       case 'm':
         machine = optarg;
@@ -310,7 +310,11 @@ int main(int argc, char *argv[])
       {
         char *sbuf = _strdup(optarg);
         char *size = strtok(sbuf, ":");
-        file_size = size_from_str(size, "g");
+#ifdef _LARGEFILE64_SOURCE
+        file_size = size_from_str(size, "gt");
+#else
+        file_size = size_from_str(size, "gt");
+#endif
         size = strtok(NULL, "");
         if(size)
         {
@@ -380,8 +384,17 @@ int main(int argc, char *argv[])
     if(file_size % 1024 > 512)
       file_size = file_size + 1024 - (file_size % 1024);
   }
-  globals.char_io_size = __min(file_size, globals.char_io_size);
-  globals.char_io_size = __max(0, globals.char_io_size);
+#ifndef _LARGEFILE64_SOURCE
+  if(file_size == 2048)
+    file_size = 2047;
+  if(file_size > 2048)
+  {
+    fprintf(stderr, "Large File Support not present, can't do %dM.\n", file_size);
+    usage();
+  }
+#endif
+  globals.byte_io_size = __min(file_size, globals.byte_io_size);
+  globals.byte_io_size = __max(0, globals.byte_io_size);
 
   if(machine == NULL)
   {
@@ -460,12 +473,14 @@ int main(int argc, char *argv[])
      && (directory_max_size < directory_min_size || directory_max_size < 0
      || directory_min_size < 0) )
     usage();
-  if(file_size > IOFileSize * MaxIOFiles || file_size > (1 << (31 - 20 + globals.io_chunk_bits)) )
+#ifndef _LARGEFILE64_SOURCE
+  if(file_size > (1 << (31 - 20 + globals.io_chunk_bits)) )
   {
     fprintf(stderr
    , "The small chunk size and large IO size make this test impossible in 32bit.\n");
     usage();
   }
+#endif
   // if doing more than one test run then we print a header before the
   // csv format output.
   if(test_count > 1)
@@ -495,7 +510,7 @@ int main(int argc, char *argv[])
     if(test_count == -1)
     {
       globals.timer.SetType(BonTimer::txt);
-      rc = globals.timer.DoReportIO(machine, file_size, globals.char_io_size
+      rc = globals.timer.DoReportIO(machine, file_size, globals.byte_io_size
                     , globals.io_chunk_size(), globals.quiet ? stderr : stdout);
       rc |= globals.timer.DoReportFile(machine, directory_size
                     , directory_max_size, directory_min_size, num_directories
@@ -504,7 +519,7 @@ int main(int argc, char *argv[])
     }
     // print a csv version in every case
     globals.timer.SetType(BonTimer::csv);
-    rc = globals.timer.DoReportIO(machine, file_size, globals.char_io_size
+    rc = globals.timer.DoReportIO(machine, file_size, globals.byte_io_size
                    , globals.io_chunk_size(), stdout);
     rc |= globals.timer.DoReportFile(machine, directory_size
                     , directory_max_size, directory_min_size, num_directories
@@ -535,10 +550,10 @@ TestFileOps(int file_size, CGlobalItems &globals)
     }
     // default is we have 1M / 8K * 300 chunks = 38400
     num_chunks = Unit / globals.io_chunk_size() * file_size;
-    int char_io_chunks = Unit / globals.io_chunk_size() * globals.char_io_size;
+    int char_io_chunks = Unit / globals.io_chunk_size() * globals.byte_io_size;
 
     int rc;
-    rc = file.open(globals.name, true, true);
+    rc = file.Open(globals.name, true);
     if(rc)
       return rc;
     if(exitNow)
@@ -549,13 +564,13 @@ TestFileOps(int file_size, CGlobalItems &globals)
     if(char_io_chunks)
     {
       dur.reset();
-      globals.decrement_and_wait(Putc);
-      // Fill up a file, writing it a char at a time with the stdio putc() call
-      if(!globals.quiet) fprintf(stderr, "Writing with putc()...");
+      globals.decrement_and_wait(ByteWrite);
+      // Fill up a file, writing it a char at a time
+      if(!globals.quiet) fprintf(stderr, "Writing a byte at a time...");
       for(words = 0; words < char_io_chunks; words++)
       {
         dur.start();
-        if(file.write_block_putc() == -1)
+        if(file.write_block_byte() == -1)
           return 1;
         dur.stop();
         if(exitNow)
@@ -566,9 +581,9 @@ TestFileOps(int file_size, CGlobalItems &globals)
        * note that we always close the file before measuring time, in an
        *  effort to force as much of the I/O out as we can
        */
-      file.close();
-      globals.timer.stop_and_record(Putc);
-      globals.timer.add_latency(Putc, dur.getMax());
+      file.Close();
+      globals.timer.stop_and_record(ByteWrite);
+      globals.timer.add_latency(ByteWrite, dur.getMax());
       if(!globals.quiet) fprintf(stderr, "done\n");
     }
     /* Write the whole file from scratch, again, with block I/O */
@@ -590,10 +605,13 @@ TestFileOps(int file_size, CGlobalItems &globals)
       bufindex = (bufindex + 1) % globals.io_chunk_size();
       dur.start();
       if(file.write_block(PVOID(buf)) == -1)
-        return io_error("write(2)");
+      {
+        fprintf(stderr, "Can't write block %d.\n", i);
+        return 1;
+      }
       dur.stop();
     }
-    file.close();
+    file.Close();
     globals.timer.stop_and_record(FastWrite);
     globals.timer.add_latency(FastWrite, dur.getMax());
     if(!globals.quiet) fprintf(stderr, "done\n");
@@ -628,34 +646,34 @@ TestFileOps(int file_size, CGlobalItems &globals)
       if(exitNow)
         return EXIT_CTRL_C;
     }
-    file.close();
+    file.Close();
     globals.timer.stop_and_record(ReWrite);
     globals.timer.add_latency(ReWrite, dur.getMax());
     if(!globals.quiet) fprintf(stderr, "done\n");
 
     if(char_io_chunks)
     {
-      // read them all back with getc()
-      if(file.reopen(false, true))
+      // read them all back a byte at a time
+      if(file.reopen(false))
         return 1;
       dur.reset();
-      globals.decrement_and_wait(Getc);
-      if(!globals.quiet) fprintf(stderr, "Reading with getc()...");
+      globals.decrement_and_wait(ByteRead);
+      if(!globals.quiet) fprintf(stderr, "Reading a byte at a time...");
       globals.timer.start();
 
       for(words = 0; words < char_io_chunks; words++)
       {
         dur.start();
-        if(file.read_block_getc(buf) == -1)
+        if(file.read_block_byte(buf) == -1)
           return 1;
         dur.stop();
         if(exitNow)
           return EXIT_CTRL_C;
       }
 
-      file.close();
-      globals.timer.stop_and_record(Getc);
-      globals.timer.add_latency(Getc, dur.getMax());
+      file.Close();
+      globals.timer.stop_and_record(ByteRead);
+      globals.timer.add_latency(ByteRead, dur.getMax());
       if(!globals.quiet) fprintf(stderr, "done\n");
     }
 
@@ -677,7 +695,7 @@ TestFileOps(int file_size, CGlobalItems &globals)
       if(exitNow)
         return EXIT_CTRL_C;
     } /* per block */
-    file.close();
+    file.Close();
     globals.timer.stop_and_record(FastRead);
     globals.timer.add_latency(FastRead, dur.getMax());
     if(!globals.quiet) fprintf(stderr, "done\n");
@@ -716,24 +734,24 @@ TestDirOps(int directory_size, int max_size, int min_size
   {
     return 0;
   }
-  // if directory_size (in K) * data per file*2 > ram << 10 (IE memory /1024)
+  // if directory_size (in K) * data per file*2 > (ram << 10) (IE memory /1024)
   // then the storage of file names will take more than half RAM and there
   // won't be enough RAM to have Bonnie++ paged in and to have a reasonable
   // meta-data cache.
-  if(globals.ram
-      && directory_size * MaxDataPerFile * 2 * num_directories
-                  > (globals.ram << 10))
+  if(globals.ram && directory_size * MaxDataPerFile * 2 > (globals.ram << 10))
   {
-    fprintf(stderr, "When testing %dK * %d of files in %d MB of RAM the system is likely to\n"
-            "start paging Bonnie++ data and the test will give suspect\n"
-            "results, use less files or install more RAM for this test.\n"
-           , directory_size, num_directories, globals.ram);
+    fprintf(stderr
+         , "When testing %dK of files in %d MB of RAM the system is likely to\n"
+           "start paging Bonnie++ data and the test will give suspect\n"
+           "results, use less files or install more RAM for this test.\n"
+          , directory_size, globals.ram);
     return 1;
   }
-  if(directory_size * num_directories * MaxDataPerFile > (1 << 20))
+  // Can't use more than 1G of RAM
+  if(directory_size * MaxDataPerFile > (1 << 20))
   {
-    fprintf(stderr, "Not enough ram to test with %dK * %d files.\n"
-                  , directory_size, num_directories);
+    fprintf(stderr, "Not enough ram to test with %dK files.\n"
+                  , directory_size);
     return 1;
   }
   globals.decrement_and_wait(CreateSeq);

@@ -524,9 +524,9 @@ fi
 
 
 
-version="1.91b"
+version="1.92"
 
-csv_version="1.91a"
+csv_version="1.92"
 
 # Check whether --enable-stripping or --disable-stripping was given.
 if test "${enable_stripping+set}" = set; then
@@ -1171,6 +1171,65 @@ else
 fi
 rm -f conftest*
 
+
+
+if test "$cross_compiling" = yes; then
+    { echo "configure: error: can not run test program while cross compiling" 1>&2; exit 1; }
+else
+  cat > conftest.$ac_ext <<EOF
+#line 1181 "configure"
+#include "confdefs.h"
+#ifdef __cplusplus
+extern "C" void exit(int);
+#endif
+#define _LARGEFILE64_SOURCE
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+
+int main () {
+  int fd;
+  off64_t i = off64_t(1) << 32 + 1;
+  char *name = "test.2g";
+
+  fd = open64(name, O_CREAT|O_RDWR|O_EXCL|O_LARGEFILE,
+              S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP);
+  if (fd == -1) {
+    perror("open64");
+    exit(1);
+  }
+  unlink(name);
+
+  int r = lseek64(fd, i, SEEK_SET);
+  if (r == -1) {
+    perror("lseek");
+    exit(1);
+  }
+  r = write(fd, &r, 1);
+  if (r == -1) {
+    perror("write");
+    exit(1);
+  }
+  close(fd);
+  return 0;
+}
+EOF
+if { (eval echo configure:1220: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
+then
+  large_file="yes"
+else
+  echo "configure: failed program was:" >&5
+  cat conftest.$ac_ext >&5
+fi
+rm -fr conftest*
+fi
+
+if [ -n "$large_file" ]; then
+   large_file="#define _LARGEFILE64_SOURCE"
+fi
+
 trap '' 1 2 15
 cat > confcache <<\EOF
 # This file is a shell script that caches the results of configure
@@ -1330,6 +1389,7 @@ s%@true_false@%$true_false%g
 s%@snprintf@%$snprintf%g
 s%@linux_pthread@%$linux_pthread%g
 s%@thread_ldflags@%$thread_ldflags%g
+s%@large_file@%$large_file%g
 
 CEOF
 EOF

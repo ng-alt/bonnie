@@ -1,10 +1,13 @@
 #ifndef BONNIE
 #define BONNIE
 
-#define BON_VERSION "1.91b"
-#define CSV_VERSION "1.91a"
+#define BON_VERSION "1.92"
+#define CSV_VERSION "1.92"
 
 #include "port.h"
+#include <stdio.h>
+
+typedef FILE *PFILE;
 
 #define SemKey 4711
 #define NumSems TestCount
@@ -28,26 +31,14 @@
 #define DefaultDirectorySize 16
 #define DefaultDirectoryMaxSize 0
 #define DefaultDirectoryMinSize 0
-// 1024M per file for IO.
-#define IOFileSize 1024
-// 3 digits
-#define MaxIOFiles 1000
-#define DefaultCharIO 20
-
-typedef const char * PCCHAR;
-typedef char * PCHAR;
-typedef PCHAR const CPCHAR;
-typedef PCCHAR const CPCCHAR;
-typedef void * PVOID;
-typedef PVOID const CPVOID;
-typedef const CPVOID CPCVOID;
+#define DefaultByteIO 3
 
 enum tests_t
 {
-  Putc = 0,
+  ByteWrite = 0,
   FastWrite,
   ReWrite,
-  Getc,
+  ByteRead,
   FastRead,
   Lseek,
   CreateSeq,

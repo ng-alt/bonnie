@@ -1,3 +1,31 @@
+bonnie++ (1.92) unstable; urgency=low
+
+  * Made the per-byte code use read() and write() instead of putc() and getc().
+    Using the stream functions gives too much variance and isn't as interesting
+    nowadays.  I will soon add a separate benchmark for streams vs write() for
+    byte at a time.
+
+  * Made it use a single file >2G on systems that have LFS support.  On systems
+    that lack it there will be no more support of more than 2G of data.
+    I believe that now any machine with 1G of RAM should have LFS support!
+    Note that the ./configure test for this takes ages on ReiserFS.
+
+  * Made it remove the ./configure cache files before Debian package build.
+    This fixes the problems with incorrect data being cached for ports.
+
+  * Fixed the memory checks for file creation tests, thanks to
+    Andreas Dilger <adilger@turbolinux.com> .
+
+  * Fixed a minor field alignment bug in bon_csv2html.
+
+  * Made bon_csv2html not display columns that contain no data.
+
+  * Fixed a bug where bon_csv2html could crash on bad data.
+
+  * Fixed a bug where bonnie++ would generate bad CSV data if run with "-n0".
+
+ -- Russell Coker <russell@coker.com.au>  Fri, 11 May 2001 16:34:58 +0100
+
 bonnie++ (1.91c) unstable; urgency=low
 
   * Now compiles with GCC 3.0.
@@ -9,7 +37,7 @@ bonnie++ (1.91c) unstable; urgency=low
 
   * Fixed a minor warning.
 
- -- Russell Coker <russell@coker.com.au>  Tue, 6 Mar 2001 18:49:03 +0100
+ -- Russell Coker <russell@coker.com.au>  Mon, 16 Apr 2001 18:49:03 +0100
 
 bonnie++ (1.91b) unstable; urgency=low
 

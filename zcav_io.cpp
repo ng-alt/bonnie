@@ -48,7 +48,7 @@ int ZcavRead::open(bool *finished, int block_size
     if(m_log == NULL)
     {
       fprintf(stderr, "Can't open %s\n", log);
-      file_close(m_fd);
+      _close(m_fd);
       return 1;
     }
   }

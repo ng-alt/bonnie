@@ -287,9 +287,9 @@ BonTimer::DoReportIO(CPCCHAR machine, int file_size, int char_file_size
     {
       printf(CSV_VERSION "," BON_VERSION ",%s,%s", machine, size_buf);
     }
-    for(i = Putc; i < Lseek; i++)
+    for(i = ByteWrite; i < Lseek; i++)
     {
-      if(i == Putc || i == Getc)
+      if(i == ByteWrite || i == ByteRead)
         print_stat(tests_t(i), char_file_size * 1024);
       else
         print_stat(tests_t(i), file_size * 1024);
@@ -298,7 +298,7 @@ BonTimer::DoReportIO(CPCCHAR machine, int file_size, int char_file_size
     if(m_type == txt)
     {
       fprintf(m_fp, "\nLatency          ");
-      for(i = Putc; i <= Lseek; i++)
+      for(i = ByteWrite; i <= Lseek; i++)
         print_latency(tests_t(i));
       fprintf(m_fp, "\n");
     }
@@ -420,11 +420,11 @@ BonTimer::DoReportFile(CPCCHAR machine, int directory_size
   }
   else if(m_type == csv)
   {
-    fprintf(m_fp, ",,,,,,,,,,,,,,,,");
+    fprintf(m_fp, ",,,,,,,,,,,,,,,,,");
   }
   if(m_type == csv)
   {
-    for(i = Putc; i < TestCount; i++)
+    for(i = ByteWrite; i < TestCount; i++)
       print_latency(tests_t(i));
   }
   fprintf(m_fp, "\n");
