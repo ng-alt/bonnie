@@ -1,0 +1,6 @@
+This file contains any messages produced by compilers while
+running configure, to aid debugging if configure makes a mistake.
+
+configure:557: checking for c++
+configure:589: checking whether the C++ compiler (g++-3.0  ) works
+configure:605: g++-3.0 -o conftest    conftest.C  1>&5

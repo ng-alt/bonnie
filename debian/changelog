@@ -1,3 +1,14 @@
+bonnie++ (1.01b) unstable; urgency=low
+
+  * Made it remove the ./configure cache files before Debian package build.
+    This fixes the problems with incorrect data being cached for ports.
+    Closes:#94289
+
+  * Fixed the memory checks for file creation tests, thanks to
+    Andreas Dilger <adilger@turbolinux.com> .
+
+ -- Russell Coker <russell@coker.com.au>  Wed, 18 Apr 2001 12:30:18 +0100
+
 bonnie++ (1.01a) unstable; urgency=low
 
   * Fixed bon_csv2txt so that it can handle a '/' in the CSV file denoting

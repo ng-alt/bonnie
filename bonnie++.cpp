@@ -552,24 +552,24 @@ TestDirOps(int directory_size, int max_size, int min_size
   {
     return 0;
   }
-  // if directory_size (in K) * data per file*2 > ram << 10 (IE memory /1024)
+  // if directory_size (in K) * data per file*2 > (ram << 10) (IE memory /1024)
   // then the storage of file names will take more than half RAM and there
   // won't be enough RAM to have Bonnie++ paged in and to have a reasonable
   // meta-data cache.
-  if(globals.ram
-      && directory_size * MaxDataPerFile * 2 * num_directories
-                  > (globals.ram << 10))
+  if(globals.ram && directory_size * MaxDataPerFile * 2 > (globals.ram << 10))
   {
-    fprintf(stderr, "When testing %dK * %d of files in %d MB of RAM the system is likely to\n"
-            "start paging Bonnie++ data and the test will give suspect\n"
-            "results, use less files or install more RAM for this test.\n"
-           , directory_size, num_directories, globals.ram);
+    fprintf(stderr
+         , "When testing %dK of files in %d MB of RAM the system is likely to\n"
+           "start paging Bonnie++ data and the test will give suspect\n"
+           "results, use less files or install more RAM for this test.\n"
+          , directory_size, globals.ram);
     return 1;
   }
-  if(directory_size * num_directories * MaxDataPerFile > (1 << 20))
+  // Can't use more than 1G of RAM
+  if(directory_size * MaxDataPerFile > (1 << 20))
   {
-    fprintf(stderr, "Not enough ram to test with %dK * %d files.\n"
-                  , directory_size, num_directories);
+    fprintf(stderr, "Not enough ram to test with %dK files.\n"
+                  , directory_size);
     return 1;
   }
   globals.decrement_and_wait(CreateSeq);
