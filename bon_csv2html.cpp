@@ -5,8 +5,8 @@
 #include <math.h>
 
 // Maximum number of items expected on a csv line
-#define MAX_ITEMS 45
-#ifdef WIN32
+#define MAX_ITEMS 46
+#ifndef OS2
 using namespace std;
 #endif
 typedef vector<PCCHAR> STR_VEC;
@@ -34,7 +34,7 @@ PCCHAR get_col(double range_col, double val, bool reverse, CPCCHAR extra);
 // 0 means don't do colors, 1 means speed, 2 means CPU, 3 means latency
 const int vals[MAX_ITEMS] =
   { 0,0,0,0,0,1,2,1,2,1,2,1,2,1,2,1,2,
-    0,0,0,0,1,2,1,2,1,2,1,2,1,2,1,2,
+    0,0,0,0,0,1,2,1,2,1,2,1,2,1,2,1,2,
     3,3,3,3,3,3,3,3,3,3,3,3 };
 
 void usage()
@@ -89,14 +89,14 @@ int main(int argc, char **argv)
   for(i = 0; i < data.size(); i++)
   {
     printf("<TR>");
-    print_a_line(i, 2, 32);
+    print_a_line(i, 2, 33);
     printf("</TR>\n");
     printf("<TR>");
     print_a_line(i, 2, 2);
     printf("<TD class=\"size\" bgcolor=\"#FFFFFF\">Latency</TD><TD></TD>");
-    print_a_line(i, 33, 38);
+    print_a_line(i, 34, 39);
     printf("<TD COLSPAN=2></TD><TD class=\"size\" bgcolor=\"#FFFFFF\" COLSPAN=2>Latency</TD>");
-    print_a_line(i, 39, 44);
+    print_a_line(i, 40, 45);
     printf("</TR>\n");
   }
   footer();
@@ -223,7 +223,11 @@ PCCHAR get_col(double range_col, double val, bool reverse, CPCCHAR extra)
   int green = int(255.0 * val / range_col);
   green = __min(green, 255);
   int red = 255 - green;
-  _snprintf(buf, buf_len, "bgcolor=\"#%02X%02X00\"%s", red, green, extra);
+  _snprintf(buf
+#ifndef NO_SNPRINTF
+          , buf_len
+#endif
+          , "bgcolor=\"#%02X%02X00\"%s", red, green, extra);
   buf[buf_len - 1] = '\0';
   return buf;
 }
@@ -309,7 +313,7 @@ STR_VEC split(CPCCHAR delim, CPCCHAR buf)
 void read_in(CPCCHAR buf)
 {
   STR_VEC arr = split(",", buf);
-  if(strcmp(arr[0], "2") )
+  if(strcmp(arr[0], CSV_VERSION) )
   {
     fprintf(stderr, "Can't process: %s\n", buf);
     free((void *)arr[0]);

@@ -337,10 +337,10 @@ int CFileOp::write_block_putc()
   return 0;
 }
 
-int CFileOp::open(CPCCHAR basename, bool create, bool use_fopen)
+int CFileOp::open(CPCCHAR base_name, bool create, bool use_fopen)
 {
-  m_name = PCHAR(malloc(strlen(basename) + 5));
-  strcpy(m_name, basename);
+  m_name = PCHAR(malloc(strlen(base_name) + 5));
+  strcpy(m_name, base_name);
   return reopen(create, use_fopen);
 }
 
@@ -407,7 +407,7 @@ int CFileOp::reopen(bool create, bool use_fopen)
   return 0;
 }
 
-int CFileOp::m_open(CPCCHAR basename, int ind, bool create)
+int CFileOp::m_open(CPCCHAR base_name, int ind, bool create)
 {
 #ifdef OS2
   ULONG createFlag;
@@ -417,7 +417,7 @@ int CFileOp::m_open(CPCCHAR basename, int ind, bool create)
   const char *fopen_mode;
   if(create)
   { /* create from scratch */
-    _unlink(basename);
+    _unlink(base_name);
     fopen_mode = "wb+";
 #ifdef OS2
     createFlag = OPEN_ACTION_CREATE_IF_NEW | OPEN_ACTION_REPLACE_IF_EXISTS;
@@ -446,23 +446,23 @@ int CFileOp::m_open(CPCCHAR basename, int ind, bool create)
   {
 #ifdef OS2
     ULONG action = 0;
-    ULONG rc = DosOpen(basename, &m_fd[ind], &action, 0, FILE_NORMAL, createFlag
+    ULONG rc = DosOpen(base_name, &m_fd[ind], &action, 0, FILE_NORMAL, createFlag
                      , OPEN_FLAGS_SEQUENTIAL | OPEN_SHARE_DENYNONE | OPEN_ACCESS_READWRITE
                      , NULL);
     if(rc)
       m_fd[ind] = -1;
 #else
-    m_fd[ind] = ::open(basename, flags, S_IRUSR | S_IWUSR);
+    m_fd[ind] = ::open(base_name, flags, S_IRUSR | S_IWUSR);
 #endif
   }
   else
   {
-    m_stream[ind] = fopen(basename, fopen_mode);
+    m_stream[ind] = fopen(base_name, fopen_mode);
   }
 
   if( (m_fd && m_fd[ind] == -1) || (m_stream && m_stream[ind] == NULL) )
   {
-    fprintf(stderr, "Can't open file %s\n", basename);
+    fprintf(stderr, "Can't open file %s\n", base_name);
     return -1;
   }
   return 0;
@@ -509,11 +509,9 @@ void CFileOp::close()
 int
 CFileOp::doseek(long where, bool update)
 {
-  int   size;
-
   if (seek(where, SEEK_SET) == -1)
     return io_error("lseek in doseek");
-  if ((size = read_block(PVOID(m_buf))) == -1)
+  if (read_block(PVOID(m_buf)) == -1)
     return io_error("read in doseek");
 
   /* every so often, update a block */

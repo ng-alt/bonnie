@@ -5,6 +5,7 @@
 
 @semun@
 @bool@
+@snprintf@
 #if @true_false@
 #define false 0
 #define true 1
@@ -26,7 +27,7 @@ typedef enum
 
 #define _read DosRead
 #define _strdup strdup
-#define _snprintf sprintf
+#define NO_SNPRINTF
 #define __min min
 #define __max max
 typedef ULONG TIMEVAL_TYPE;
@@ -76,11 +77,18 @@ typedef struct timeval TIMEVAL_TYPE;
 typedef int FILE_TYPE;
 #define __min min
 #define __max max
-#define _snprintf snprintf
 #endif
 typedef FILE_TYPE *PFILE_TYPE;
 typedef FILE *PFILE;
 
+#endif
+
+#ifdef NO_SNPRINTF
+#define _snprintf sprintf
+#else
+#ifndef WIN32
+#define _snprintf snprintf
+#endif
 #endif
 
 #define EXIT_CTRL_C 5

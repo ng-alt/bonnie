@@ -57,6 +57,7 @@ int Semaphore::create(int count)
     }
   }
   m_semopen = true;
+  printf("Creating semaphore for %d procs.\n", count);
   return 0;
 }
 

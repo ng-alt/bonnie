@@ -24,7 +24,6 @@ void usage()
          "File name of \"-\" means standard input\n"
          "Count is the number of times to read the data (default 1).\n"
          "Max size is the amount of data to read from each device.\n"
-         "-w means to wait until all devices have read a block before reading the next.\n"
          "\n"
          "Version: " BON_VERSION "\n");
   exit(1);
@@ -69,8 +68,6 @@ public:
       usage();
   }
 
-  void setWait() { m_wait = true; }
-
 private:
   virtual Thread *newThread(int threadNum)
                   { return new MultiZcav(threadNum, this); }
@@ -79,7 +76,6 @@ private:
   vector<ZcavRead *> *m_readers;
 
   int m_block_size, m_max_loops, m_max_size;
-  bool m_wait;
 
   MultiZcav(const MultiZcav &m);
   MultiZcav & operator =(const MultiZcav &m);
@@ -90,7 +86,6 @@ MultiZcav::MultiZcav()
   m_block_size = 100;
   m_max_loops = 1;
   m_max_size = 0;
-  m_wait = false;
   m_readers = new vector<ZcavRead *>;
 }
 
@@ -100,18 +95,14 @@ MultiZcav::MultiZcav(int threadNum, const MultiZcav *parent)
  , m_block_size(parent->m_block_size)
  , m_max_loops(parent->m_max_loops)
  , m_max_size(parent->m_max_size)
- , m_wait(parent->m_wait)
 {
 }
 
 int MultiZcav::action(PVOID)
 {
   ZcavRead *zc = (*m_readers)[getThreadNum() - 1];
-  int rc = zc->read(m_max_loops, m_max_size / m_block_size, m_wait
-                  , m_read, m_write);
+  int rc = zc->read(m_max_loops, m_max_size / m_block_size, m_write);
   zc->close();
-  char c = eEXIT;
-  Write(&c, 1, 0);
   return rc;
 }
 
@@ -142,52 +133,17 @@ int MultiZcav::runit()
     }
   }
   go(NULL, num_threads);
-  char c;
-  if(m_wait)
+  int res = 0;
+  while(num_threads)
   {
-    char *buf = new char[num_threads];
-    bool end = false;
-    while(num_threads)
-    {
-      bool loop = false;
-      for(i = 0; i < num_threads; i++)
-      {
-        if(Read(&c, 1, 0) != 1) return 1;
-printf("read data - threads:%d, char:%c\n", num_threads, c);
-        switch (c)
-        {
-        case eLOOP:
-          if(!end)
-            loop = true;
-        break;
-        case eEND:
-          end = true;
-        break;
-        case eEXIT:
-          end = true;
-          num_threads--;
-        break;
-        }
-      }
-      if(end)
-        memset(buf, eEXIT, num_threads);
-      else if(loop)
-        memset(buf, eLOOP, num_threads);
-      else
-        memset(buf, eBLOCK, num_threads);
-printf("writing:%c\n", *buf);
-      if(Write(buf, (int)num_threads) != (int)num_threads)
-        return 1;
-    }
-  }
-  else while(num_threads)
-  {
+    char c = 0;
     if(Read(&c, 1, 0) != 1)
       printf("can't read!\n");
-    if(c == eEXIT)
-      num_threads--;
+    num_threads--;
+    if(c > res)
+      res = c;
   }
-  return 0;
+  return res;
 }
 
 int main(int argc, char *argv[])
@@ -245,8 +201,6 @@ int main(int argc, char *argv[])
       }
 #endif
       break;
-      case 'w':
-        mz.setWait();
       break;
       case 'f':
       case char(1):
@@ -267,7 +221,9 @@ int main(int argc, char *argv[])
   }
 #endif
 
-  return mz.runit();
+  int rc = mz.runit();
+  sleep(2); // time for all threads to complete
+  return rc;
 }
 
 

@@ -75,11 +75,15 @@ public:
   Sync *syn;
   char *name;
   bool bufSync;
-  int  chunk_bits;
-  int chunk_size() const { return m_chunk_size; }
+  int  io_chunk_bits;
+  int  file_chunk_bits;
+  int io_chunk_size() const { return m_io_chunk_size; }
+  int file_chunk_size() const { return m_file_chunk_size; }
   bool *doExit;
-  void set_chunk_size(int size)
-    { delete m_buf; m_buf = new char[size]; m_chunk_size = size; }
+  void set_io_chunk_size(int size)
+    { delete m_buf; m_buf = new char[__max(size, m_file_chunk_size)]; m_io_chunk_size = size; }
+  void set_file_chunk_size(int size)
+    { delete m_buf; m_buf = new char[__max(size, m_io_chunk_size)]; m_file_chunk_size = size; }
 
   char *buf() { return m_buf; }
 
@@ -114,7 +118,8 @@ public:
 #endif
 
 private:
-  int m_chunk_size;
+  int m_io_chunk_size;
+  int m_file_chunk_size;
   char *m_buf;
 
 
@@ -131,10 +136,12 @@ CGlobalItems::CGlobalItems(bool *exitFlag)
  , syn(NULL)
  , name(NULL)
  , bufSync(false)
- , chunk_bits(DefaultChunkBits)
+ , io_chunk_bits(DefaultChunkBits)
+ , file_chunk_bits(DefaultChunkBits)
  , doExit(exitFlag)
- , m_chunk_size(DefaultChunkSize)
- , m_buf(new char[m_chunk_size])
+ , m_io_chunk_size(DefaultChunkSize)
+ , m_file_chunk_size(DefaultChunkSize)
+ , m_buf(new char[__max(m_io_chunk_size, m_file_chunk_size)])
 {
   SetName(".");
 }
@@ -163,6 +170,25 @@ void ctrl_c_handler(int sig)
   exitNow = true;
 }
 #endif
+
+unsigned int size_from_str(CPCCHAR string, CPCCHAR conv)
+{
+  const unsigned int mult[3] = { 1<<10 , 1<<20, 1<<30 };
+  unsigned int size = atoi(string);
+  char c = tolower(string[strlen(string) - 1]);
+  if(conv)
+  {
+    for(int i = 0; conv[i] != '\0' && i < 3; i++)
+    {
+      if(c == conv[i])
+      {
+        size *= mult[i];
+        return size;
+      }
+    }
+  }
+  return size;
+}
 
 int main(int argc, char *argv[])
 {
@@ -241,9 +267,33 @@ int main(int argc, char *argv[])
         machine = optarg;
       break;
       case 'n':
-        sscanf(optarg, "%d:%d:%d:%d", &directory_size
-                     , &directory_max_size, &directory_min_size
-                     , &num_directories);
+      {
+        char *sbuf = _strdup(optarg);
+        char *size = strtok(sbuf, ":");
+        directory_size = size_from_str(size, "m");
+        size = strtok(NULL, ":");
+        if(size)
+        {
+          directory_max_size = size_from_str(size, "kmg");
+          size = strtok(NULL, ":");
+          if(size)
+          {
+            directory_min_size = size_from_str(size, "kmg");
+            size = strtok(NULL, ":");
+            if(size)
+            {
+              num_directories = size_from_str(size, "k");
+              size = strtok(NULL, "");
+              if(size)
+              {
+                int tmp = size_from_str(size, "kmg");
+                globals.set_file_chunk_size(tmp);
+              }
+            }
+          }
+        }
+        free(sbuf);
+      }
       break;
       case 'p':
         num_bonnie_procs = atoi(optarg);
@@ -260,20 +310,15 @@ int main(int argc, char *argv[])
       {
         char *sbuf = _strdup(optarg);
         char *size = strtok(sbuf, ":");
-        file_size = atoi(size);
-        char c = size[strlen(size) - 1];
-        if(c == 'g' || c == 'G')
-          file_size *= 1024;
+        file_size = size_from_str(size, "g");
         size = strtok(NULL, "");
         if(size)
         {
-          int tmp = atoi(size);
-          c = size[strlen(size) - 1];
-          if(c == 'k' || c == 'K')
-            tmp *= 1024;
-          globals.set_chunk_size(tmp);
+          int tmp = size_from_str(size, "k");
+          globals.set_io_chunk_size(tmp);
         }
         setSize = true;
+        free(sbuf);
       }
       break;
 #ifndef NON_UNIX
@@ -377,6 +422,7 @@ int main(int argc, char *argv[])
 #ifndef NON_UNIX
   if(num_bonnie_procs)
   {
+    globals.setSync(eSem, SemKey, TestCount);
     if(num_bonnie_procs == -1)
     {
       return globals.syn->clear_sem();
@@ -396,20 +442,30 @@ int main(int argc, char *argv[])
 
   if(file_size < 0 || directory_size < 0 || (!file_size && !directory_size) )
     usage();
-  if(globals.chunk_size() < 256 || globals.chunk_size() > Unit)
+  if(globals.io_chunk_size() < 256 || globals.io_chunk_size() > Unit)
+    usage();
+  if(globals.file_chunk_size() < 256 || globals.file_chunk_size() > Unit)
     usage();
   int i;
-  globals.chunk_bits = 0;
-  for(i = globals.chunk_size(); i > 1; i = i >> 1, globals.chunk_bits++);
-  if(1 << globals.chunk_bits != globals.chunk_size())
+  globals.io_chunk_bits = 0;
+  globals.file_chunk_bits = 0;
+  for(i = globals.io_chunk_size(); i > 1; i = i >> 1, globals.io_chunk_bits++);
+  if(1 << globals.io_chunk_bits != globals.io_chunk_size())
+    usage();
+  for(i = globals.file_chunk_size(); i > 1; i = i >> 1, globals.file_chunk_bits++);
+  if(1 << globals.file_chunk_bits != globals.file_chunk_size())
     usage();
 
   if( (directory_max_size != -1 && directory_max_size != -2)
      && (directory_max_size < directory_min_size || directory_max_size < 0
      || directory_min_size < 0) )
     usage();
-  if(file_size > IOFileSize * MaxIOFiles || file_size > (1 << (31 - 20 + globals.chunk_bits)) )
+  if(file_size > IOFileSize * MaxIOFiles || file_size > (1 << (31 - 20 + globals.io_chunk_bits)) )
+  {
+    fprintf(stderr
+   , "The small chunk size and large IO size make this test impossible in 32bit.\n");
     usage();
+  }
   // if doing more than one test run then we print a header before the
   // csv format output.
   if(test_count > 1)
@@ -439,19 +495,20 @@ int main(int argc, char *argv[])
     if(test_count == -1)
     {
       globals.timer.SetType(BonTimer::txt);
-      rc = globals.timer.DoReport(machine
-                    , file_size, globals.char_io_size, globals.chunk_size()
-                    , directory_size
+      rc = globals.timer.DoReportIO(machine, file_size, globals.char_io_size
+                    , globals.io_chunk_size(), globals.quiet ? stderr : stdout);
+      rc |= globals.timer.DoReportFile(machine, directory_size
                     , directory_max_size, directory_min_size, num_directories
+                    , globals.file_chunk_size()
                     , globals.quiet ? stderr : stdout);
     }
     // print a csv version in every case
     globals.timer.SetType(BonTimer::csv);
-    rc = globals.timer.DoReport(machine
-                    , file_size, globals.char_io_size, globals.chunk_size()
-                    , directory_size
+    rc = globals.timer.DoReportIO(machine, file_size, globals.char_io_size
+                   , globals.io_chunk_size(), stdout);
+    rc |= globals.timer.DoReportFile(machine, directory_size
                     , directory_max_size, directory_min_size, num_directories
-                    , stdout);
+                    , globals.file_chunk_size(), stdout);
     if(rc) return rc;
   }
   return 0;
@@ -462,7 +519,7 @@ TestFileOps(int file_size, CGlobalItems &globals)
 {
   if(file_size)
   {
-    CFileOp file(globals.timer, file_size, globals.chunk_bits, globals.bufSync);
+    CFileOp file(globals.timer, file_size, globals.io_chunk_bits, globals.bufSync);
     int    num_chunks;
     int    words;
     char  *buf = globals.buf();
@@ -476,9 +533,9 @@ TestFileOps(int file_size, CGlobalItems &globals)
             , globals.ram);
       return 1;
     }
-    // default is we have 1M / 8K * 200 chunks = 25600
-    num_chunks = Unit / globals.chunk_size() * file_size;
-    int char_io_chunks = Unit / globals.chunk_size() * globals.char_io_size;
+    // default is we have 1M / 8K * 300 chunks = 38400
+    num_chunks = Unit / globals.io_chunk_size() * file_size;
+    int char_io_chunks = Unit / globals.io_chunk_size() * globals.char_io_size;
 
     int rc;
     rc = file.open(globals.name, true, true);
@@ -520,7 +577,7 @@ TestFileOps(int file_size, CGlobalItems &globals)
     dur.reset();
     globals.decrement_and_wait(FastWrite);
     if(!globals.quiet) fprintf(stderr, "Writing intelligently...");
-    memset(buf, 0, globals.chunk_size());
+    memset(buf, 0, globals.io_chunk_size());
     globals.timer.start();
     bufindex = 0;
     // for the number of chunks of file data
@@ -530,7 +587,7 @@ TestFileOps(int file_size, CGlobalItems &globals)
         return EXIT_CTRL_C;
       // for each chunk in the Unit
       buf[bufindex]++;
-      bufindex = (bufindex + 1) % globals.chunk_size();
+      bufindex = (bufindex + 1) % globals.io_chunk_size();
       dur.start();
       if(file.write_block(PVOID(buf)) == -1)
         return io_error("write(2)");
@@ -560,7 +617,7 @@ TestFileOps(int file_size, CGlobalItems &globals)
       dur.start();
       if (file.read_block(PVOID(buf)) == -1)
         return 1;
-      bufindex = bufindex % globals.chunk_size();
+      bufindex = bufindex % globals.io_chunk_size();
       buf[bufindex]++;
       bufindex++;
       if (file.seek(-1, SEEK_CUR) == -1)
@@ -654,7 +711,7 @@ int
 TestDirOps(int directory_size, int max_size, int min_size
          , int num_directories, CGlobalItems &globals)
 {
-  COpenTest open_test(globals.chunk_size(), globals.bufSync, globals.doExit);
+  COpenTest open_test(globals.file_chunk_size(), globals.bufSync, globals.doExit);
   if(!directory_size)
   {
     return 0;
@@ -714,13 +771,12 @@ TestDirOps(int directory_size, int max_size, int min_size
 void
 usage()
 {
-  fprintf(stderr,
-    "usage: Bonnie [-d scratch-dir] [-s size(Mb)[:chunk-size(b)]]\n"
-    "              [-n number-to-stat[:max-size[:min-size][:num-directories]]]\n"
-    "              [-m machine-name]\n"
-    "              [-r ram-size-in-Mb]\n"
-    "              [-x number-of-tests] [-u uid-to-use:gid-to-use] [-g gid-to-use]\n"
-    "              [-q] [-f] [-b] [-p processes | -y]\n"
+  fprintf(stderr, "usage:\n"
+    "bonnie++ [-d scratch-dir] [-s size(Mb)[:chunk-size(b)]]\n"
+    "      [-n number-to-stat[:max-size[:min-size][:num-directories[:chunk-size]]]]\n"
+    "      [-m machine-name] [-r ram-size-in-Mb]\n"
+    "      [-x number-of-tests] [-u uid-to-use:gid-to-use] [-g gid-to-use]\n"
+    "      [-q] [-f] [-b] [-p processes | -y]\n"
     "\nVersion: " BON_VERSION "\n");
   exit(1);
 }

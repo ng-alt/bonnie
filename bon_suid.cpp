@@ -10,7 +10,7 @@ int bon_setugid(CPCCHAR userName, CPCCHAR groupName, bool quiet)
   int id = 0;
   uid_t userId = 0;
   gid_t groupId = 0;
-  bool setUser = false, setGroup = false;
+  bool setGroup = false;
   struct passwd *pw;
   struct group *gr;
   if(userName)
@@ -18,7 +18,6 @@ int bon_setugid(CPCCHAR userName, CPCCHAR groupName, bool quiet)
     if(sscanf(userName, "%d", &id) == 1)
     {
       userId = uid_t(id);
-      setUser = true;
       pw = getpwuid(userId);
       if(pw)
       {
@@ -42,7 +41,6 @@ int bon_setugid(CPCCHAR userName, CPCCHAR groupName, bool quiet)
         return 1;
       }
       userId = pw->pw_uid;
-      setUser = true;
       groupId = pw->pw_gid;
       setGroup = true;
     }

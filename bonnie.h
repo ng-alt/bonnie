@@ -1,7 +1,8 @@
 #ifndef BONNIE
 #define BONNIE
 
-#define BON_VERSION "1.91"
+#define BON_VERSION "1.91b"
+#define CSV_VERSION "1.91a"
 
 #include "port.h"
 

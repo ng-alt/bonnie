@@ -2,6 +2,7 @@
 #define BONNIE
 
 #define BON_VERSION "@version@"
+#define CSV_VERSION "@csv_version@"
 
 #include "port.h"
 

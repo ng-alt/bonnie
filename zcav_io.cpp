@@ -78,8 +78,7 @@ int ZcavRead::writeStatus(int fd, char c)
   return 0;
 }
 
-int ZcavRead::read(int max_loops, int max_size, bool wait
-                 , int readCom, int writeCom)
+int ZcavRead::read(int max_loops, int max_size, int writeCom)
 {
   int i;
   bool exiting = false;
@@ -88,7 +87,7 @@ int ZcavRead::read(int max_loops, int max_size, bool wait
     if(lseek(m_fd, 0, SEEK_SET))
     {
       fprintf(stderr, "Can't llseek().\n");
-      writeStatus(writeCom, eEND);
+      writeStatus(writeCom, eSEEK);
       return 1;
     }
     // i is block index
@@ -104,61 +103,27 @@ int ZcavRead::read(int max_loops, int max_size, bool wait
         if(i == 0)
         {
           fprintf(stderr, "Input file \"%s\" too small.\n", m_name);
-          writeStatus(writeCom, eEND);
+          writeStatus(writeCom, eSIZE);
           return 1;
         }
-        m_times[i][0] = 0;
-        break;
-      }
-      if(wait)
-      {
-        if((!max_size || (i+1) < max_size)
-           && (loops == 0 || m_times[i+1][0] != 0))
-        {
-          if(writeStatus(writeCom, eBLOCK))
-            return 1;
-        }
+        nextLoop = true;
       }
       if(loops == 0)
         m_count.push_back(0);
       m_count[i]++;
-      if(wait)
-      {
-        char c;
-        if(::_read(readCom, &c, 1) != 1)
-        {
-          fprintf(stderr, "Read comms channel broken\n");
-          return 1;
-        }
-printf("thread got:%c\n", c);
-        switch (c)
-        {
-        case eEXIT:
-          exiting = true;
-          nextLoop = true;
-        break;
-        case eLOOP:
-          nextLoop = true;
-        break;
-        case eBLOCK:
-        break;
-        default:
-          printf("unexpected character %c\n", c);
-        }
-      }
     } // end loop for reading blocks
-    if(!exiting && wait && writeStatus(writeCom, eLOOP))
+    if(exiting)
       return 1;
-printf("got here!\n");
   } // end loop for multiple disk reads
   fprintf(m_log, "#loops: %d\n", max_loops);
   fprintf(m_log, "#block K/s time\n");
 //  for(i = 0; (!max_size || i < max_size) && m_count[i]; i++)
-  for(i = 0; (unsigned)i < m_count.size(); i++)
+  for(i = 0; m_times[i][0] != -1.0; i++)
   {
     printavg(i, average(m_times[i], m_count[i]), m_block_size);
   }
-  return writeStatus(writeCom, eEND);
+  writeStatus(writeCom, eEND);
+  return 0;
 }
 
 void ZcavRead::printavg(int position, double avg, int block_size)
@@ -220,7 +185,7 @@ double ZcavRead::readmegs()
   {
     int rc = readall(meg);
     if(rc != meg)
-      return 0;
+      return -1.0;
   }
   return m_dur.stop();
 }

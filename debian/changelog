@@ -1,3 +1,54 @@
+bonnie++ (1.91c) unstable; urgency=low
+
+  * Now compiles with GCC 3.0.
+
+  * Stopped it giving a SIGFPE on Alpha and tidied up the relevant code in the
+    results printing.
+
+  * Fixed the CSV output.
+
+  * Fixed a minor warning.
+
+ -- Russell Coker <russell@coker.com.au>  Tue, 6 Mar 2001 18:49:03 +0100
+
+bonnie++ (1.91b) unstable; urgency=low
+
+  * Added an fflush(NULL) to the Sync code to make it display the prompt on
+    buffered devices.
+
+  * Added autoconf check for snprintf().
+
+  * Fixed some minor warnings.
+
+ -- Russell Coker <russell@coker.com.au>  Tue, 6 Mar 2001 20:17:17 +0100
+
+bonnie++ (1.91a) unstable; urgency=low
+
+  * Fixed the -p/-y options.
+
+  * Made -n take "k" suffix for kilobytes for the size and the "m" suffix
+    for creating millions of files.  Also allow specifying the chunk size
+    for small file tests.
+
+  * Changed readme.html to make it more up to date.
+
+  * Made it conflict/provide/replace the bonnie package.  Bonnie++ does
+    everything that bonnie does and fixes some bugs including doing srand()
+    after fork(), and having sensible defaults and detection of RAM installed
+    to avoid meaningless test results.
+    There is no need to have bonnie and bonnie++ installed.
+
+  * Use @exec_prefix@ in autoconf for better standards compliance.
+
+  * Made it possible to specify chunk_size for IO and file tests separately.
+    Added a new field in position 21 in the csv file to record this.  So I
+    changed the compatibility number for the bon_csv2* programs.
+
+  * Removed the "wait" code in zcav which caused all the broken-ness.  It
+    probably didn't gain us much anyway.
+
+ -- Russell Coker <russell@coker.com.au>  Sun, 25 Feb 2001 17:38:49 +0100
+
 bonnie++ (1.91) unstable; urgency=low
 
   * Fixed the bon_csv2html bug that made the columns not line up if different

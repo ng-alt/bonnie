@@ -39,7 +39,8 @@ sub process
   chomp($line);
   $line =~ s/\r//;
   my @arr = split(',', $line);
-  if($arr[0] ne '2')
+  my $csv_version = '@csv_version@';
+  if($arr[0] ne $csv_version)
   {
     printf(STDERR "Can't process: %s\n", $line);
     return;
@@ -58,9 +59,9 @@ sub process
   if(join('', @ioline) ne "")
   {
     $io[$iocount] = $name . "," . join(',', @ioline);
-    if($#arr > 33)
+    if($#arr > 34)
     {
-      $io[$iocount] .= "," . join(',', @arr[33..38]);
+      $io[$iocount] .= "," . join(',', @arr[34..39]);
     }
     $iocount++;
   }
@@ -78,15 +79,19 @@ sub process
   {
     $tmp .= "/" . $arr[20];
   }
-  $arr[20] = $tmp;
+  if($arr[21] ne "")
+  {
+    $tmp .= ":" . $arr[21];
+  }
+  $arr[21] = $tmp;
 # $fileline contains the file creation data - everything but $ioline
-  my @fileline = @arr[20 .. 32];
+  my @fileline = @arr[21 .. 33];
   if(join('', @fileline) ne "")
   {
     $file[$filecount] = $name . "," . join(',', @fileline);
-    if($#arr > 39)
+    if($#arr > 40)
     {
-      $file[$filecount] .= "," . join(',', @arr[39..$#arr]);
+      $file[$filecount] .= "," . join(',', @arr[40..$#arr]);
     }
     $filecount++;
   }

@@ -6,6 +6,7 @@ all: $(EXE) $(EXES)
 SCRIPTS=bon_csv2txt
 
 prefix=@prefix@
+eprefix=@exec_prefix@
 #MORE_WARNINGS=-Weffc++ -Wcast-align
 WFLAGS=-Wall -W -Wshadow -Wpointer-arith -Wwrite-strings -pedantic -ffor-scope $(MORE_WARNINGS)
 CFLAGS=-O2 -DNDEBUG $(WFLAGS) $(MORECFLAGS)
@@ -36,10 +37,10 @@ bon_csv2html: bon_csv2html.cpp
 	$(CXX) bon_csv2html.cpp -o bon_csv2html
 
 install-bin: $(EXE) $(EXES)
-	mkdir -p $(prefix)/bin $(prefix)/sbin
-	@INSTALL_PROGRAM@ @stripping@ $(EXES) $(prefix)/sbin
-	@INSTALL_PROGRAM@ @stripping@ $(EXE) $(prefix)/bin
-	@INSTALL_PROGRAM@ $(SCRIPTS) $(prefix)/bin
+	mkdir -p $(eprefix)/bin $(eprefix)/sbin
+	@INSTALL_PROGRAM@ @stripping@ $(EXES) $(eprefix)/sbin
+	@INSTALL_PROGRAM@ @stripping@ $(EXE) $(eprefix)/bin
+	@INSTALL_PROGRAM@ $(SCRIPTS) $(eprefix)/bin
 
 install: install-bin
 	mkdir -p @mandir@/man1 @mandir@/man8

@@ -21,7 +21,7 @@ version 1 was the type used in Bonnie++ < 1.90.
 Before each field I list the field number as well as the name given in the heading
 .TP
 .B 0 format_version
-Version of the output format in use (2)
+Version of the output format in use (@csv_version@)
 .TP
 .B 1 bonnie_version
 (@version@)
@@ -66,35 +66,38 @@ The minimum size of files for file-creation tests.
 .B 20 num_dirs
 The number of directories for creation of files in multiple directories.
 .TP
-.B 21 seq_create,seq_create_cpu
+.B 21 file_chunk_size
+The size of blocks for writing multiple files.
+.TP
+.B 22 seq_create,seq_create_cpu
 Rate of creating files sequentially files/s,%CPU
 .TP
-.B 23 seq_stat,seq_stat_cpu
+.B 24 seq_stat,seq_stat_cpu
 Rate of reading/stating files sequentially files/s,%CPU
 .TP
-.B 25 seq_del,seq_del_cpu
+.B 26 seq_del,seq_del_cpu
 Rate of deleting files sequentially files/s,%CPU
 .TP
-.B 27 ran_create,ran_create_cpu
+.B 28 ran_create,ran_create_cpu
 Rate of creating files in random order files/s,%CPU
 .TP
-.B 29 ran_stat,ran_stat_cpu
+.B 30 ran_stat,ran_stat_cpu
 Rate of deleting files in random order files/s,%CPU
 .TP
-.B 31 ran_del,ran_del_cpu
+.B 32 ran_del,ran_del_cpu
 Rate of deleting files in random order files/s,%CPU
 .TP
-.B 33 putc_latency,put_block_latency,rewrite_latency
+.B 34 putc_latency,put_block_latency,rewrite_latency
 Latency (maximum amount of time for a single operation) for putc, put_block,
 and reqrite
 .TP
-.B 36 getc_latency,get_block_latency,seeks_latency
+.B 37 getc_latency,get_block_latency,seeks_latency
 Latency for getc, get_block, and seeks
 .TP
-.B 39 seq_create_latency,seq_stat_latency,seq_del_latency
+.B 40 seq_create_latency,seq_stat_latency,seq_del_latency
 Latency for seq_create, seq_stat, and seq_del
 .TP
-.B 42 ran_create_latency,ran_stat_latency,ran_del_latency
+.B 43 ran_create_latency,ran_stat_latency,ran_del_latency
 Latency for ran_create, ran_stat, and ran_del
 .P
 A string that starts with '#' is a comment.

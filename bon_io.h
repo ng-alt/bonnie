@@ -12,7 +12,7 @@ class CFileOp : public Thread
 {
 public:
   CFileOp(BonTimer &timer, int file_size, int chunk_bits, bool use_sync = false);
-  int open(CPCCHAR basename, bool create, bool use_fopen = false);
+  int open(CPCCHAR base_name, bool create, bool use_fopen = false);
   ~CFileOp();
   int write_block_putc();
   int write_block(PVOID buf);
@@ -31,7 +31,7 @@ private:
   virtual int action(PVOID param); // called for seek test
   virtual Thread *newThread(int threadNum);
   CFileOp(int threadNum, CFileOp *parent);
-  int m_open(CPCCHAR basename, int ind, bool create);
+  int m_open(CPCCHAR base_name, int ind, bool create);
 
   BonTimer &m_timer;
   int m_file_size;

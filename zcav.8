@@ -4,7 +4,7 @@ zcav \- program to test raw hard drive throughput.
 
 .SH SYNOPSIS
 .B zcav
-.I [-b block-size] [-c count] [-s max-size] [-w]
+.I [-b block-size] [-c count] [-s max-size]
 .I [-u uid-to-use:gid-to-use] [-g gid-to-use]
 .I [-l log-file] [-f] file-name
 .I [-l log-file [-f] file-name]...
@@ -50,12 +50,6 @@ the number of times to read the entire disk.
 .B -s
 the maximum amount of data (in megs) to read from a disk, useful if you want to
 quickly test the start of a large drive.
-
-.TP
-.B -w
-waiting mode. This means that after reading a block a thread will wait for
-threads reading from other drives. Also the amount of data read from each drive
-will be the same.
 
 .TP
 .B -f

@@ -1,3 +1,4 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <HTML>
 <HEAD><TITLE>Bonnie++ Documentation</TITLE></HEAD>
 <BODY>
@@ -11,19 +12,21 @@ should be used in the program. Tim has graciously given me permission to use
 the name "bonnie++" for my program which is based around his benchmark.<BR>
 Bonnie++ adds the facility to test more than 2G of storage on a 32bit
 machine, and tests for file creat(), stat(), unlink() operations.<BR>
-Also it has the option (via -t csv) to output in CSV spread-sheet format.
+Also it will output in CSV spread-sheet format to standard output. If you use
+the "-q" option for quiet mode then the human-readable version will go to
+stderr so redirecting stdout to a file will get only the csv in the file.
 The program bon_csv2html takes csv format data on stdin and writes a HTML
 file on standard output which has a nice display of all the data. The program
 bon_csv2txt takes csv format data on stdin and writes a formatted plain text
 version on stdout, this was originally written to work with 80 column braille
-displays, but can also work well in email.<P></LI>
+displays, but can also work well in email.<BR></LI>
 <LI><B>A note on blocking writes</B><BR>
 I have recently added a <B>-b</B> option to cause a fsync() after every
 write (and a fsync() of the directory after file create or delete). This is
 what you probably want to do if testing performance of mail or database
 servers as they like to sync everything. The default is to allow write-back
 caching in the OS which is what you want if testing performance for copying
-files, compiling, etc.<P></LI>
+files, compiling, etc.<BR></LI>
 <LI><B>Waiting for semaphores</B><BR>
 There is often a need to test multiple types of IO at the same time. This is
 most important for testing RAID arrays where you will almost never see full
@@ -46,7 +49,7 @@ of Waterloo.<BR>
 It initially performs a series of tests on a file (or files) of known size.
 By default, that size is 200 Mb (but that's not enough - see below). For
 each test, Bonnie reports the number of Kilo-bytes processed per elapsed
-second, and the % CPU usage (sum of user and system). If a size >1G is
+second, and the % CPU usage (sum of user and system). If a size &gt;1G is
 specified then we will use a number of files of size 1G or less. This way
 we can use a 32bit program to test machines with 8G of RAM! NB I have not
 yet tested more than 2100M of file storage. If you test with larger storage
@@ -56,7 +59,7 @@ that are common bottlenecks on large Squid and INN servers, and machines with
 tens of thousands of mail files in /var/spool/mail.<BR>
 In each case, an attempt is made to keep optimizers from noticing it's
 all bogus. The idea is to make sure that these are real transfers to/from
-user space to the physical disk.</LI><P>
+user space to the physical disk.<P></LI>
 <LI><B>Test Details</B><BR>
 <UL><LI>The file IO tests are:
 <OL>
@@ -149,8 +152,8 @@ stat()ed it's data will be read.
 (tbray@textuality.com)</A>, 1990.<BR>
 * Copyright &copy; <A HREF="MAILTO:russell@coker.com.au">Russell Coker
 (russell@coker.com.au)</A> 1999.<P>
-I have updated the program, added support for >2G on 32bit machines, and tests
-for file creation.<BR>
+I have updated the program, added support for &gt;2G on 32bit machines, and
+tests for file creation.<BR>
 Licensed under the GPL version 2.0.
 </LI><LI>
 <B>DISCLAIMER</B><BR>

@@ -5,7 +5,7 @@ bonnie++ \- program to test hard drive performance.
 .SH SYNOPSIS
 .B bonnie++
 .I [-d dir] [-s size(Mb)[:chunk-size(b)]]
-.I [-n number-to-stat(*1024)[:max-size[:min-size][:num-directories]]]
+.I [-n number-to-stat(*1024)[:max-size[:min-size][:num-directories[:chunk-size]]]]
 .I [-m machine-name] [-r ram-size-in-Mb] [-x number-of-tests]
 .I [-u uid-to-use:gid-to-use] [-g gid-to-use]
 .I [-q] [-f size-for-char-io] [-b] [-p processes | -y p|s ]
@@ -60,7 +60,7 @@ If the specified number is 0 then this test will be skipped.
 
 The default for this test is to test with 0 byte files. To use files of other
 sizes you can specify
-.B number:max:min:num-directories
+.B number:max:min:num-directories:chunk-size
 where
 .B max
 is the maximum size and

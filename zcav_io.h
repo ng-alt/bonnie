@@ -4,16 +4,15 @@
 
 #include "bonnie.h"
 #include "duration.h"
-#ifdef WIN32
+#ifndef OS2
 using namespace std;
 #endif
 
 enum results
 {
-  eEND = 'e',
-  eBLOCK = 'b',
-  eLOOP = 'l',
-  eEXIT = 'z'
+  eEND = 0,
+  eSEEK = 1,
+  eSIZE = 2
 };
 
 // Returns the mean of the values in the array.  If the array contains
@@ -31,7 +30,7 @@ public:
 
   int open(bool *finished, int block_size, const char *file, const char *log);
   void close();
-  int read(int max_loops, int max_size, bool wait, int readCom, int writeCom);
+  int read(int max_loops, int max_size, int writeCom);
 
 private:
   ssize_t readall(int count);
