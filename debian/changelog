@@ -1,3 +1,16 @@
+bonnie++ (1.02a) unstable; urgency=low
+
+  * Removed optind=0, which caused problems on BSD.
+
+ -- Russell Coker <russell@coker.com.au>  Tue,  6 Nov 2001 17:23:00 +0100
+
+bonnie++ (1.02-1) unstable; urgency=low
+
+  * Updated to latest debian standards version and follow the latest Debian
+    policy on stripping and debug generation.
+
+ -- Russell Coker <russell@coker.com.au>  Sat,  6 Oct 2001 19:06:39 +0200
+
 bonnie++ (1.02) unstable; urgency=low
 
   * Fixed the cause of a minor warning on AIX.

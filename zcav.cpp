@@ -44,7 +44,6 @@ int main(int argc, char *argv[])
 
   char *userName = NULL, *groupName = NULL;
   int c;
-  optind = 0;
   while(-1 != (c = getopt(argc, argv, "-c:b:f:g:u:")) )
   {
     switch(char(c))

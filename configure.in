@@ -1,16 +1,29 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(bonnie++.cpp)
 AC_SUBST(version)
-version="1.02"
+version="1.02a"
 
+AC_SUBST(stripping)
 AC_ARG_ENABLE(stripping,
       [  --disable-stripping  disables stripping of installed binaries],
       STRIPPING=$strippingval, STRIPPING=no)
-AC_SUBST(stripping)
 if [[ ! "$STRIPPING" = "no" ]]; then
   stripping=""
 else
   stripping="-s"
+fi
+echo $DEB_BUILD_OPTIONS | grep -q nostrip
+if [[ "$?" = "0" ]]; then
+  stripping=""
+fi
+
+AC_SUBST(debug)
+AC_ARG_ENABLE(debug,
+      [  --with-debug  enables debug code generation for binaries],
+      debug=-g, debug="")
+echo $DEB_BUILD_OPTIONS | grep -q debug
+if [[ "$?" = "0" ]]; then
+  debug=-g
 fi
 
 dnl Checks for programs.

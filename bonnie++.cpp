@@ -172,7 +172,6 @@ int main(int argc, char *argv[])
 #endif
 
   int int_c;
-  optind = 0;
   while(-1 != (int_c = getopt(argc, argv, "bd:fg:m:n:p:qr:s:u:x:y")) )
   {
     switch(char(int_c))
