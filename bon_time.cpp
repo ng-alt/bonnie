@@ -84,14 +84,14 @@ BonTimer::cpu_so_far()
     ((double) tms.tms_stime) / ((double) CLK_TCK);
 
 #else
-  struct rusage rusage;
+  struct rusage res_usage;
 
-  getrusage(RUSAGE_SELF, &rusage);
+  getrusage(RUSAGE_SELF, &res_usage);
   return
-    double(rusage.ru_utime.tv_sec) +
-      (double(rusage.ru_utime.tv_usec) / 1000000.0) +
-        double(rusage.ru_stime.tv_sec) +
-          (double(rusage.ru_stime.tv_usec) / 1000000.0);
+    double(res_usage.ru_utime.tv_sec) +
+      (double(res_usage.ru_utime.tv_usec) / 1000000.0) +
+        double(res_usage.ru_stime.tv_sec) +
+          (double(res_usage.ru_stime.tv_usec) / 1000000.0);
 #endif
 #endif
 }
@@ -213,7 +213,7 @@ int BonTimer::print_seek_stat(tests_t test)
     else if(m_delta[test].Elapsed < 1.0)
       fprintf(m_fp, ",+++++");
     else
-      fprintf(m_fp, ",%4.1f", seek_stat);
+      fprintf(m_fp, ",%.1f", seek_stat);
   }
   print_cpu_stat(test);
   return 0;
@@ -293,11 +293,12 @@ BonTimer::DoReport(CPCCHAR machine, int file_size, int directory_size
       else
         sprintf(size_buf, "%d:%d", m_file_size, m_chunk_size);
     }
-    char buf[20];
+    char buf[4096];
     if(m_type == txt)
     {
       // copy machine name to buf
       snprintf(buf, sizeof(buf) - 1, "%s               ", machine);
+      buf[sizeof(buf) - 1] = '\0';
       // set cur to point to a byte past where we end the machine name
       // size of the buf - size of the new data - 1 for the space - 1 for the
       // terminating zero on the string
@@ -308,7 +309,8 @@ BonTimer::DoReport(CPCCHAR machine, int file_size, int directory_size
     }
     else
     {
-      sprintf(buf, "%s,%s", machine, size_buf);
+      snprintf(buf, sizeof(buf) - 1, "%s,%s", machine, size_buf);
+      buf[sizeof(buf) - 1] = '\0';
     }
     fputs(buf, m_fp);
     print_io_stat(Putc);

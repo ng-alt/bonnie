@@ -10,7 +10,6 @@
 #include <string.h>
 #include <stdlib.h>
 #include <sys/stat.h>
-#include <assert.h>
 
 #include "bon_file.h"
 #include "bon_time.h"
@@ -18,15 +17,16 @@
 CPCCHAR rand_chars = "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 
-COpenTest::COpenTest(int chunk_size, bool sync)
+COpenTest::COpenTest(int chunk_size, bool use_sync)
  : m_chunk_size(chunk_size)
+ , m_buf(new char[m_chunk_size])
 {
   m_number = 0;
   m_number_directories = 1;
   m_dirname = NULL;
   m_file_name_buf = NULL;
   m_file_names = NULL;
-  m_sync = sync;
+  m_sync = use_sync;
   m_directoryHandles = NULL;
   m_dirIndex = NULL;
 }
@@ -80,6 +80,7 @@ COpenTest::~COpenTest()
   delete m_file_name_buf;
   delete m_file_names;
   delete m_dirIndex;
+  delete m_buf;
 }
 
 void COpenTest::make_names(bool do_random)
@@ -244,22 +245,21 @@ int COpenTest::create(CPCCHAR dirname, BonTimer &timer, int num, int max_size
     return -1;
   }
   int i;
-  char buf[m_chunk_size];
   if(m_sync)
     m_directoryHandles = new FILE_TYPE[num_directories];
   if(num_directories > 1)
   {
     for(i = 0; i < num_directories; i++)
     {
-      sprintf(buf, "%03d", i);
-      if(make_directory(buf))
+      sprintf(m_buf, "%03d", i);
+      if(make_directory(m_buf))
       {
-        fprintf(stderr, "Can't make directory %s\n", buf);
+        fprintf(stderr, "Can't make directory %s\n", m_buf);
         return -1;
       }
       if(m_sync)
       {
-        m_directoryHandles[i] = open(buf, O_RDONLY);
+        m_directoryHandles[i] = open(m_buf, O_RDONLY);
         if(m_directoryHandles[i] == -1)
         {
           fprintf(stderr, "Can't get directory handle.\n");
@@ -286,7 +286,7 @@ int COpenTest::create(CPCCHAR dirname, BonTimer &timer, int num, int max_size
     {
       if(i == 0)
       {
-        if(create_a_file(m_file_names[0], buf, 0, m_dirIndex ? m_dirIndex[0] : 0))
+        if(create_a_file(m_file_names[0], m_buf, 0, m_dirIndex ? m_dirIndex[0] : 0))
           return -1;
       }
       else
@@ -303,7 +303,7 @@ int COpenTest::create(CPCCHAR dirname, BonTimer &timer, int num, int max_size
         size = m_min + (rand() % (m_size_range + 1));
       else
         size = m_max;
-      if(create_a_file(m_file_names[i], buf, size, m_dirIndex ? m_dirIndex[i] : 0))
+      if(create_a_file(m_file_names[i], m_buf, size, m_dirIndex ? m_dirIndex[i] : 0))
         return -1;
     }
   }
@@ -475,17 +475,16 @@ int COpenTest::stat_file(CPCCHAR file)
       fprintf(stderr, "Can't open file %s\n", file);
       return -1;
     }
-    char buf[m_chunk_size];
     for(int i = 0; i < st.st_size; i += m_chunk_size)
     {
       int to_read = st.st_size - i;
       if(to_read > m_chunk_size) to_read = m_chunk_size;
 #ifdef OS2
       ULONG actual = 0;
-      rc = DosRead(fd, PVOID(buf), to_read, &actual);
+      rc = DosRead(fd, PVOID(m_buf), to_read, &actual);
       if(to_read != actual || rc)
 #else
-      if(to_read != read(fd, static_cast<void *>(buf), to_read))
+      if(to_read != read(fd, static_cast<void *>(m_buf), to_read))
 #endif
       {
         fprintf(stderr, "Can't read data.\n");

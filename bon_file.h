@@ -10,7 +10,7 @@ typedef unsigned long MASK_TYPE;
 class COpenTest
 {
 public:
-  COpenTest(int chunk_size, bool sync = false);
+  COpenTest(int chunk_size, bool use_sync);
   ~COpenTest();
 
   int create(CPCCHAR dirname, BonTimer &timer, int num, int max_size
@@ -38,6 +38,7 @@ private:
   bool m_sync; // do we sync after every significant operation?
   FILE_TYPE *m_directoryHandles; // handles to the directories for m_sync
   int *m_dirIndex; // which directory we are in
+  char *m_buf;
 
   void random_sort();
 

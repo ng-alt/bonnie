@@ -9,8 +9,8 @@ class BonTimer;
 class CFileOp
 {
 public:
-  CFileOp(BonTimer &timer, int file_size, int chunk_bits, bool sync = false);
-  int open(CPCCHAR basename, bool create, bool fopen = false);
+  CFileOp(BonTimer &timer, int file_size, int chunk_bits, bool use_sync = false);
+  int open(CPCCHAR basename, bool create, bool use_fopen = false);
   ~CFileOp();
   int write_block_putc();
   int write_block(PVOID buf);
@@ -18,10 +18,12 @@ public:
   int read_block(PVOID buf);
   int seek(int offset, int whence);
   int doseek(long where, bool update);
-  int seek_test(int threads, int seeks, bool quiet, Semaphore &sem);
+  int seek_test(bool quiet, Semaphore &s);
   void close();
-  int reopen(bool create, bool fopen = false);
-  BonTimer &timer() { return m_timer; }
+  // reopen a file, bools for whether the file should be unlink()'d and
+  // creat()'d and for whether fopen should be used
+  int reopen(bool create, bool use_fopen = false);
+  BonTimer &getTimer() { return m_timer; }
   int chunks() const { return m_total_chunks; }
 private:
   int m_open(CPCCHAR basename, int ind, bool create);
@@ -44,6 +46,7 @@ private:
   CFileOp(const CFileOp &f);
   CFileOp & operator =(const CFileOp &f);
   bool m_sync;
+  char *m_buf;
 };
 
 

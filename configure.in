@@ -19,6 +19,20 @@ if [[ -n "$semun" ]]; then
    semun="#define SEMUN_IN_SEM_H"
 fi
 
+dnl AC_SUBST(o_large_file)
+dnl AC_TRY_COMPILE([#include <sys/types.h>
+dnl #include <sys/stat.h>
+dnl #include <fcntl.h>
+dnl ] , [ int fd = open("foo", O_WRONLY | O_LARGEFILE);
+dnl ] , o_large_file="yes")
+dnl 
+dnl if [[ "$o_large_file" = "yes" ]] ; then
+dnl   o_large_file="#define USE_LARGE_FILE | O_LARGEFILE"
+dnl else
+dnl   o_large_file="#define USE_LARGE_FILE"
+dnl fi
+
+
 dnl Checks for library functions.
 
 AC_OUTPUT(Makefile bonnie.h)

@@ -1,210 +1,222 @@
-#include <stdio.h>
 #include <unistd.h>
-#include <sys/time.h>
-#include <sys/resource.h>
-#include <time.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <stdlib.h>
-#include "bonnie.h"
 
-// Read the specified number of megabytes of data from the fd and return the
-// amount of time elapsed in seconds.
-double readmegs(int fd, int size, char *buf);
+#include "zcav_io.h"
+#include "thread.h"
 
-// Returns the mean of the values in the array.  If the array contains
-// more than 2 items then discard the highest and lowest thirds of the
-// results before calculating the mean.
-double average(double *array, int count);
-void printavg(int position, double avg, int block_size);
-
-const int meg = 1024*1024;
-const int max_blocks = 10000;
-typedef double *PDOUBLE;
+#define TOO_MANY_LOOPS 100
 
 void usage()
 {
-  printf("Usage: zcav file-name [count] [block-size]\n"
+  fprintf(stderr
+       , "Usage: zcav [-b block-size] [-c count] [-s max-size] [-w]\n"
+         "            [-l log-file] [-f] file-name\n"
+         "            [-l log-file [-f] file-name]...\n"
+         "\n"
          "File name of \"-\" means standard input\n"
          "Count is the number of times to read the data (default 1).\n"
+         "Max size is the amount of data to read from each device.\n"
+         "-w means to wait until all devices have read a block before reading the next.\n"
+         "\n"
          "Version: " BON_VERSION "\n");
   exit(1);
 }
 
+class MultiZcav : public Thread
+{
+public:
+  MultiZcav();
+  MultiZcav(int threadNum, const MultiZcav *parent);
+  virtual ~MultiZcav();
+
+  virtual int action(PVOID param);
+
+  int runit();
+
+  void setFileLogNames(const char *file, const char *log)
+  {
+    m_fileNames.push_back(file);
+    m_logNames.push_back(log);
+    m_readers->push_back(new ZcavRead);
+  }
+
+  void setBlockSize(int block_size)
+  {
+    m_block_size = block_size;
+    if(m_block_size < 1)
+      usage();
+  }
+
+  void setLoops(int max_loops)
+  {
+    m_max_loops = max_loops;
+    if(max_loops < 1 || max_loops > TOO_MANY_LOOPS)
+      usage();
+  }
+
+  void setMaxSize(int max_size)
+  {
+    m_max_size = max_size;
+    if(max_size < 1)
+      usage();
+  }
+
+  void setWait() { m_wait = true; }
+
+private:
+  virtual Thread *newThread(int threadNum)
+                  { return new MultiZcav(threadNum, this); }
+
+  vector<const char *> m_fileNames, m_logNames;
+  vector<ZcavRead *> *m_readers;
+
+  int m_block_size, m_max_loops, m_max_size;
+  bool m_wait;
+};
+
+MultiZcav::MultiZcav()
+{
+  m_block_size = 100;
+  m_max_loops = 1;
+  m_max_size = 0;
+  m_wait = false;
+  m_readers = new vector<ZcavRead *>;
+}
+
+MultiZcav::MultiZcav(int threadNum, const MultiZcav *parent)
+ : Thread(threadNum, parent)
+ , m_readers(parent->m_readers)
+ , m_block_size(parent->m_block_size)
+ , m_max_loops(parent->m_max_loops)
+ , m_max_size(parent->m_max_size)
+ , m_wait(parent->m_wait)
+{
+}
+
+int MultiZcav::action(PVOID)
+{
+  ZcavRead *zc = (*m_readers)[getThreadNum() - 1];
+  int rc = zc->read(m_max_loops, m_max_size / m_block_size, m_wait
+                  , m_read, m_write);
+  zc->close();
+  char c = eEXIT;
+  Write(&c, 1, 0);
+  return rc;
+}
+
+MultiZcav::~MultiZcav()
+{
+  if(getThreadNum() < 1)
+  {
+    while(m_readers->size())
+    {
+      delete m_readers->back();
+      m_readers->pop_back();
+    }
+    delete m_readers;
+  }
+}
+
+int MultiZcav::runit()
+{
+  unsigned int i;
+  unsigned int num_threads = m_fileNames.size();
+  if(num_threads < 1)
+    usage();
+  for(i = 0; i < num_threads; i++)
+  {
+    if((*m_readers)[i]->open(NULL, m_block_size, m_fileNames[i], m_logNames[i]))
+    {
+      return 1;
+    }
+  }
+  go(NULL, num_threads);
+  char c;
+  if(m_wait)
+  {
+    char *buf = new char[num_threads];
+    bool end = false;
+    while(num_threads)
+    {
+      bool loop = false;
+      for(i = 0; i < num_threads; i++)
+      {
+        if(Read(&c, 1, 0) != 1) return 1;
+printf("read data - threads:%d, char:%c\n", num_threads, c);
+        switch (c)
+        {
+        case eLOOP:
+          if(!end)
+            loop = true;
+        break;
+        case eEND:
+          end = true;
+        break;
+        case eEXIT:
+          end = true;
+          num_threads--;
+        break;
+        }
+      }
+      if(end)
+        memset(buf, eEXIT, num_threads);
+      else if(loop)
+        memset(buf, eLOOP, num_threads);
+      else
+        memset(buf, eBLOCK, num_threads);
+printf("writing:%c\n", *buf);
+      if(Write(buf, (int)num_threads) != (int)num_threads)
+        return 1;
+    }
+  }
+  else while(num_threads)
+  {
+    if(Read(&c, 1, 0) != 1)
+      printf("can't read!\n");
+    if(c == eEXIT)
+      num_threads--;
+  }
+  return 0;
+}
+
 int main(int argc, char *argv[])
 {
-  double **times = NULL;
-  int count[max_blocks];
-  int block_size = 100;
+  MultiZcav mz;
 
-  if(argc < 2 || argc > 4)
-    usage();
-  int max_loops = 1;
-
-  if(argc >= 3)
-    max_loops = atoi(argv[2]);
-  if(argc == 4)
-    block_size = atoi(argv[3]);
-
-  if(max_loops < 1 || block_size < 1)
+  if(argc < 2)
     usage();
 
-  int i;
-  if(max_loops > 1)
+  int c;
+  const char *log = "-";
+  while(-1 != (c = getopt(argc, argv, "-c:b:f:l:s:w")) )
   {
-    times = new PDOUBLE[max_loops];
-    for(i = 0; i < max_loops; i++)
-      times[i] = new double[max_blocks];
-    for(i = 0; i < max_blocks; i++)
+    switch(char(c))
     {
-      times[0][i] = 0.0;
-      count[i] = 0;
+      case 'b':
+        mz.setBlockSize(atoi(optarg));
+      break;
+      case 'c':
+        mz.setLoops(atoi(optarg));
+      break;
+      case 'l':
+        log = optarg;
+      break;
+      case 's':
+        mz.setMaxSize(atoi(optarg));
+      break;
+      case 'w':
+        mz.setWait();
+      break;
+      case 'f':
+      case char(1):
+        mz.setFileLogNames(optarg, log);
+        log = "-";
+      break;
+      default:
+        usage();
     }
   }
-  char *buf = new char[meg];
-  int fd;
-  if(strcmp(argv[1], "-"))
-  {
-    fd = open(argv[1], O_RDONLY);
-    if(fd == -1)
-    {
-      printf("Can't open %s\n", argv[1]);
-      return 1;
-    }
-  }
-  else
-  {
-    fd = 0;
-  }
-  if(max_loops > 1)
-  {
-    for(int loops = 0; loops < max_loops; loops++)
-    {
-      if(lseek(fd, 0, SEEK_SET))
-      {
-        printf("Can't llseek().\n");
-        return 1;
-      }
-      for(i = 0; times[0][i] != -1.0; i += block_size)
-      {
-        double read_time = readmegs(fd, block_size, buf);
-        times[loops][i] += read_time;
-        if(read_time < 0.0)
-        {
-          if(i == 0)
-          {
-            fprintf(stderr, "Input file too small.\n");
-            return 1;
-          }
-          times[0][i] = -1.0;
-          break;
-        }
-        count[i]++;
-      }
-    }
-    printf("loops: %d\n", max_loops);
-    double *item_times = new double[max_loops];
-    for(i = 0; count[i]; i += block_size)
-    {
-      for(int j = 0; j < max_loops; j++)
-        item_times[j] = times[j][i];
-      printavg(i, average(item_times, count[i]), block_size);
-    }
-  }
-  else
-  {
-    for(i = 0; 1; i += block_size)
-    {
-      double read_time = readmegs(fd, block_size, buf);
-      if(read_time < 0.0)
-        break;
-      printavg(i, read_time, block_size);
-    }
-    if(i == 0)
-    {
-      fprintf(stderr, "Input file too small.\n");
-      return 1;
-    }
-  }
-  return 0;
+
+  return mz.runit();
 }
 
-void printavg(int position, double avg, int block_size)
-{
-  double num_k = double(block_size * 1024);
-  if(avg < 1.0)
-    printf("%d %f \n", position, avg);
-  else
-    printf("%d %f %d\n", position, avg, int(num_k / avg));
-}
-
-int compar(const void *a, const void *b)
-{
-  double *c = static_cast<double *>(a);
-  double *d = static_cast<double *>(b);
-  if(*c < *d) return -1;
-  if(*c > *d) return 1;
-  return 0;
-}
-
-// Returns the mean of the values in the array.  If the array contains
-// more than 2 items then discard the highest and lowest thirds of the
-// results before calculating the mean.
-double average(double *array, int count)
-{
-  qsort(array, count, sizeof(double), compar);
-  int skip = count / 3;
-  int arr_items = count - (skip * 2);
-  double total = 0.0;
-  for(int i = skip; i < (count - skip); i++)
-  {
-    total += array[i];
-  }
-  return total / arr_items;
-}
-
-// just like the read() system call but takes a (char *) and will not return
-// a partial result.
-ssize_t readall(int fd, char *buf, size_t count)
-{
-  ssize_t total = 0;
-  while(total != static_cast<ssize_t>(count) )
-  {
-    ssize_t rc = read(fd, &buf[total], count - total);
-    if(rc == -1 || rc == 0)
-      return -1;
-    total += rc;
-  }
-  return total;
-}
-
-// Read the specified number of megabytes of data from the fd and return the
-// amount of time elapsed in seconds.
-double readmegs(int fd, int size, char *buf)
-{
-  struct timeval tp;
- 
-  if (gettimeofday(&tp, static_cast<struct timezone *>(NULL)) == -1)
-  {
-    printf("Can't get time.\n");
-    return -1.0;
-  }
-  double start = double(tp.tv_sec) +
-    (double(tp.tv_usec) / 1000000.0);
-
-  for(int i = 0; i < size; i++)
-  {
-    int rc = readall(fd, buf, meg);
-    if(rc != meg)
-      return -1.0;
-  }
-  if (gettimeofday(&tp, static_cast<struct timezone *>(NULL)) == -1)
-  {
-    printf("Can't get time.\n");
-    return -1.0;
-  }
-  return (double(tp.tv_sec) + (double(tp.tv_usec) / 1000000.0))
-        - start;
-}
 

@@ -3,30 +3,24 @@ all: bonnie++
 
 SCRIPTS=bon_csv2html bon_csv2txt
 EXES=bonnie++ zcav
-#PPC=-mno-powerpc -mno-power
 
-#OS2=yes
+CXX=@CXX@ -O2 -g -Wall -W -Wshadow -Wpointer-arith -Wcast-align -Wwrite-strings -DNDEBUG
 
-ifdef OS2
-CXX=icc /G4 /Gm+ /Gl+ /O+ /Oi+ /Ol+ -DOS2 /Q+
-else
-CXX=@CXX@ -O2 -g -Wall
-endif
+BONSRC=bon_io.cpp bon_file.cpp bon_time.cpp semaphore.cpp forkit.cpp
+BONOBJS=$(BONSRC:.cpp=.o)
 
-SOURCE=bon_io.cpp bon_file.cpp bon_time.cpp forkit.cpp semaphore.cpp
-ifdef OS2
-OBJS=$(SOURCE:.cpp=.obj)
-else
-OBJS=$(SOURCE:.cpp=.o)
-endif
+ZCAVSRC=thread.cpp zcav_io.cpp
+ZCAVOBJS=$(ZCAVSRC:.cpp=.o)
+
+ALLOBJS=$(BONOBJS) $(ZCAVOBJS)
 
 all: $(EXES)
 
-bonnie++: bonnie++.cpp $(OBJS)
-	$(CXX) bonnie++.cpp -o bonnie++ $(OBJS) $(LFLAGS)
+bonnie++: bonnie++.cpp $(BONOBJS)
+	$(CXX) bonnie++.cpp -o bonnie++ $(BONOBJS) $(LFLAGS)
 
-zcav: zcav.cpp
-	$(CXX) zcav.cpp -o zcav $(LFLAGS)
+zcav: zcav.cpp $(ZCAVOBJS)
+	$(CXX) zcav.cpp -o zcav $(ZCAVOBJS) $(LFLAGS) -lpthread
 
 install: $(EXES)
 	mkdir -p $(DESTDIR)/usr/bin $(DESTDIR)/usr/sbin
@@ -34,16 +28,13 @@ install: $(EXES)
 	cp $(SCRIPTS) $(DESTDIR)/usr/bin
 	cp zcav bonnie++ $(DESTDIR)/usr/sbin
 
-ifdef OS2
-%.obj: %.cpp %.h bonnie.h
-else
 %.o: %.cpp %.h bonnie.h
-endif
 	$(CXX) -c $<
 
 clean:
-	rm -f $(EXES) $(OBJS) config.log
+	rm -f $(EXES) $(ALLOBJS) config.log
 	rm -rf build-stamp install-stamp debian/tmp err out
 
 realclean: clean
-	rm -f config.* Makefile bonnie.h
+	rm -f config.* Makefile bonnie.h debian/postinst.debhelper
+	rm -f debian/prerm.debhelper debian/substvars debian/files

@@ -1,6 +1,7 @@
 #include "semaphore.h"
 #include <stdio.h>
 #include <errno.h>
+#include <unistd.h>
 
 Semaphore::Semaphore(int semKey, int numSems, int val)
 {
