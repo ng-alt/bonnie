@@ -187,11 +187,11 @@ int BonTimer::print_stat(tests_t test)
     }
     else
     {
-      double stat = double(m_file_size) / (m_delta[test].Elapsed / 1024.0);
+      int res = int(double(m_file_size) / (m_delta[test].Elapsed / 1024.0));
       if(m_type == txt)
-        fprintf(m_fp, " %5d", int(stat));
+        fprintf(m_fp, " %5d", res);
       else
-        fprintf(m_fp, ",%d", int(stat));
+        fprintf(m_fp, ",%d", res);
     }
   }
   return print_cpu_stat(test);
@@ -215,12 +215,12 @@ int BonTimer::print_file_stat(tests_t test)
   }
   else
   {
-    int stat = int(double(m_directory_size) * double(DirectoryUnit)
+    int res = int(double(m_directory_size) * double(DirectoryUnit)
                 / m_delta[test].Elapsed);
     if(m_type == txt)
-      fprintf(m_fp, " %5d", stat);
+      fprintf(m_fp, " %5d", res);
     else
-      fprintf(m_fp, ",%d", stat);
+      fprintf(m_fp, ",%d", res);
   }
 
   return print_cpu_stat(test);

@@ -172,6 +172,7 @@ int main(int argc, char *argv[])
 #endif
 
   int int_c;
+  optind = 0;
   while(-1 != (int_c = getopt(argc, argv, "bd:fg:m:n:p:qr:s:u:x:y")) )
   {
     switch(char(int_c))
@@ -330,7 +331,12 @@ int main(int argc, char *argv[])
      && (directory_max_size < directory_min_size || directory_max_size < 0
      || directory_min_size < 0) )
     usage();
-  if(file_size > IOFileSize * MaxIOFiles || file_size > (1 << (31 - 20 + globals.chunk_bits)) )
+  /* If the storage size is too big for the maximum number of files (1000G) */
+  if(file_size > IOFileSize * MaxIOFiles)
+    usage();
+  /* If the file size is so large and the chunk size is so small that we have
+   * more than 2G of chunks */
+  if(globals.chunk_bits < 20 && file_size > (1 << (31 - 20 + globals.chunk_bits)) )
     usage();
   // if doing more than one test run then we print a header before the
   // csv format output.

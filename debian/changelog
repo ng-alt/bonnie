@@ -1,3 +1,20 @@
+bonnie++ (1.02) unstable; urgency=low
+
+  * Fixed the cause of a minor warning on AIX.
+
+ -- Russell Coker <russell@coker.com.au>  Wed, 19 Sep 2001 17:05:01 +0200
+
+bonnie++ (1.01d) unstable; urgency=low
+
+  * Fixed a bug where bonnie++ would SEGV if ^C was pressed at the start of the
+    file creation tests.
+
+  * Clarified the -r option to bonnie++ in the man page.
+
+  * Minor fix to command line checking for chunk size.  Now works for 1M chunks.
+
+ -- Russell Coker <russell@coker.com.au>  Thu, 26 Jul 2001 21:46:18 +0200
+
 bonnie++ (1.01c) unstable; urgency=low
 
   * Made the -d option to bonnie++ work with relative paths.  Now it does

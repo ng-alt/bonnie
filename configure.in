@@ -1,7 +1,7 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(bonnie++.cpp)
 AC_SUBST(version)
-version="1.01b"
+version="1.02"
 
 AC_ARG_ENABLE(stripping,
       [  --disable-stripping  disables stripping of installed binaries],

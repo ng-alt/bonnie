@@ -60,9 +60,10 @@ COpenTest::~COpenTest()
   if(m_dirname)
   {
     fprintf(stderr, "Cleaning up test directory after error.\n");
-    for(i = 0; i < m_number; i++)
+    if(m_file_names)
     {
-      unlink(m_file_names[i]);
+      for(i = 0; i < m_number; i++)
+        unlink(m_file_names[i]);
     }
     if(m_number_directories > 1)
     {
