@@ -12,6 +12,7 @@ CFLAGS=-O2 @debug@ -DNDEBUG $(WFLAGS) $(MORECFLAGS)
 CXX=@CXX@ $(CFLAGS)
 
 INSTALL=@INSTALL@
+INSTALL_PROGRAM=@INSTALL_PROGRAM@
 
 BONSRC=bon_io.cpp bon_file.cpp bon_time.cpp semaphore.cpp forkit.cpp \
  bon_suid.cpp
@@ -34,7 +35,7 @@ zcav: zcav.cpp $(ZCAVOBJS)
 install-bin: $(EXES)
 	mkdir -p $(eprefix)/bin $(eprefix)/sbin
 	@INSTALL_PROGRAM@ @stripping@ $(EXES) $(eprefix)/sbin
-	@INSTALL_PROGRAM@ $(SCRIPTS) $(eprefix)/bin
+	@INSTALL_SCRIPT@ $(SCRIPTS) $(eprefix)/bin
 
 install: install-bin
 	mkdir -p @mandir@/man1 @mandir@/man8

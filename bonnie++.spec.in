@@ -4,8 +4,13 @@ Version: @version@
 Release: 1
 Copyright: GPL
 Group: Utilities/Benchmarking
-Source: http://www.coker.com.au/bonnie++/bonnie++%{version}.tgz 
+URL: http://www.coker.com.au/bonnie++
+Source: http://www.coker.com.au/bonnie++/bonnie++-%{version}.tgz 
 BuildRoot: /tmp/%{name}-buildroot
+Prefixes: %{_prefix} %{_datadir}
+Requires: glibc >= 2.1
+Requires: perl >= 5.0
+BuildRequires: glibc-devel >= 2.1
 
 %description
 Bonnie++ is a benchmark suite that is aimed at performing a number of simple
@@ -15,16 +20,12 @@ tests of hard drive and file system performance.
 %setup -q
 
 %build
-./configure --prefix=${RPM_BUILD_ROOT}
-make 
+./configure --prefix=$RPM_BUILD_ROOT%{_prefix} --mandir=$RPM_BUILD_ROOT%{_mandir}
+make
 
 %install
 rm -rf $RPM_BUILD_ROOT
-DESTDIR=${RPM_BUILD_ROOT} make install
-install -d ${RPM_BUILD_ROOT}/usr/man/man8
-install -d ${RPM_BUILD_ROOT}/usr/man/man1
-install -m 644 *.8 $RPM_BUILD_ROOT/usr/man/man8
-install -m 644 *.1 $RPM_BUILD_ROOT/usr/man/man1
+make install
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -33,14 +34,14 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root)
 %doc changelog.txt readme.html
 
-/usr/sbin/bonnie++
-/usr/sbin/zcav
-/usr/bin/bon_csv2html
-/usr/bin/bon_csv2txt
-/usr/man/man1/bon_csv2html.1
-/usr/man/man1/bon_csv2txt.1
-/usr/man/man8/bonnie++.8
-/usr/man/man8/zcav.8
+%{_prefix}/sbin/bonnie++
+%{_prefix}/sbin/zcav
+%{_prefix}/bin/bon_csv2html
+%{_prefix}/bin/bon_csv2txt
+%{_prefix}/man/man1/bon_csv2html.1
+%{_prefix}/man/man1/bon_csv2txt.1
+%{_prefix}/man/man8/bonnie++.8
+%{_prefix}/man/man8/zcav.8
 
 %changelog
 * Wed Sep 06 2000 Rob Latham <rlatham@plogic.com>

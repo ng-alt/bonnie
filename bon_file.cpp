@@ -67,10 +67,10 @@ COpenTest::~COpenTest()
     }
     if(m_number_directories > 1)
     {
-      char buf[4];
+      char buf[6];
       for(i = 0; i < m_number_directories; i++)
       {
-        sprintf(buf, "%03d", i);
+        sprintf(buf, "%05d", i);
         if(rmdir(buf))
           io_error("rmdir");
       }
@@ -107,7 +107,7 @@ void COpenTest::make_names(bool do_random)
   }
   else
   {
-    m_file_name_buf = new char[(MaxNameLen + 1 + 4) * m_number];
+    m_file_name_buf = new char[(MaxNameLen + 1 + 6) * m_number];
   }
   m_file_names = new PCHAR[m_number];
   PCHAR buf = m_file_name_buf;
@@ -130,7 +130,7 @@ void COpenTest::make_names(bool do_random)
     m_file_names[i] = buf;
     if(m_number_directories != 1)
     {
-      sprintf(buf, "%03d/", directory_num);
+      sprintf(buf, "%05d/", directory_num);
       buf += strlen(buf);
     }
     if(m_sync)
@@ -254,6 +254,12 @@ int COpenTest::create_a_link(const char *original, const char *filename, int dir
 int COpenTest::create(CPCCHAR dirname, BonTimer &timer, int num, int max_size
                     , int min_size, int num_directories, bool do_random)
 {
+  if(num_directories >= 100000)
+  {
+    fprintf(stderr, "Can't have more than 99,999 directories.\n");
+    return -1;
+  }
+
   m_number = num * DirectoryUnit;
   m_number_directories = num_directories;
   make_names(do_random);
@@ -280,7 +286,7 @@ int COpenTest::create(CPCCHAR dirname, BonTimer &timer, int num, int max_size
   {
     for(i = 0; i < num_directories; i++)
     {
-      sprintf(m_buf, "%03d", i);
+      sprintf(m_buf, "%05d", i);
       if(make_directory(m_buf))
       {
         fprintf(stderr, "Can't make directory %s\n", m_buf);
@@ -367,10 +373,10 @@ int COpenTest::delete_random(BonTimer &timer)
   }
   if(m_number_directories > 1)
   {
-    char buf[4];
+    char buf[6];
     for(i = 0; i < m_number_directories; i++)
     {
-      sprintf(buf, "%03d", i);
+      sprintf(buf, "%05d", i);
       if(m_sync)
       {
         close(m_directoryHandles[i]);
@@ -407,10 +413,10 @@ int COpenTest::delete_sequential(BonTimer &timer)
   int count = 0;
   for(int i = 0; i < m_number_directories; i++)
   {
-    char buf[4];
+    char buf[6];
     if(m_number_directories != 1)
     {
-      sprintf(buf, "%03d", i);
+      sprintf(buf, "%05d", i);
       if(chdir(buf))
       {
         fprintf(stderr, "Can't change to directory %s\n", buf);
@@ -574,10 +580,10 @@ int COpenTest::stat_sequential(BonTimer &timer)
   int count = 0;
   for(int i = 0; i < m_number_directories; i++)
   {
-    char buf[4];
+    char buf[6];
     if(m_number_directories != 1)
     {
-      sprintf(buf, "%03d", i);
+      sprintf(buf, "%05d", i);
       if(chdir(buf))
       {
         fprintf(stderr, "Can't change to directory %s\n", buf);
@@ -594,6 +600,8 @@ int COpenTest::stat_sequential(BonTimer &timer)
     if(rc || !entries)
     {
       fprintf(stderr, "Can't open directory.\n");
+      if(m_number_directories != 1)
+        chdir("..");
       return -1;
     }
     do
@@ -605,7 +613,11 @@ int COpenTest::stat_sequential(BonTimer &timer)
       if(findBuf.achName[0] != '.') // our files do not start with a dot
       {
         if(-1 == stat_file(findBuf.achName))
+        {
+          if(m_number_directories != 1)
+            chdir("..");
           return -1;
+        }
         count++;
       }
       rc = DosFindNext(d, &findBuf, sizeof(findBuf), &entries);
@@ -616,6 +628,8 @@ int COpenTest::stat_sequential(BonTimer &timer)
     if(!d)
     {
       fprintf(stderr, "Can't open directory.\n");
+      if(m_number_directories != 1)
+        chdir("..");
       return -1;
     }
     dirent *file_ent;
@@ -623,24 +637,30 @@ int COpenTest::stat_sequential(BonTimer &timer)
     {
       if(*m_exit)
       {
+        if(m_number_directories != 1 && chdir(".."))
+        {
+          fprintf(stderr, "Can't change to directory ..\n");
+          return -1;
+        }
         return EXIT_CTRL_C;
       }
       if(file_ent->d_name[0] != '.') // our files do not start with a dot
       {
         if(-1 == stat_file(file_ent->d_name))
+        {
+          if(m_number_directories != 1)
+            chdir("..");
           return -1;
+        }
         count++;
       }
     }
     closedir(d);
 #endif
-    if(m_number_directories != 1)
+    if(m_number_directories != 1 && chdir(".."))
     {
-      if(chdir(".."))
-      {
-        fprintf(stderr, "Can't change to directory ..\n");
-        return -1;
-      }
+      fprintf(stderr, "Can't change to directory ..\n");
+      return -1;
     }
   }
   if(count != m_number)

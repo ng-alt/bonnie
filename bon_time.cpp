@@ -15,8 +15,12 @@
 #include "bon_time.h"
 #include <time.h>
 #include <string.h>
-#ifdef HAVE_ALGO_H
+#if defined(HAVE_ALGO_H) || defined(HAVE_ALGO)
+#ifdef HAVE_ALGO
+#include <algo>
+#else
 #include <algo.h>
+#endif
 #else
 #define min(XX,YY) ((XX) < (YY) ? (XX) : (YY))
 #define max(XX,YY) ((XX) > (YY) ? (XX) : (YY))

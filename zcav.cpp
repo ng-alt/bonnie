@@ -7,7 +7,11 @@
 #include <fcntl.h>
 #include <stdlib.h>
 #include "bonnie.h"
+#ifdef HAVE_VECTOR
+#include <vector>
+#else
 #include <vector.h>
+#endif
 
 // Read the specified number of megabytes of data from the fd and return the
 // amount of time elapsed in seconds.

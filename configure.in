@@ -2,7 +2,7 @@ dnl Process this file with autoconf to produce a configure script.
 AC_INIT(bonnie++.cpp)
 AC_CONFIG_HEADER(conf.h)
 AC_SUBST(version)
-version="1.02b"
+version="1.03"
 
 AC_SUBST(stripping)
 AC_ARG_ENABLE(stripping,
@@ -41,9 +41,16 @@ AC_SUBST(semun)
 AC_TRY_COMPILE(#include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/sem.h>
-    , union semun sem; , semun="yes")
+    , union semun sem , semun="yes")
 if [[ -n "$semun" ]]; then
    semun="#define SEMUN_IN_SEM_H"
+fi
+AC_SUBST(sa_sigaction)
+AC_TRY_COMPILE([#include <signal.h>]
+             , [struct sigaction sa; sa.sa_sigaction = 0]
+             , sa_sigaction=y)
+if [[ "$sa_sigaction" = "y" ]]; then
+  sa_sigaction="#define USE_SA_SIGACTION"
 fi
 AC_SUBST(bool)
 AC_TRY_COMPILE([], [bool var;] , , bool="typedef bool char;")
@@ -60,11 +67,12 @@ AC_SUBST(exes)
 AC_SUBST(man8)
 exes="bonnie++"
 man8="bonnie++.8"
-AC_SUBST(stl)
-AC_CHECK_HEADERS(vector.h, exes="$exes zcav" man8="$man8 zcav.8", echo "STL not installed so no ZCAV!")
-AC_CHECK_HEADERS(algo.h)
+AC_CHECK_HEADERS(vector.h vector, exes="$exes zcav" man8="$man8 zcav.8", echo "STL not installed so no ZCAV!")
+AC_CHECK_HEADERS(algo.h algo)
 
-
-dnl Checks for library functions.
+AC_SUBST(aix_mem_size)
+if [[ -f /etc/objrepos ]]; then
+  aix_mem_size="#define AIX_MEM_SIZE 1"
+fi
 
 AC_OUTPUT(Makefile bonnie.h port.h bonnie++.spec bon_csv2html bon_csv2txt sun/pkginfo)

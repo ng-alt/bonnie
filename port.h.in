@@ -4,8 +4,10 @@
 #include <stdio.h>
 
 @semun@
+@sa_sigaction@
 @bool@
 @snprintf@
+@aix_mem_size@
 #if @true_false@
 #define false 0
 #define true 1

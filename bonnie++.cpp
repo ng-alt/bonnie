@@ -42,6 +42,12 @@
 #include <sys/utsname.h>
 #include <signal.h>
 
+#ifdef AIX_MEM_SIZE
+#include <cf.h>
+#include <sys/cfgodm.h>
+#include <sys/cfgdb.h>
+#endif
+
 void usage();
 
 class CGlobalItems
@@ -118,14 +124,25 @@ int TestDirOps(int directory_size, int max_size, int min_size
 int TestFileOps(int file_size, CGlobalItems &globals);
 
 static bool exitNow;
+static bool already_printed_error;
+
+#ifdef USE_SA_SIGACTION
+#define SIGNAL_NUMBER siginf->si_signo
+#else
+#define SIGNAL_NUMBER sig
+#endif
 
 extern "C"
 {
-  void ctrl_c_handler(int sig)
+  void ctrl_c_handler(int sig
+#ifdef USE_SA_SIGACTION
+		    , siginfo_t *siginf, void *unused
+#endif
+		     )
   {
-    if(sig == SIGXCPU)
+    if(SIGNAL_NUMBER == SIGXCPU)
       fprintf(stderr, "Exceeded CPU usage.\n");
-    else if(sig == SIGXFSZ)
+    else if(SIGNAL_NUMBER == SIGXFSZ)
       fprintf(stderr, "exceeded file storage limits.\n");
     exitNow = true;
   }
@@ -146,11 +163,16 @@ int main(int argc, char *argv[])
   bool setSize = false;
 
   exitNow = false;
+  already_printed_error = false;
 
   struct sigaction sa;
-  sa.sa_sigaction = NULL;
+#ifdef USE_SA_SIGACTION
+  sa.sa_sigaction = &ctrl_c_handler;
+  sa.sa_flags = SA_RESETHAND | SA_SIGINFO;
+#else
   sa.sa_handler = ctrl_c_handler;
   sa.sa_flags = SA_RESETHAND;
+#endif
   if(sigaction(SIGINT, &sa, NULL)
    || sigaction(SIGXCPU, &sa, NULL)
    || sigaction(SIGXFSZ, &sa, NULL))
@@ -158,6 +180,9 @@ int main(int argc, char *argv[])
     printf("Can't handle SIGINT.\n");
     return 1;
   }
+#ifdef USE_SA_SIGACTION
+  sa.sa_sigaction = NULL;
+#endif
   sa.sa_handler = SIG_IGN;
   if(sigaction(SIGHUP, &sa, NULL))
   {
@@ -172,6 +197,19 @@ int main(int argc, char *argv[])
   {
     globals.ram = page_size/1024 * (num_pages/1024);
   }
+#else
+
+#ifdef AIX_MEM_SIZE
+  struct CuAt *odm_obj;
+  int how_many;
+
+  odm_set_path("/etc/objrepos");
+  odm_obj = getattr("sys0", "realmem", 0, &how_many);
+  globals.ram = atoi(odm_obj->value) / 1024;
+  odm_terminate();
+  printf("Memory = %d MB\n", globals.ram);
+#endif
+
 #endif
 
   int int_c;
@@ -635,8 +673,12 @@ io_error(CPCCHAR message, bool do_exit)
 {
   char buf[1024];
 
-  sprintf(buf, "Bonnie: drastic I/O error (%s)", message);
-  perror(buf);
+  if(!already_printed_error && !do_exit)
+  {
+    sprintf(buf, "Bonnie: drastic I/O error (%s)", message);
+    perror(buf);
+    already_printed_error = 1;
+  }
   if(do_exit)
     exit(1);
   return(1);

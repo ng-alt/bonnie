@@ -2,7 +2,7 @@
 #define FORKIT_H
 
 #ifndef OS2
-#include <sys/poll.h>
+#include <poll.h>
 #endif
 
 #include "port.h"

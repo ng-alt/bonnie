@@ -40,15 +40,19 @@ void seeker(Fork *f, PVOID param, int)
 {
   struct report_s seeker_report;
   CFileOp *file = (CFileOp *)param;
-  seeker_report.StartTime = file->getTimer().get_cur_time();
   int num_chunks = file->chunks();
   if(file->reopen(false))
     exit(1);
   char ticket;
   int rc;
   int lseek_count = 0;
+
+  rc = f->Read(&ticket, 1, 0);
+
   file->getTimer().timestamp();
-  while((rc = f->Read(&ticket, 1, 0)) == 1 && ticket)
+  seeker_report.StartTime = file->getTimer().get_cur_time();
+
+  if(rc == 1 && ticket) do
   {
     bool update;
     if( (lseek_count++ % UpdateSeek) == 0)
@@ -58,6 +62,8 @@ void seeker(Fork *f, PVOID param, int)
     if(file->doseek(rand() % num_chunks, update) )
       exit(1);
   }
+  while((rc = f->Read(&ticket, 1, 0)) == 1 && ticket);
+
   if(rc != 1)
   {
     fprintf(stderr, "Can't read ticket.\n");

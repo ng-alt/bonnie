@@ -1,3 +1,35 @@
+bonnie++ (1.03) unstable; urgency=low
+
+  * Fixed a bug in error handling during a stat test with multiple directories.
+
+ -- Russell Coker <russell@coker.com.au>  Fri,  6 Dec 2002 12:52:00 +0100
+
+bonnie++ (1.02d) unstable; urgency=low
+
+  * Fixed a bug where it would SEGV if you specified more than 999 directories
+    (now it handles 99,999 and displays an error message if you ask for more).
+    Closes: #171507
+
+  * Made it build on Irix.
+
+  * Fixed <vector> and <algo> checks to work with GCC 3.2.
+
+ -- Russell Coker <russell@coker.com.au>  Tue,  3 Dec 2002 15:12:00 +0100
+
+bonnie++ (1.02c) unstable; urgency=low
+
+  * Improved the RPM packaging.
+
+  * Added support for detecting memory size on AIX.
+
+  * I changed minimum time for a test to be considered valid to half a second
+    but forgot to change the man page, changed it now.
+
+  * Fixed an error in calculating seeks, it used to add an extra 5 seconds to
+    the test time before calculation and therefore under-reported the results.
+
+ -- Russell Coker <russell@coker.com.au>  Mon, 22 Apr 2002 00:33:00 +0200
+
 bonnie++ (1.02b) unstable; urgency=low
 
   * Made the signal handler extern "C".

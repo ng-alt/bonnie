@@ -4,6 +4,8 @@
 #include <stdio.h>
 
 
+#define USE_SA_SIGACTION
+
 
 
 #if 0
