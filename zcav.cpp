@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <unistd.h>
-#include <linux/unistd.h>
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <time.h>
@@ -10,7 +9,13 @@
 #include <stdlib.h>
 #include "bonnie.h"
 
+// Read the specified number of megabytes of data from the fd and return the
+// amount of time elapsed in seconds.
 double readmegs(int fd, int size, char *buf);
+
+// Returns the mean of the values in the array.  If the array contains
+// more than 2 items then discard the highest and lowest thirds of the
+// results before calculating the mean.
 double average(double *array, int count);
 void printavg(int position, double avg, int block_size);
 
@@ -87,6 +92,11 @@ int main(int argc, char *argv[])
         times[loops][i] += read_time;
         if(read_time < 0.0)
         {
+          if(i == 0)
+          {
+            fprintf(stderr, "Input file too small.\n");
+            return 1;
+          }
           times[0][i] = -1.0;
           break;
         }
@@ -111,6 +121,11 @@ int main(int argc, char *argv[])
         break;
       printavg(i, read_time, block_size);
     }
+    if(i == 0)
+    {
+      fprintf(stderr, "Input file too small.\n");
+      return 1;
+    }
   }
   return 0;
 }
@@ -133,6 +148,9 @@ int compar(const void *a, const void *b)
   return 0;
 }
 
+// Returns the mean of the values in the array.  If the array contains
+// more than 2 items then discard the highest and lowest thirds of the
+// results before calculating the mean.
 double average(double *array, int count)
 {
   qsort(array, count, sizeof(double), compar);

@@ -4,7 +4,7 @@ bonnie++ \- program to test hard drive performance.
 
 .SH SYNOPSIS
 .B bonnie++
-.I [-d dir] [-s size(Mb)] [-n number-to-stat(*1024)[:max-size[:min-size][:num-directories]]]
+.I [-d dir] [-s size(Mb)[:chunk-size(b)]] [-n number-to-stat(*1024)[:max-size[:min-size][:num-directories]]]
 .I [-m machine-name] [-r ram-size-in-Mb] [-x number-of-tests] [-q] [-f] [-b] [-p processes | -y]
 
 .SH "DESCRIPTION"
@@ -32,9 +32,7 @@ All the details of the tests performed by Bonnie++ are contained in the file
 
 .SH OPTIONS
 For Bonnie++ every option is of the form of a hyphen followed by a letter and
-then the next parameter contains the value. I have no plans to use one of the
-libraries for parsing command lines for portability reasons, and don't wish to
-do anything fancier myself.
+then the next parameter contains the value.
 .TP
 .B -d
 the directory to use for the tests.
@@ -42,7 +40,9 @@ the directory to use for the tests.
 .B -s
 the size of the file(s) for IO performance measures in megabytes. If the size
 is greater than 1G then multiple files will be used to store the data, and
-each file will be up to 1G in size.
+each file will be up to 1G in size.  This parameter may include the chunk size
+seperated from the size by a colon.  The chunk-size is measured in bytes and
+must be a power of two from 256 to 1048576.
 
 If the specified size is 0 then this test will be skipped.
 .TP

@@ -100,7 +100,7 @@ int CFileOp::seek_test(int threads, int seeks, bool quiet, Semaphore &sem)
         != sizeof(seeker_report))
     {
       fprintf(stderr, "Can't read from pipe, expected %d, got %d.\n"
-                    , sizeof(seeker_report), rc);
+                    , int(sizeof(seeker_report)), rc);
       return 1;
     }
 
@@ -167,19 +167,19 @@ int CFileOp::seek(int offset, int whence)
     {
 #ifdef OS2
       unsigned long actual;
-      rc = DosSetFilePtr(m_fd[m_file_ind], m_cur_pos << ChunkBits, FILE_BEGIN, &actual);
+      rc = DosSetFilePtr(m_fd[m_file_ind], m_cur_pos << m_chunk_bits, FILE_BEGIN, &actual);
       if(rc != 0) rc = -1;
 #else
-      rc = lseek(m_fd[m_file_ind], m_cur_pos << ChunkBits, SEEK_SET);
+      rc = lseek(m_fd[m_file_ind], m_cur_pos << m_chunk_bits, SEEK_SET);
 #endif
     }
     else
     {
-      rc = fseek(m_stream[m_file_ind], m_cur_pos << ChunkBits, SEEK_SET);
+      rc = fseek(m_stream[m_file_ind], m_cur_pos << m_chunk_bits, SEEK_SET);
     }
 
     if(rc == -1)
-      fprintf(stderr, "Error in lseek to %d\n", (m_cur_pos << ChunkBits));
+      fprintf(stderr, "Error in lseek to %d\n", (m_cur_pos << m_chunk_bits));
     else
       rc = 0;
     return rc;
@@ -192,13 +192,13 @@ int CFileOp::read_block(PVOID buf)
   assert(m_fd);
 #ifdef OS2
   unsigned long actual;
-  int rc = DosRead(m_fd[m_file_ind], buf, Chunk, &actual);
+  int rc = DosRead(m_fd[m_file_ind], buf, m_chunk_size, &actual);
   if(rc)
     rc = -1;
   else
     rc = actual;
 #else
-  int rc = ::read(m_fd[m_file_ind], buf, Chunk);
+  int rc = ::read(m_fd[m_file_ind], buf, m_chunk_size);
 #endif
   m_cur_pos++;
   if(m_cur_pos >= m_chunks_per_file)
@@ -213,7 +213,7 @@ int CFileOp::read_block(PVOID buf)
   {
     io_error("re-write read");
   }
-  else if(rc != Chunk)
+  else if(rc != m_chunk_size)
   {
     fprintf(stderr, "Can't read a full block, only got %d bytes.\n", rc);
     rc = -1;
@@ -225,7 +225,7 @@ int CFileOp::read_block_getc(char *buf)
 {
   assert(m_stream);
   int next;
-  for(int i = 0; i < Chunk; i++)
+  for(int i = 0; i < m_chunk_size; i++)
   {
     if ((next = getc(m_stream[m_file_ind])) == EOF)
     {
@@ -250,16 +250,16 @@ int CFileOp::write_block(PVOID buf)
   assert(m_fd);
 #ifdef OS2
   unsigned long actual;
-  int rc = DosWrite(m_fd[m_file_ind], buf, Chunk, &actual);
+  int rc = DosWrite(m_fd[m_file_ind], buf, m_chunk_size, &actual);
   if(rc)
     rc = -1;
   else
     rc = 0;
-  if(actual != Chunk)
+  if(actual != m_chunk_size)
     rc = -1;
 #else
-  int rc = ::write(m_fd[m_file_ind], buf, Chunk);
-  if(rc != Chunk)
+  int rc = ::write(m_fd[m_file_ind], buf, m_chunk_size);
+  if(rc != m_chunk_size)
   {
     fprintf(stderr, "Can't write block.\n");
     return -1;
@@ -277,7 +277,7 @@ int CFileOp::write_block(PVOID buf)
 int CFileOp::write_block_putc()
 {
   assert(m_stream);
-  for(int i = 0; i < Chunk; i++)
+  for(int i = 0; i < m_chunk_size; i++)
   {
     if (putc(i & 0x7f, m_stream[m_file_ind]) == EOF)
     {
@@ -301,8 +301,10 @@ int CFileOp::open(CPCCHAR basename, bool create, bool fopen)
   return reopen(create, fopen);
 }
 
-CFileOp::CFileOp(BonTimer &timer, int file_size, bool sync)
- : m_chunks_per_file(Unit / Chunk * IOFileSize)
+CFileOp::CFileOp(BonTimer &timer, int file_size, int chunk_bits, bool sync)
+ : m_chunk_bits(chunk_bits)
+ , m_chunk_size(1 << m_chunk_bits)
+ , m_chunks_per_file(Unit / m_chunk_size * IOFileSize)
  , m_timer(timer)
  , m_stream(NULL)
  , m_fd(NULL)
@@ -310,7 +312,7 @@ CFileOp::CFileOp(BonTimer &timer, int file_size, bool sync)
  , m_sync(sync)
 {
   m_file_size = file_size;
-  m_total_chunks = Unit / Chunk * file_size;
+  m_total_chunks = Unit / m_chunk_size * file_size;
   m_last_file_chunks = m_total_chunks % m_chunks_per_file;
   m_num_files = m_file_size / IOFileSize + 1;
   if(m_last_file_chunks == 0)
@@ -459,7 +461,7 @@ int
 CFileOp::doseek(long where, bool update)
 {
   assert(m_fd);
-  int   buf[Chunk / IntSize];
+  int   buf[m_chunk_size / IntSize];
   int   size;
 
   if (seek(where, SEEK_SET) == -1)

@@ -14,6 +14,7 @@ build-stamp:
 
 	
 	# Add here commands to compile the package.
+	./configure
 	$(MAKE)
 
 	touch build-stamp

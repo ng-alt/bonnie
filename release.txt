@@ -1,3 +1,13 @@
+1.00a
+Added a 30 second startup delay when run as root.  A user lost some data
+because of running it as root, if they had run it as a regular account
+they would be OK.  I don't want this to happen again.
+ 
+Zcav now displays an error if it can't read a single block.
+
+Added some basic autoconf support which I will use to increase portability
+in future versions.
+
 1.00
 It seems to work well now so I'm calling it 1.00!  I have added zcav, a test
 for raw reading performance on hard drives.

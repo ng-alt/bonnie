@@ -257,11 +257,13 @@ BonTimer::PrintHeader(FILE *fp)
 
 int
 BonTimer::DoReport(CPCCHAR machine, int file_size, int directory_size
-                 , int max_size, int min_size, int num_directories, FILE *fp)
+                 , int max_size, int min_size, int num_directories
+                 , int chunk_size, FILE *fp)
 {
   m_fp = fp;
   m_file_size = file_size;
   m_directory_size = directory_size;
+  m_chunk_size = chunk_size;
   if(m_file_size)
   {
     if(m_type == txt)
@@ -272,14 +274,43 @@ BonTimer::DoReport(CPCCHAR machine, int file_size, int directory_size
       fprintf(m_fp, "                    ");
       fprintf(m_fp,
         "-Per Chr- --Block-- -Rewrite- -Per Chr- --Block-- --Seeks--\n");
-      fprintf(m_fp, "Machine          MB ");
+      if(m_chunk_size == DefaultChunkSize)
+        fprintf(m_fp, "Machine          MB ");
+      else
+        fprintf(m_fp, "Machine     MB:chnk ");
       fprintf(m_fp, "K/sec %%CP K/sec %%CP K/sec %%CP K/sec %%CP K/sec ");
       fprintf(m_fp, "%%CP  /sec %%CP\n");
     }
-    if(m_type == txt)
-      fprintf(m_fp, "%-14.14s %4d", machine, m_file_size);
+    char size_buf[20];
+    if(m_chunk_size == DefaultChunkSize)
+    {
+      sprintf(size_buf, "%d", m_file_size);
+    }
     else
-      fprintf(m_fp, "%s,%d", machine, m_file_size);
+    {
+      if(m_chunk_size >= 1024)
+        sprintf(size_buf, "%d:%dk", m_file_size, m_chunk_size / 1024);
+      else
+        sprintf(size_buf, "%d:%d", m_file_size, m_chunk_size);
+    }
+    char buf[20];
+    if(m_type == txt)
+    {
+      // copy machine name to buf
+      snprintf(buf, sizeof(buf) - 1, "%s               ", machine);
+      // set cur to point to a byte past where we end the machine name
+      // size of the buf - size of the new data - 1 for the space - 1 for the
+      // terminating zero on the string
+      char *cur = &buf[sizeof(buf) - strlen(size_buf) - 2];
+      *cur = ' '; // make cur a space
+      cur++; // increment to where we store the size
+      strcpy(cur, size_buf);  // copy the size in
+    }
+    else
+    {
+      sprintf(buf, "%s,%s", machine, size_buf);
+    }
+    fputs(buf, m_fp);
     print_io_stat(Putc);
     print_io_stat(FastWrite);
     print_io_stat(ReWrite);

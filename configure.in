@@ -1,0 +1,24 @@
+dnl Process this file with autoconf to produce a configure script.
+AC_INIT(bonnie++.cpp)
+
+dnl AM_CONFIG_HEADER(config.h)
+
+dnl Checks for programs.
+AC_PROG_CXX
+AC_PROG_CPP
+AC_PROG_INSTALL
+
+dnl Checks for typedefs, structures, and compiler characteristics.
+AC_C_CONST
+AC_TYPE_SIZE_T
+
+AC_SUBST(semun)
+AC_TRY_COMPILE(#include <sys/sem.h>
+    , union semun sem; , semun="yes")
+if [[ -n "$semun" ]]; then
+   semun="#define SEMUN_IN_SEM_H"
+fi
+
+dnl Checks for library functions.
+
+AC_OUTPUT(Makefile bonnie.h)

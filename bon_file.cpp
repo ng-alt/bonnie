@@ -18,7 +18,8 @@
 CPCCHAR rand_chars = "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 
-COpenTest::COpenTest(bool sync)
+COpenTest::COpenTest(int chunk_size, bool sync)
+ : m_chunk_size(chunk_size)
 {
   m_number = 0;
   m_number_directories = 1;
@@ -155,10 +156,10 @@ int COpenTest::create_a_file(const char *filename, char *buf, int size, int dir)
   }
   if(m_max)
   {
-    for(int i = 0; i < size; i += Chunk)
+    for(int i = 0; i < size; i += m_chunk_size)
     {
       int to_write = size - i;
-      if(to_write > Chunk) to_write = Chunk;
+      if(to_write > m_chunk_size) to_write = m_chunk_size;
 #ifdef OS2
       ULONG actual = 0;
       if(DosWrite(fd, PVOID(buf), to_write, &actual))
@@ -243,7 +244,7 @@ int COpenTest::create(CPCCHAR dirname, BonTimer &timer, int num, int max_size
     return -1;
   }
   int i;
-  char buf[Chunk];
+  char buf[m_chunk_size];
   if(m_sync)
     m_directoryHandles = new FILE_TYPE[num_directories];
   if(num_directories > 1)
@@ -474,11 +475,11 @@ int COpenTest::stat_file(CPCCHAR file)
       fprintf(stderr, "Can't open file %s\n", file);
       return -1;
     }
-    char buf[Chunk];
-    for(int i = 0; i < st.st_size; i += Chunk)
+    char buf[m_chunk_size];
+    for(int i = 0; i < st.st_size; i += m_chunk_size)
     {
       int to_read = st.st_size - i;
-      if(to_read > Chunk) to_read = Chunk;
+      if(to_read > m_chunk_size) to_read = m_chunk_size;
 #ifdef OS2
       ULONG actual = 0;
       rc = DosRead(fd, PVOID(buf), to_read, &actual);

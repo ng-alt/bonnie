@@ -1,3 +1,22 @@
+bonnie++ (1.00a) unstable; urgency=low
+
+  * Added a 30 second startup delay when run as root.  A user lost some data
+    because of running it as root, if they had run it as a regular account
+    they would be OK.  I don't want this to happen again.
+
+  * Zcav now displays an error if it can't read a single block.
+
+  * Added some basic autoconf support which I will use to increase portability
+    in future versions.
+
+  * Now provides zcav.
+
+  * Should compile with all old versions of gcc.
+
+  * Fixed a warning on Alpha.
+
+ -- Russell Coker <russell@coker.com.au>  Mon, 24 Apr 2000 23:34:02 +0100
+
 bonnie++ (1.00) unstable; urgency=low
 
   * License is now GPL.

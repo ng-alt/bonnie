@@ -51,6 +51,8 @@ public:
   Semaphore sem;
   char *name;
   bool bufSync;
+  int  chunk_size;
+  int  chunk_bits;
 
   CGlobalItems();
   ~CGlobalItems() { delete name; }
@@ -84,6 +86,8 @@ CGlobalItems::CGlobalItems()
   name = NULL;
   SetName(".");
   bufSync = false;
+  chunk_size = DefaultChunkSize;
+  chunk_bits = DefaultChunkBits;
 }
 
 void CGlobalItems::decrement_and_wait(int nr_sem)
@@ -106,6 +110,15 @@ int main(int argc, char *argv[])
   int    num_directories = 1;
   int    count = -1;
   char * machine = "Unknown";
+
+  if(geteuid() == 0)
+  {
+    fprintf(stderr , "You shouldn't run this as root, if something goes wrong the results could be\n"
+           "very bad.  After a 30 second delay the program will execute as normal.\n"
+           "Press ^C now if you want to abort and run this from a regular account.\n");
+    sleep(30);
+  }
+
   CGlobalItems globals;
 
   int c;
@@ -146,7 +159,21 @@ int main(int argc, char *argv[])
         globals.ram = atoi(optarg);
       break;
       case 's':
-        file_size = atoi(optarg);
+      {
+        char *size = strtok(optarg, ":");
+        file_size = atoi(size);
+        char c = size[strlen(size) - 1];
+        if(c == 'g' || c == 'G')
+          file_size *= 1024;
+        size = strtok(NULL, "");
+        if(size)
+        {
+          globals.chunk_size = atoi(size);
+          c = size[strlen(size) - 1];
+          if(c == 'k' || c == 'K')
+            globals.chunk_size *= 1024;
+        }
+      }
       break;
       case 'x':
         count = atoi(optarg);
@@ -184,11 +211,19 @@ int main(int argc, char *argv[])
 
   if(file_size < 0 || directory_size < 0 || (!file_size && !directory_size) )
     usage();
+  if(globals.chunk_size < 256 || globals.chunk_size > Unit)
+    usage();
+  int i;
+  globals.chunk_bits = 0;
+  for(i = globals.chunk_size; i > 1; i = i >> 1, globals.chunk_bits++);
+  if(1 << globals.chunk_bits != globals.chunk_size)
+    usage();
+
   if( (directory_max_size != -1 && directory_max_size != -2)
      && (directory_max_size < directory_min_size || directory_max_size < 0
      || directory_min_size < 0) )
     usage();
-  if(file_size > IOFileSize * MaxIOFiles || file_size > (1 << (31 - 20 + ChunkBits)) )
+  if(file_size > IOFileSize * MaxIOFiles || file_size > (1 << (31 - 20 + globals.chunk_bits)) )
     usage();
   // if doing more than one test run then we print a header before the
   // csv format output.
@@ -221,14 +256,14 @@ int main(int argc, char *argv[])
       globals.timer.SetType(BonTimer::txt);
       rc = globals.timer.DoReport(machine, file_size, directory_size
                                 , directory_max_size, directory_min_size
-                                , num_directories
+                                , num_directories, globals.chunk_size
                                 , globals.quiet ? stderr : stdout);
     }
     // print a csv version in every case
     globals.timer.SetType(BonTimer::csv);
     rc = globals.timer.DoReport(machine, file_size, directory_size
                               , directory_max_size, directory_min_size
-                              , num_directories, stdout);
+                              , num_directories, globals.chunk_size, stdout);
     if(rc) return rc;
   }
 }
@@ -238,10 +273,10 @@ TestFileOps(int file_size, CGlobalItems &globals)
 {
   if(file_size)
   {
-    CFileOp file(globals.timer, file_size, globals.bufSync);
+    CFileOp file(globals.timer, file_size, globals.chunk_bits, globals.bufSync);
     int    num_chunks;
     int    words;
-    int    buf[Chunk / IntSize];
+    int    buf[globals.chunk_size / IntSize];
     int    bufindex;
     int    chars[256];
     int    i;
@@ -252,7 +287,7 @@ TestFileOps(int file_size, CGlobalItems &globals)
       return 1;
     }
     // default is we have 1M / 8K * 200 chunks = 25600
-    num_chunks = Unit / Chunk * file_size;
+    num_chunks = Unit / globals.chunk_size * file_size;
 
     int rc;
     rc = file.open(globals.name, true, true);
@@ -284,7 +319,7 @@ TestFileOps(int file_size, CGlobalItems &globals)
       return 1;
     globals.decrement_and_wait(FastWrite);
     if(!globals.quiet) fprintf(stderr, "Writing intelligently...");
-    for (words = 0; words < int(Chunk / IntSize); words++)
+    for (words = 0; words < int(globals.chunk_size / IntSize); words++)
       buf[words] = 0;
     globals.timer.timestamp();
     bufindex = 0;
@@ -293,7 +328,7 @@ TestFileOps(int file_size, CGlobalItems &globals)
     {
       // for each chunk in the Unit
       buf[bufindex]++;
-      bufindex = (bufindex + 1) % (Chunk / IntSize);
+      bufindex = (bufindex + 1) % (globals.chunk_size / IntSize);
       if(file.write_block(PVOID(buf)) == -1)
         return io_error("write(2)");
     }
@@ -318,7 +353,7 @@ TestFileOps(int file_size, CGlobalItems &globals)
     { // for each chunk in the file
       if (file.read_block(PVOID(buf)) == -1)
         return 1;
-      if (bufindex == Chunk / IntSize)
+      if (bufindex == globals.chunk_size / int(IntSize) )
         bufindex = 0;
       buf[bufindex++]++;
       if (file.seek(-1, SEEK_CUR) == -1)
@@ -369,7 +404,7 @@ TestFileOps(int file_size, CGlobalItems &globals)
     { /* per block */
       if ((words = file.read_block(PVOID(buf))) == -1)
         return io_error("read(2)");
-      chars[buf[abs(buf[0]) % (Chunk / IntSize)] & 0x7f]++;
+      chars[buf[abs(buf[0]) % (globals.chunk_size / IntSize)] & 0x7f]++;
     } /* per block */
     file.close();
     globals.timer.get_delta_t(FastRead);
@@ -469,7 +504,7 @@ void
 usage()
 {
   fprintf(stderr,
-    "usage: Bonnie [-d scratch-dir] [-s size(Mb)]\n"
+    "usage: Bonnie [-d scratch-dir] [-s size(Mb)[:chunk-size(b)]]\n"
     "              [-n number-to-stat[:max-size[:min-size][:num-directories]]]\n"
     "              [-m machine-name]\n"
     "              [-r ram-size-in-Mb]\n"
@@ -482,7 +517,7 @@ usage()
 int
 io_error(CPCCHAR message, bool do_exit)
 {
-  char buf[Chunk];
+  char buf[1024];
 
   sprintf(buf, "Bonnie: drastic I/O error (%s)", message);
   perror(buf);

@@ -31,7 +31,8 @@ public:
   void get_delta_report(report_s &rep);
   void add_delta_report(report_s &rep, tests_t test);
   int DoReport(CPCCHAR machine, int size, int directory_size
-             , int max_size, int min_size, int num_directories, FILE *fp);
+             , int max_size, int min_size, int num_directories
+             , int chunk_size, FILE *fp);
   void SetType(RepType type) { m_type = type; }
   double cpu_so_far();
   double time_so_far();
@@ -51,6 +52,7 @@ private:
   RepType m_type;
   int m_file_size;
   int m_directory_size;
+  int m_chunk_size;
   FILE *m_fp;
 };
 

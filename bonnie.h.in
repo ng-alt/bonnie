@@ -1,10 +1,11 @@
 #ifndef BONNIE
 #define BONNIE
 
-#define BON_VERSION "1.00"
+#define BON_VERSION "1.00a"
 
 #include "port.h"
 
+@semun@
 #define SemKey 4711
 #define NumSems TestCount
 // million files (7) + up to 12 random extra chars
@@ -16,8 +17,8 @@
 #define Seeks (8000)
 #define UpdateSeek (10)
 #define SeekProcCount (3)
-#define ChunkBits (13)
-#define Chunk (1 << ChunkBits)
+#define DefaultChunkBits (13)
+#define DefaultChunkSize (1 << DefaultChunkBits)
 #define UnitBits (20)
 #define Unit (1 << UnitBits)
 #define CreateNameLen 6

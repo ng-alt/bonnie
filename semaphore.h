@@ -5,11 +5,7 @@
 #include <sys/ipc.h>
 #include <sys/sem.h>
 
-#ifndef BSD
-#if defined(__GNU_LIBRARY__) && !defined(_SEM_SEMUN_UNDEFINED)
-/* union semun is defined by including <sys/sem.h> */
-#else
- /* according to X/OPEN we have to define it ourselves */
+#ifndef SEMUN_IN_SEM_H
 union semun
 {
   int val;                    /* value for SETVAL */
@@ -17,7 +13,6 @@ union semun
   unsigned short int *array;  /* array for GETALL, SETALL */
   struct seminfo *__buf;      /* buffer for IPC_INFO */
 };
-#endif
 #endif
 
 class Semaphore

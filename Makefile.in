@@ -8,9 +8,9 @@ EXES=bonnie++ zcav
 #OS2=yes
 
 ifdef OS2
-CC=icc /G4 /Gm+ /Gl+ /O+ /Oi+ /Ol+ -DOS2 /Q+
+CXX=icc /G4 /Gm+ /Gl+ /O+ /Oi+ /Ol+ -DOS2 /Q+
 else
-CC=gcc -O2 -g -Wall -pipe
+CXX=@CXX@ -O2 -g -Wall
 endif
 
 SOURCE=bon_io.cpp bon_file.cpp bon_time.cpp forkit.cpp semaphore.cpp
@@ -23,10 +23,10 @@ endif
 all: $(EXES)
 
 bonnie++: bonnie++.cpp $(OBJS)
-	$(CC) bonnie++.cpp -o bonnie++ $(OBJS) $(LFLAGS)
+	$(CXX) bonnie++.cpp -o bonnie++ $(OBJS) $(LFLAGS)
 
 zcav: zcav.cpp
-	$(CC) zcav.cpp -o zcav $(LFLAGS)
+	$(CXX) zcav.cpp -o zcav $(LFLAGS)
 
 install: $(EXES)
 	mkdir -p $(DESTDIR)/usr/bin $(DESTDIR)/usr/sbin
@@ -39,10 +39,11 @@ ifdef OS2
 else
 %.o: %.cpp %.h bonnie.h
 endif
-	$(CC) -c $< -o $@
+	$(CXX) -c $<
 
 clean:
-	rm -f $(EXES) $(OBJS)
+	rm -f $(EXES) $(OBJS) config.log
 	rm -rf build-stamp install-stamp debian/tmp err out
 
-
+realclean: clean
+	rm -f config.* Makefile bonnie.h

@@ -10,7 +10,7 @@ typedef unsigned long MASK_TYPE;
 class COpenTest
 {
 public:
-  COpenTest(bool sync = false);
+  COpenTest(int chunk_size, bool sync = false);
   ~COpenTest();
 
   int create(CPCCHAR dirname, BonTimer &timer, int num, int max_size
@@ -26,6 +26,7 @@ private:
   int create_a_file(const char *filename, char *buf, int size, int dir);
   int create_a_link(const char *original, const char *filename, int dir);
 
+  const int m_chunk_size;
   int m_number; // the total number of files to create
   int m_number_directories; // the number of directories to store files in
   int m_max; // maximum file size (negative for links)

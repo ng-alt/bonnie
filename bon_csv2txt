@@ -40,6 +40,7 @@ sub process
   $name =~ s/,.*$//;
   $line =~ s/$name,//;
 
+# $ioline contains the file-IO data, IE we strip off the data on file creation
   my $ioline = $line;
   $ioline =~ s/,[:0-9\-\+.]+,[0-9\+.]+,[0-9\+.]+,[0-9\+.]+,[0-9\+.]+,[0-9\+.]+,[0-9\+.]+,[0-9\+.]+,[0-9\+.]+,[0-9\+.]+,[0-9\+.]+,[0-9\+.]+,[0-9\+.]+$//;
   $ioline =~ s/,,,,,,,,,,,,,$//;
@@ -48,6 +49,7 @@ sub process
     $io[$iocount] = $name . "," . $ioline;
     $iocount++;
   }
+# $fileline contains the file creation data - everything but $ioline
   my $fileline = substr($line, length($ioline));
   if(join('', split(/,/,$fileline)) != "")
   {
