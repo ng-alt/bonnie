@@ -193,6 +193,10 @@ void calc_vals()
             props[arr[sort_ind].pos][column_ind]
                   = get_col(range_col, arr[sort_ind].val - min_col, reverse, extra);
           }
+          else if(vals[column_ind] != 1)
+          {
+            props[arr[sort_ind].pos][column_ind] = "COLSPAN=2";
+          }
         }
       }
       else

@@ -1,8 +1,9 @@
-EXES=bonnie++ zcav bon_csv2html
+EXES=bonnie++ zcav
+EXE=bon_csv2html
 
-all: $(EXES)
+all: $(EXE) $(EXES)
 
-SCRIPTS=bon_csv2html bon_csv2txt
+SCRIPTS=bon_csv2txt
 
 prefix=@prefix@
 #MORE_WARNINGS=-Weffc++ -Wcast-align
@@ -34,9 +35,10 @@ zcav: zcav.cpp $(ZCAVOBJS)
 bon_csv2html: bon_csv2html.cpp
 	$(CXX) bon_csv2html.cpp -o bon_csv2html
 
-install-bin: $(EXES)
+install-bin: $(EXE) $(EXES)
 	mkdir -p $(prefix)/bin $(prefix)/sbin
 	@INSTALL_PROGRAM@ @stripping@ $(EXES) $(prefix)/sbin
+	@INSTALL_PROGRAM@ @stripping@ $(EXE) $(prefix)/bin
 	@INSTALL_PROGRAM@ $(SCRIPTS) $(prefix)/bin
 
 install: install-bin
@@ -51,7 +53,7 @@ bon_suid.o: bon_suid.cpp bonnie.h port.h
 	$(CXX) -c $<
 
 clean:
-	rm -f $(EXES) $(ALLOBJS) build-stamp install-stamp
+	rm -f $(EXE) $(EXES) $(ALLOBJS) build-stamp install-stamp
 	rm -rf debian/tmp core debian/*.debhelper
 	rm -f debian/{substvars,files} config.log
 

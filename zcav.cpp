@@ -260,7 +260,7 @@ int main(int argc, char *argv[])
 #ifndef NON_UNIX
   if(userName || groupName)
   {
-    if(bon_setugid(userName, groupName))
+    if(bon_setugid(userName, groupName, false))
       return 1;
     if(userName)
       free(userName);

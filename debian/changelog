@@ -1,3 +1,15 @@
+bonnie++ (1.91) unstable; urgency=low
+
+  * Fixed the bon_csv2html bug that made the columns not line up if different
+    rows had different numbers of blank columns.
+
+  * Fixed a bug introduced in 1.90f which resulted in Random Seeks always
+    being reported as 0.
+
+  * Made quiet mode not tell you which UID it uses.
+
+ -- Russell Coker <russell@coker.com.au>  Sun, 11 Feb 2001 11:23:10 +0100
+
 bonnie++ (1.90g) unstable; urgency=low
 
   * Added latency parsing support to bon_csv2html.

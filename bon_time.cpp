@@ -35,7 +35,7 @@ void BonTimer::stop_and_record(tests_t test)
 
 void BonTimer::add_delta_report(report_s &rep, tests_t test)
 {
-  if(m_delta[test].FirstStart == 0.0)
+  if(m_delta[test].CPU == 0.0)
   {
     m_delta[test].FirstStart = rep.StartTime;
     m_delta[test].LastStop = rep.EndTime;
@@ -304,13 +304,14 @@ BonTimer::DoReport(CPCCHAR machine
     {
       printf("2," BON_VERSION ",%s,%s", machine, size_buf);
     }
-    for(i = Putc; i <= Lseek; i++)
+    for(i = Putc; i < Lseek; i++)
     {
       if(i == Putc || i == Getc)
         print_io_stat(tests_t(i), char_file_size);
       else
         print_io_stat(tests_t(i), file_size);
     }
+    print_seek_stat(Lseek);
     if(m_type == txt)
     {
       fprintf(m_fp, "\nLatency          ");

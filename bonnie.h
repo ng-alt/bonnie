@@ -1,7 +1,7 @@
 #ifndef BONNIE
 #define BONNIE
 
-#define BON_VERSION "1.90f"
+#define BON_VERSION "1.91"
 
 #include "port.h"
 
@@ -16,7 +16,7 @@
 #define MinTime (0.5)
 #define Seeks (8192)
 #define UpdateSeek (10)
-#define SeekProcCount (3)
+#define SeekProcCount (5)
 #define DefaultChunkBits (13)
 #define DefaultChunkSize (1 << DefaultChunkBits)
 #define UnitBits (20)
@@ -59,6 +59,6 @@ enum tests_t
 };
 
 int   io_error(CPCCHAR message, bool do_exit = false);
-int bon_setugid(const char * const user, const char * const group);
+int bon_setugid(CPCCHAR user, CPCCHAR group, bool quiet);
 
 #endif

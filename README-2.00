@@ -1,0 +1,16 @@
+Differences between Bonnie++ 1.00 and 2.00.
+
+Version 2.00 is totally threaded, this has many subtle impacts on the way the
+code works.  When you link with the threaded library the fgetc() and fputc()
+library calls are replaced with thread-safe versions which take 5 times longer,
+thus the per-char tests will record much lower results.  From 1.90a.
+
+When closing files for the IO tests the operation is to fflush(NULL) to
+flush any per-char IO and to fsync() each file handle.  This means on Linux
+and other OSs that agressively cache writes the write performance will be
+noticably less, but the results will be more accurate.  From 1.90b.
+
+The number of seek processes is now 5 instead of 3.  Now almost all new hard
+drives have some sort of seek reordering capability, and OSs are getting
+smarter about maintaining queues.  This and the increasing popularity of RAID
+arrays requires more seek procs to do a reasonable test.

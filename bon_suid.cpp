@@ -1,10 +1,11 @@
 #include <pwd.h>
 #include <grp.h>
 #include <sys/types.h>
-#include <stdio.h>
 #include <unistd.h>
+#include <stdio.h>
+#include "bonnie.h"
 
-int bon_setugid(const char * const userName, const char * const groupName)
+int bon_setugid(CPCCHAR userName, CPCCHAR groupName, bool quiet)
 {
   int id = 0;
   uid_t userId = 0;
@@ -78,6 +79,7 @@ int bon_setugid(const char * const userName, const char * const groupName)
     fprintf(stderr, "Can't set uid to %d.\n", int(userId));
     return 1;
   }
-  fprintf(stderr, "Using uid:%d, gid:%d.\n", int(getuid()), int(getgid()));
+  if(!quiet)
+    fprintf(stderr, "Using uid:%d, gid:%d.\n", int(getuid()), int(getgid()));
   return 0;
 }
