@@ -48,50 +48,51 @@ sub process
   my $name = $arr[2];
 
 # merge size and chunk-size
-  my $tmp = $arr[4];
-  if($arr[5] ne "")
+  my $tmp = $arr[5];
+  if($arr[6] ne "")
   {
-    $tmp .= ":" . $arr[5];
+    $tmp .= ":" . $arr[6];
   }
-  $arr[5] = $tmp;
+  $arr[6] = $tmp;
 # $ioline contains the file-IO data, IE we strip off the data on file creation
-  my @ioline = @arr[5 .. 17];
+  my @ioline = @arr[6 .. 18];
   if(join('', @ioline) ne "")
   {
     $io[$iocount] = $name . "," . join(',', @ioline);
-    if($#arr > 35)
+    if($#arr > 37)
     {
-      $io[$iocount] .= "," . join(',', @arr[35..40]);
+      $io[$iocount] .= "," . join(',', @arr[36..41]);
     }
     $iocount++;
   }
 
-  $tmp = $arr[18];
-  if($arr[19] ne "")
-  {
-    $tmp .= ":" . $arr[19];
-  }
+# merge num_files, max_size, min_size, num_dirs, and file_chunk_size
+  $tmp = $arr[19];
   if($arr[20] ne "")
   {
     $tmp .= ":" . $arr[20];
   }
   if($arr[21] ne "")
   {
-    $tmp .= "/" . $arr[21];
+    $tmp .= ":" . $arr[21];
   }
   if($arr[22] ne "")
   {
-    $tmp .= ":" . $arr[22];
+    $tmp .= "/" . $arr[22];
   }
-  $arr[22] = $tmp;
+  if($arr[23] ne "")
+  {
+    $tmp .= ":" . $arr[23];
+  }
+  $arr[23] = $tmp;
 # $fileline contains the file creation data - everything but $ioline
-  my @fileline = @arr[22 .. 34];
+  my @fileline = @arr[23 .. 35];
   if(join('', @fileline) ne "")
   {
     $file[$filecount] = $name . "," . join(',', @fileline);
     if($#arr > 41)
     {
-      $file[$filecount] .= "," . join(',', @arr[41..$#arr]);
+      $file[$filecount] .= "," . join(',', @arr[42..$#arr]);
     }
     $filecount++;
   }

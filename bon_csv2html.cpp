@@ -5,7 +5,7 @@
 #include <math.h>
 
 // Maximum number of items expected on a csv line
-#define MAX_ITEMS 46
+#define MAX_ITEMS 48
 #ifndef OS2
 using namespace std;
 #endif
@@ -37,16 +37,26 @@ PCCHAR get_col(double range_col, double val, bool reverse, CPCCHAR extra);
 
 typedef enum { eNoCols, eSpeed, eCPU, eLatency } VALS_TYPE;
 const VALS_TYPE vals[MAX_ITEMS] =
-  { eNoCols,eNoCols,eNoCols,eNoCols,eNoCols,eSpeed,eCPU,eSpeed,eCPU,eSpeed,eCPU,eSpeed,eCPU,eSpeed,eCPU,eSpeed,eCPU,
+  { eNoCols,eNoCols,eNoCols,eNoCols,eNoCols,eNoCols,eSpeed,eCPU,eSpeed,eCPU,eSpeed,eCPU,eSpeed,eCPU,eSpeed,eCPU,eSpeed,eCPU,
     eNoCols,eNoCols,eNoCols,eNoCols,eNoCols,eSpeed,eCPU,eSpeed,eCPU,eSpeed,eCPU,eSpeed,eCPU,eSpeed,eCPU,eSpeed,eCPU,
     eLatency,eLatency,eLatency,eLatency,eLatency,eLatency,eLatency,eLatency,eLatency,eLatency,eLatency,eLatency };
 
 bool col_used[MAX_ITEMS];
-#define COL_DATA_CHUNK_SIZE 4
-#define COL_MAX_SIZE 18
-#define COL_MIN_SIZE 19
-#define COL_NUM_DIRS 20
-#define COL_FILE_CHUNK_SIZE 21
+#define COL_NAME 2
+#define COL_CONCURRENCY 3
+#define COL_FILE_SIZE 5
+#define COL_DATA_CHUNK_SIZE 6
+#define COL_PUTC 7
+#define COL_NUM_FILES 19
+#define COL_MAX_SIZE 20
+#define COL_MIN_SIZE 21
+#define COL_NUM_DIRS 22
+#define COL_FILE_CHUNK_SIZE 23
+#define COL_RAN_DEL_CPU 35
+#define COL_PUTC_LATENCY 36
+#define COL_SEEKS_LATENCY 41
+#define COL_SEQ_CREATE_LATENCY 42
+#define COL_RAN_DEL_LATENCY 47
 
 void usage()
 {
@@ -81,18 +91,16 @@ int main(int argc, char **argv)
     props[i] = new PCCHAR[MAX_ITEMS];
     props[i][0] = NULL;
     props[i][1] = NULL;
-    props[i][2] = "bgcolor=\"#FFFFFF\" class=\"rowheader\"><FONT SIZE=+1";
-    props[i][3] = "class=\"size\" bgcolor=\"#FFFFFF\"";
+    props[i][COL_NAME] = "bgcolor=\"#FFFFFF\" class=\"rowheader\"><FONT SIZE=+1";
     int j;
-    for(j = 4; j < MAX_ITEMS; j++)
+    for(j = COL_CONCURRENCY; j < MAX_ITEMS; j++)
     {
-      if( (j >= 17 && j <= 20) || j == 4 )
+      if( (j >= COL_NUM_FILES && j <= COL_FILE_CHUNK_SIZE) || j <= COL_DATA_CHUNK_SIZE )
       {
         props[i][j] = "class=\"size\" bgcolor=\"#FFFFFF\"";
       }
       else
       {
-//        props[i][j] = "bgcolor=\"#FFFFFF\"";
         props[i][j] = NULL;
       }
     }
@@ -103,15 +111,13 @@ int main(int argc, char **argv)
   {
 // First print the average speed line
     printf("<TR>");
+    print_item(i, COL_NAME);
+    if(col_used[COL_CONCURRENCY] == true)
+      print_item(i, COL_CONCURRENCY);
+    print_item(i, COL_FILE_SIZE); // file_size
     if(col_used[COL_DATA_CHUNK_SIZE] == true)
-    {
-      print_a_line(i, 2, 17);
-    }
-    else
-    {
-      print_a_line(i, 2, 3);
-      print_a_line(i, 5, 17);
-    }
+      print_item(i, COL_DATA_CHUNK_SIZE);
+    print_a_line(i, COL_PUTC, COL_NUM_FILES);
     if(col_used[COL_MAX_SIZE])
       print_item(i, COL_MAX_SIZE);
     if(col_used[COL_MIN_SIZE])
@@ -120,23 +126,28 @@ int main(int argc, char **argv)
       print_item(i, COL_NUM_DIRS);
     if(col_used[COL_FILE_CHUNK_SIZE])
       print_item(i, COL_FILE_CHUNK_SIZE);
-    print_a_line(i, 22, 33);
+    print_a_line(i, COL_FILE_CHUNK_SIZE + 1, COL_RAN_DEL_CPU);
     printf("</TR>\n");
 // Now print the latency line
     printf("<TR>");
-    print_a_line(i, 2, 2);
-    printf("<TD class=\"size\" bgcolor=\"#FFFFFF\">Latency</TD>");
+    print_item(i, COL_NAME);
+    int lat_width = 1;
     if(col_used[COL_DATA_CHUNK_SIZE] == true)
-      printf("<TD></TD>");
-    print_a_line(i, 34, 39);
-    int bef_lat_width, lat_width = 1;
+      lat_width++;
+    if(col_used[COL_CONCURRENCY] == true)
+      lat_width++;
+    printf("<TD class=\"size\" bgcolor=\"#FFFFFF\" COLSPAN=%d>Latency</TD>"
+         , lat_width);
+    print_a_line(i, COL_PUTC_LATENCY, COL_SEEKS_LATENCY);
+    int bef_lat_width;
+    lat_width = 1;
     if(mid_width > 1)
       lat_width = 2;
     bef_lat_width = mid_width - lat_width;
     if(bef_lat_width)
       printf("<TD COLSPAN=%d></TD>", bef_lat_width);
     printf("<TD class=\"size\" bgcolor=\"#FFFFFF\" COLSPAN=%d>Latency</TD>", lat_width);
-    print_a_line(i, 40, 45);
+    print_a_line(i, COL_SEQ_CREATE_LATENCY, COL_RAN_DEL_LATENCY);
     printf("</TR>\n");
   }
   footer();
@@ -287,7 +298,9 @@ int header()
 {
   int vers_width = 2;
   if(col_used[COL_DATA_CHUNK_SIZE] == true)
-    vers_width = 3;
+    vers_width++;
+  if(col_used[COL_CONCURRENCY] == true)
+    vers_width++;
   int mid_width = 1;
   if(col_used[COL_MAX_SIZE])
     mid_width++;
@@ -317,9 +330,13 @@ int header()
 "<TD COLSPAN=%d class=\"header\"></TD>"
 "<TD COLSPAN=6 class=\"header\"><FONT SIZE=+2><B>Sequential Create</B></FONT></TD>"
 "<TD COLSPAN=6 class=\"header\"><FONT SIZE=+2><B>Random Create</B></FONT></TD>"
-"</TR>"
-"<TR><TD></TD>"
-"<TD>Size</TD>", vers_width, mid_width);
+"</TR>\n"
+"<TR>", vers_width, mid_width);
+  if(col_used[COL_CONCURRENCY] == true)
+    printf("<TD COLSPAN=2>Concurrency</TD>");
+  else
+    printf("<TD></TD>");
+  printf("<TD>Size</TD>");
   if(col_used[COL_DATA_CHUNK_SIZE] == true)
     printf("<TD>Chunk Size</TD>");
   heading("Per Char"); heading("Block"); heading("Rewrite");

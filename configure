@@ -524,9 +524,9 @@ fi
 
 
 
-version="1.92a"
+version="1.92b"
 
-csv_version="1.92a"
+csv_version="1.92b"
 
 # Check whether --enable-stripping or --disable-stripping was given.
 if test "${enable_stripping+set}" = set; then
@@ -1182,7 +1182,9 @@ else
 #ifdef __cplusplus
 extern "C" void exit(int);
 #endif
+#ifndef _LARGEFILE64_SOURCE
 #define _LARGEFILE64_SOURCE
+#endif
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -1216,7 +1218,7 @@ int main () {
   return 0;
 }
 EOF
-if { (eval echo configure:1220: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
+if { (eval echo configure:1222: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
 then
   large_file="yes"
 else

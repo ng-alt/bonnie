@@ -30,7 +30,7 @@ bool Rand::seedFile(CPCCHAR name)
     m_arr[i] = abs(ntohl(m_arr[i]));
   }
   close(fd);
-  m_ind = 0;
+  m_ind = -1;
   m_name = string(name);
   return false;
 }
@@ -41,7 +41,16 @@ void Rand::seedNum(UINT num)
   m_arr = NULL;
   m_size = 0;
   srand(num);
+  m_init = num;
   char buf[12];
   sprintf(buf, "%u", num);
   m_name = string(buf);
+}
+
+void Rand::reset()
+{
+  if(m_arr)
+    m_ind = -1;
+  else
+    srand(m_init);
 }

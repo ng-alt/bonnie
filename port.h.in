@@ -4,7 +4,9 @@
 @semun@
 @bool@
 @snprintf@
+#ifndef _LARGEFILE64_SOURCE
 @large_file@
+#endif
 #ifdef _LARGEFILE64_SOURCE
 #define OFF_T_PRINTF "%lld"
 #else

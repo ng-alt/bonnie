@@ -4,7 +4,9 @@
 
 
 
+#ifndef _LARGEFILE64_SOURCE
 #define _LARGEFILE64_SOURCE
+#endif
 #ifdef _LARGEFILE64_SOURCE
 #define OFF_T_PRINTF "%lld"
 #else

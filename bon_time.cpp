@@ -52,6 +52,7 @@ void BonTimer::add_delta_report(report_s &rep, tests_t test)
 
 BonTimer::BonTimer()
  : m_type(txt)
+ , m_concurrency(1)
 {
   Initialize();
 }
@@ -65,6 +66,7 @@ BonTimer::Initialize()
     m_delta[i].Elapsed = 0.0;
     m_delta[i].Latency = 0.0;
   }
+  random_source.reset();
 }
 
 void
@@ -132,7 +134,12 @@ int BonTimer::print_stat(tests_t test, int test_size)
           fprintf(m_fp, " %5.1f", stat);
       }
       else
-        fprintf(m_fp, ",%.1f", stat);
+      {
+        if(stat >= 1000.0)
+          fprintf(m_fp, ",%.0f", stat);
+        else
+          fprintf(m_fp, ",%.1f", stat);
+      }
     }
     else
     {
@@ -239,7 +246,7 @@ BonTimer::DoReportIO(int file_size, int char_file_size
       fprintf(m_fp, "Version %5s       ", BON_VERSION);
       fprintf(m_fp,
         "------Sequential Output------ --Sequential Input- --Random-\n");
-      fprintf(m_fp, "                    ");
+      fprintf(m_fp, "Concurrency %3d     ", m_concurrency);
       fprintf(m_fp,
         "-Per Chr- --Block-- -Rewrite- -Per Chr- --Block-- --Seeks--\n");
       if(io_chunk_size == DefaultChunkSize)
@@ -285,8 +292,8 @@ BonTimer::DoReportIO(int file_size, int char_file_size
     }
     else
     {
-      printf(CSV_VERSION "," BON_VERSION ",%s,%s,%s", m_name
-           , random_source.getSeed().c_str(), size_buf);
+      printf(CSV_VERSION "," BON_VERSION ",%s,%d,%s,%s", m_name
+           , m_concurrency, random_source.getSeed().c_str(), size_buf);
     }
     for(i = ByteWrite; i < Lseek; i++)
     {
@@ -306,8 +313,8 @@ BonTimer::DoReportIO(int file_size, int char_file_size
   }
   else if(m_type == csv)
   {
-    fprintf(m_fp, CSV_VERSION "," BON_VERSION ",%s,%s,,,,,,,,,,,,,", m_name
-          , random_source.getSeed().c_str());
+    fprintf(m_fp, CSV_VERSION "," BON_VERSION ",%s,%d,%s,,,,,,,,,,,,,", m_name
+          , m_concurrency, random_source.getSeed().c_str());
   }
   return 0;
 }

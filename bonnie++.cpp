@@ -250,9 +250,10 @@ int main(int argc, char *argv[])
   myPid = sys_getpid();
 #endif
   globals.timer.random_source.seedNum(myPid ^ time(NULL));
+  int concurrency = 1;
 
   int int_c;
-  while(-1 != (int_c = getopt(argc, argv, "bd:f::g:l:m:n:p:qr:s:u:x:y:z:Z:")) )
+  while(-1 != (int_c = getopt(argc, argv, "bc:d:f::g:l:m:n:p:qr:s:u:x:y:z:Z:")) )
   {
     switch(char(int_c))
     {
@@ -262,6 +263,9 @@ int main(int argc, char *argv[])
       break;
       case 'b':
         globals.bufSync = true;
+      break;
+      case 'c':
+        concurrency = atoi(optarg);
       break;
       case 'd':
         if(chdir(optarg))
@@ -395,6 +399,8 @@ int main(int argc, char *argv[])
       break;
     }
   }
+  if(concurrency < 1 || concurrency > 200)
+    usage();
 #ifndef NON_UNIX
   if(!globals.syn)
     globals.setSync(eNone);
@@ -441,6 +447,7 @@ int main(int argc, char *argv[])
   }
 
   globals.timer.setMachineName(machine);
+  globals.timer.setConcurrency(concurrency);
 
 #ifndef NON_UNIX
   if(userName || groupName)
@@ -509,6 +516,14 @@ int main(int argc, char *argv[])
     usage();
   }
 #endif
+  if(file_size && globals.ram && (file_size * concurrency) < (globals.ram * 2) )
+  {
+    fprintf(stderr
+          , "File size should be double RAM for good results, RAM is %dM.\n"
+          , globals.ram);
+    usage();
+  }
+
   // if doing more than one test run then we print a header before the
   // csv format output.
   if(test_count > 1)
@@ -561,13 +576,6 @@ TestFileOps(int file_size, CGlobalItems &globals)
     int    bufindex;
     int    i;
 
-    if(globals.ram && file_size < globals.ram * 2)
-    {
-      fprintf(stderr
-            , "File size should be double RAM for good results, RAM is %dM.\n"
-            , globals.ram);
-      return 1;
-    }
     // default is we have 1M / 8K * 300 chunks = 38400
     num_chunks = Unit / globals.io_chunk_size() * file_size;
     int char_io_chunks = Unit / globals.io_chunk_size() * globals.byte_io_size;
@@ -810,7 +818,7 @@ void
 usage()
 {
   fprintf(stderr, "usage:\n"
-    "bonnie++ [-d scratch-dir] [-s size(Mb)[:chunk-size(b)]]\n"
+    "bonnie++ [-d scratch-dir] [-c concurrency] [-s size(Mb)[:chunk-size(b)]]\n"
     "      [-n number-to-stat[:max-size[:min-size][:num-directories[:chunk-size]]]]\n"
     "      [-m machine-name] [-r ram-size-in-Mb]\n"
     "      [-x number-of-tests] [-u uid-to-use:gid-to-use] [-g gid-to-use]\n"

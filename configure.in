@@ -1,9 +1,9 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(bonnie++.cpp)
 AC_SUBST(version)
-version="1.92a"
+version="1.92b"
 AC_SUBST(csv_version)
-csv_version="1.92a"
+csv_version="1.92b"
 
 AC_ARG_ENABLE(stripping,
       [  --disable-stripping  disables stripping of installed binaries],
@@ -66,7 +66,9 @@ void * thread_func(void * param) { return NULL; }
 
 
 AC_SUBST(large_file)
-AC_TRY_RUN([#define _LARGEFILE64_SOURCE
+AC_TRY_RUN([#ifndef _LARGEFILE64_SOURCE
+#define _LARGEFILE64_SOURCE
+#endif
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>

@@ -1,3 +1,17 @@
+bonnie++ (1.92b) unstable; urgency=low
+
+  * Fixed a buffer overflow in the random number management code.
+
+  * Fixed a bug where bonnie++ would SEGV if ^C was pressed at the start of the
+    file creation tests.
+ 
+  * Clarified the -r option to bonnie++ in the man page.
+
+  * Finished adding the support for specifying the seed.  Fixed the bon_csv2*
+    programs and their documentation.
+
+ -- Russell Coker <russell@coker.com.au>  Sun, 7 Jun 2001 14:03:54 +0200
+
 bonnie++ (1.92a) unstable; urgency=low
 
   * Made the -d option to bonnie++ work with relative paths.  Now it does
@@ -17,7 +31,7 @@ bonnie++ (1.92a) unstable; urgency=low
 
   * Now I don't use stupid macro names like _close which break on BSD!
 
- -- Russell Coker <russell@coker.com.au>  Fri, 11 May 2001 16:34:58 +0100
+ -- Russell Coker <russell@coker.com.au>  Mon, 11 Jun 2001 13:39:36 +0200
 
 bonnie++ (1.92) unstable; urgency=low
 

@@ -19,10 +19,9 @@ public:
   {
     if(m_arr)
     {
+      m_ind++;
       if(m_ind >= m_size)
         m_ind = 0;
-      else
-        m_ind++;
       return m_arr[m_ind];
     }
     else
@@ -33,11 +32,14 @@ public:
 
   string getSeed() { return m_name; }
 
+  void reset();
+
 private:
   int *m_arr;
   int m_size;
   int m_ind;
   string m_name;
+  UINT m_init;
 
   Rand(const Rand &t);
   Rand & operator =(const Rand &t);

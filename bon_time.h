@@ -48,6 +48,8 @@ public:
   void add_latency(tests_t test, double t);
 
   void setMachineName(CPCCHAR name) { m_name = name; }
+
+  void setConcurrency(int con) { m_concurrency = con; }
  
   Rand random_source;
 
@@ -62,6 +64,7 @@ private:
   Duration m_dur;
   CPU_Duration m_cpu_dur;
   PCCHAR m_name;
+  int m_concurrency;
 
   BonTimer(const BonTimer&);
   BonTimer &operator=(const BonTimer&);
