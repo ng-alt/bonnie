@@ -1,6 +1,6 @@
 Summary: A program for benchmarking hard drives and filesystems
 Name: bonnie++
-Version: 1.02e
+Version: 1.03
 Release: 1
 Copyright: GPL
 Group: Utilities/Benchmarking
@@ -38,10 +38,8 @@ rm -rf $RPM_BUILD_ROOT
 %{_prefix}/sbin/zcav
 %{_prefix}/bin/bon_csv2html
 %{_prefix}/bin/bon_csv2txt
-%{_prefix}/man/man1/bon_csv2html.1
-%{_prefix}/man/man1/bon_csv2txt.1
-%{_prefix}/man/man8/bonnie++.8
-%{_prefix}/man/man8/zcav.8
+%{_mandir}/man1/*
+%{_mandir}/man8/*
 
 %changelog
 * Wed Sep 06 2000 Rob Latham <rlatham@plogic.com>

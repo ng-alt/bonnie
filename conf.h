@@ -4,5 +4,7 @@
 
 #define HAVE_ALGO_H 1
 /* #undef HAVE_ALGO */
+#define HAVE_ALGORITHM 1
+#define HAVE_VECTOR 1
 
 #endif

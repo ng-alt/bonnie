@@ -1,3 +1,10 @@
+bonnie++ (1.03a) unstable; urgency=low
+
+  * Fixed the bugs in GCC 3.2 compilation and compiled with GCC 3.2.  Results
+    will be slightly lower now, but it's still a fair test of compiler/OS...
+
+ -- Russell Coker <russell@coker.com.au>  Fri, 10 Jan 2002 15:20:00 +0100
+
 bonnie++ (1.03) unstable; urgency=low
 
   * Fixed a bug in error handling during a stat test with multiple directories.

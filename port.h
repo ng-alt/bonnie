@@ -3,6 +3,10 @@
 
 #include <stdio.h>
 
+#if defined (WIN32) || defined (OS2)
+#define NON_UNIX
+#endif
+
 
 #define USE_SA_SIGACTION
 

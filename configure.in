@@ -65,10 +65,10 @@ fi
 
 AC_SUBST(exes)
 AC_SUBST(man8)
-exes="bonnie++"
-man8="bonnie++.8"
-AC_CHECK_HEADERS(vector.h vector, exes="$exes zcav" man8="$man8 zcav.8", echo "STL not installed so no ZCAV!")
-AC_CHECK_HEADERS(algo.h algo)
+AC_CHECK_HEADERS(vector.h vector, vec_exes="zcav" vec_man8="zcav.8", echo "STL not installed so no ZCAV!")
+exes="bonnie++ $vec_exes"
+man8="bonnie++.8 $vec_man8"
+AC_CHECK_HEADERS(algorithm algo.h algo)
 
 AC_SUBST(aix_mem_size)
 if [[ -f /etc/objrepos ]]; then

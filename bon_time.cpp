@@ -1,3 +1,6 @@
+
+using namespace std;
+
 #include <sys/time.h>
 #ifdef OS2
 #define INCL_DOSFILEMGR
@@ -15,15 +18,26 @@
 #include "bon_time.h"
 #include <time.h>
 #include <string.h>
-#if defined(HAVE_ALGO_H) || defined(HAVE_ALGO)
+
+#ifndef NON_UNIX
+#include "conf.h"
+#endif
+
+#ifdef HAVE_ALGORITHM
+#include <algorithm>
+#else
+
 #ifdef HAVE_ALGO
 #include <algo>
 #else
+#ifdef HAVE_ALGO_H
 #include <algo.h>
-#endif
 #else
 #define min(XX,YY) ((XX) < (YY) ? (XX) : (YY))
 #define max(XX,YY) ((XX) > (YY) ? (XX) : (YY))
+#endif
+#endif
+
 #endif
 
 #define TIMEVAL_TO_DOUBLE(XX) (double((XX).tv_sec) + double((XX).tv_usec) / 1000000.0)
