@@ -119,13 +119,16 @@ int TestFileOps(int file_size, CGlobalItems &globals);
 
 static bool exitNow;
 
-void ctrl_c_handler(int sig)
+extern "C"
 {
-  if(sig == SIGXCPU)
-    fprintf(stderr, "Exceeded CPU usage.\n");
-  else if(sig == SIGXFSZ)
-    fprintf(stderr, "exceeded file storage limits.\n");
-  exitNow = true;
+  void ctrl_c_handler(int sig)
+  {
+    if(sig == SIGXCPU)
+      fprintf(stderr, "Exceeded CPU usage.\n");
+    else if(sig == SIGXFSZ)
+      fprintf(stderr, "exceeded file storage limits.\n");
+    exitNow = true;
+  }
 }
 
 int main(int argc, char *argv[])

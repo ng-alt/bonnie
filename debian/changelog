@@ -1,3 +1,12 @@
+bonnie++ (1.02b) unstable; urgency=low
+
+  * Made the signal handler extern "C".
+
+  * Fixed a spelling error in the description.
+    Closes: #124462
+
+ -- Russell Coker <russell@coker.com.au>  Wed, 19 Dec 2001 07:55:00 +0100
+
 bonnie++ (1.02a) unstable; urgency=low
 
   * Removed optind=0, which caused problems on BSD.

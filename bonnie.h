@@ -1,7 +1,7 @@
 #ifndef BONNIE
 #define BONNIE
 
-#define BON_VERSION "@version@"
+#define BON_VERSION "1.02b"
 
 #include "conf.h"
 #include "port.h"

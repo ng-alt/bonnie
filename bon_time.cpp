@@ -15,7 +15,7 @@
 #include "bon_time.h"
 #include <time.h>
 #include <string.h>
-#ifdef USE_STL
+#ifdef HAVE_ALGO_H
 #include <algo.h>
 #else
 #define min(XX,YY) ((XX) < (YY) ? (XX) : (YY))
