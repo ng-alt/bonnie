@@ -75,10 +75,10 @@ COpenTest::~COpenTest()
     }
     if(m_number_directories > 1)
     {
-      char buf[4];
+      char buf[6];
       for(i = 0; i < m_number_directories; i++)
       {
-        sprintf(buf, "%03d", i);
+        sprintf(buf, "%05d", i);
         if(sys_rmdir(buf))
           io_error("rmdir");
       }
@@ -117,7 +117,7 @@ void COpenTest::make_names(Rand &r, bool do_random)
   }
   else
   {
-    m_file_name_buf = new char[(MaxNameLen + 1 + 4) * m_number];
+    m_file_name_buf = new char[(MaxNameLen + 1 + 6) * m_number];
   }
   m_file_names = new PCHAR[m_number];
   PCHAR buf = m_file_name_buf;
@@ -141,7 +141,7 @@ void COpenTest::make_names(Rand &r, bool do_random)
     m_file_names[i] = buf;
     if(m_number_directories != 1)
     {
-      sprintf(buf, "%03d/", directory_num);
+      sprintf(buf, "%05d/", directory_num);
       buf += strlen(buf);
     }
     if(m_sync)
@@ -272,6 +272,12 @@ int COpenTest::create_a_link(const char *original, const char *filename, int dir
 int COpenTest::create(CPCCHAR dirname, BonTimer &timer, int num, int max_size
                     , int min_size, int num_directories, bool do_random)
 {
+  if(num_directories >= 100000)
+  {
+    fprintf(stderr, "Can't have more than 99,999 directories.\n");
+    return -1;
+  }
+
   m_number = num * DirectoryUnit;
   m_number_directories = num_directories;
   make_names(timer.random_source, do_random);
@@ -281,6 +287,11 @@ int COpenTest::create(CPCCHAR dirname, BonTimer &timer, int num, int max_size
   m_dirname = new char[strlen(dirname) + 1];
   strcpy(m_dirname, dirname);
 
+  if(num_directories >= 100000)
+  {
+    fprintf(stderr, "Can't have more than 99,999 directories.\n");
+    return -1;
+  }
   if(make_directory(dirname))
   {
     fprintf(stderr, "Can't make directory %s\n", dirname);
@@ -300,7 +311,7 @@ int COpenTest::create(CPCCHAR dirname, BonTimer &timer, int num, int max_size
   {
     for(i = 0; i < num_directories; i++)
     {
-      sprintf(m_buf, "%03d", i);
+      sprintf(m_buf, "%05d", i);
       if(make_directory(m_buf))
       {
         fprintf(stderr, "Can't make directory %s\n", m_buf);
@@ -337,6 +348,11 @@ int COpenTest::create(CPCCHAR dirname, BonTimer &timer, int num, int max_size
   {
     if(*m_exit)
     {
+      if(m_number_directories != 1 && chdir(".."))
+      {
+        fprintf(stderr, "Can't change to directory ..\n");
+        return -1;
+      }
       return eCtrl_C;
     }
     dur.start();
@@ -403,10 +419,10 @@ int COpenTest::delete_random(BonTimer &timer)
   }
   if(m_number_directories > 1)
   {
-    char buf[4];
+    char buf[6];
     for(i = 0; i < m_number_directories; i++)
     {
-      sprintf(buf, "%03d", i);
+      sprintf(buf, "%05d", i);
 #ifndef NON_UNIX
       if(m_sync)
       {
@@ -452,10 +468,10 @@ int COpenTest::delete_sequential(BonTimer &timer)
   Duration dur;
   for(int i = 0; i < m_number_directories; i++)
   {
-    char buf[4];
+    char buf[6];
     if(m_number_directories != 1)
     {
-      sprintf(buf, "%03d", i);
+      sprintf(buf, "%05d", i);
       if(chdir(buf))
       {
         fprintf(stderr, "Can't change to directory %s\n", buf);
@@ -474,11 +490,13 @@ int COpenTest::delete_sequential(BonTimer &timer)
 #else
     int rc = 0;
     struct _finddata_t findBuf;
-    d = file_findfirst("*.*", &findBuf);
+    d = _findfirst("*.*", &findBuf);
     if(d == -1)
 #endif
     {
       fprintf(stderr, "Can't open directory.\n");
+      if(m_number_directories != 1)
+        chdir("..");
       return -1;
     }
     dur.start();
@@ -490,7 +508,7 @@ int COpenTest::delete_sequential(BonTimer &timer)
         {
           dur.stop();
           fprintf(stderr, "Can't delete file %s\n", findBuf.achName);
-          file_findclose(d);
+          _findclose(d);
           return -1;
         }
         dur.stop();
@@ -500,16 +518,19 @@ int COpenTest::delete_sequential(BonTimer &timer)
 #ifdef OS2
       rc = DosFindNext(d, &findBuf, sizeof(findBuf), &entries);
     } while(!rc && entries == 1);
-#else
-      rc = file_findnext(d, &findBuf);
-    } while(!rc);
-#endif
     file_findclose(d);
+#else
+      rc = _findnext(d, &findBuf);
+    } while(!rc);
+    _findclose(d);
+#endif
 #else
     DIR *d = opendir(".");
     if(!d)
     {
       fprintf(stderr, "Can't open directory.\n");
+      if(m_number_directories != 1)
+        chdir("..");
       return -1;
     }
     dirent *file_ent;
@@ -657,10 +678,10 @@ int COpenTest::stat_sequential(BonTimer &timer)
   Duration dur;
   for(int i = 0; i < m_number_directories; i++)
   {
-    char buf[4];
+    char buf[6];
     if(m_number_directories != 1)
     {
-      sprintf(buf, "%03d", i);
+      sprintf(buf, "%05d", i);
       if(chdir(buf))
       {
         fprintf(stderr, "Can't change to directory %s\n", buf);
@@ -679,11 +700,13 @@ int COpenTest::stat_sequential(BonTimer &timer)
 #else
     int rc = 0;
     struct _finddata_t findBuf;
-    d = file_findfirst("*.*", &findBuf);
+    d = _findfirst("*.*", &findBuf);
     if(d == -1)
 #endif
     {
       fprintf(stderr, "Can't open directory.\n");
+      if(m_number_directories != 1)
+        chdir("..");
       return -1;
     }
     dur.start();
@@ -691,6 +714,11 @@ int COpenTest::stat_sequential(BonTimer &timer)
     {
       if(*m_exit)
       {
+        if(m_number_directories != 1 && chdir(".."))
+        {
+          fprintf(stderr, "Can't change to directory ..\n");
+          return -1;
+        }
         return eCtrl_C;
       }
       if(findBuf.achName[0] != '.') // our files do not start with a dot
@@ -698,6 +726,8 @@ int COpenTest::stat_sequential(BonTimer &timer)
         if(-1 == stat_file(findBuf.achName))
         {
           dur.stop();
+          if(m_number_directories != 1)
+            chdir("..");
           return -1;
         }
         count++;
@@ -707,19 +737,22 @@ int COpenTest::stat_sequential(BonTimer &timer)
 #ifdef OS2
       rc = DosFindNext(d, &findBuf, sizeof(findBuf), &entries);
 #else
-      rc = file_findnext(d, &findBuf);
+      rc = _findnext(d, &findBuf);
 #endif
 #ifdef OS2
     } while(!rc && entries == 1);
+    file_findclose(d);
 #else
     } while(!rc);
+    _findclose(d);
 #endif
-    file_findclose(d);
 #else
     DIR *d = opendir(".");
     if(!d)
     {
       fprintf(stderr, "Can't open directory.\n");
+      if(m_number_directories != 1)
+        chdir("..");
       return -1;
     }
     dirent *file_ent;
@@ -731,12 +764,22 @@ int COpenTest::stat_sequential(BonTimer &timer)
         break;
       if(*m_exit)
       {
+        if(m_number_directories != 1 && chdir(".."))
+        {
+          fprintf(stderr, "Can't change to directory ..\n");
+          return -1;
+        }
         return eCtrl_C;
       }
       if(file_ent->d_name[0] != '.') // our files do not start with a dot
       {
         if(-1 == stat_file(file_ent->d_name))
+        {
+          if(m_number_directories != 1)
+            chdir("..");
+          dur.stop();
           return -1;
+        }
         count++;
         dur.stop();
       }

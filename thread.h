@@ -4,7 +4,7 @@
 #include "port.h"
 
 #ifndef NON_UNIX
-#include <sys/poll.h>
+#include <poll.h>
 #include <pthread.h>
 #endif
 
@@ -60,6 +60,7 @@ private:
 #ifndef NON_UNIX
   pollfd m_readPoll;
   pollfd m_writePoll;
+  pthread_t *m_thread_info;
 #endif
   FILE_TYPE m_parentRead;
   FILE_TYPE m_parentWrite;
@@ -67,7 +68,6 @@ private:
   FILE_TYPE m_childWrite;
   int m_numThreads;
   int *m_retVal;
-  pthread_t *m_thread_info;
 
   Thread(const Thread &f);
   Thread & operator =(const Thread &f);

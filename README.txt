@@ -1,12 +1,12 @@
 To compile for OS/2 type "nmake -f Makefile.os2".
 
-To compile for NT type "nmake -f Makefile.nt".
+To compile for NT type "nmake /nologo /f Makefile.nt".
 
 To build a Solaris package type "make -C sun".
 
-To build a Debian package type "dpkg-buildpackage".
+To build a Debian package type "fakeroot dpkg-buildpackage".
 
-To build a RPM type "".
+To build a RPM type "SOMEONE TELL ME WHAT TO PUT HERE".
 
 To compile for any other Unix type "./configure" and then type "make" after
 the configure script successfully completes.  If ./configure produces errors

@@ -24,14 +24,15 @@ Thread::Thread()
  : m_read(-1)
  , m_write(-1)
  , m_threadNum(-1)
-
+#ifndef NON_UNIX
+ , m_thread_info(NULL)
+#endif
  , m_parentRead(-1)
  , m_parentWrite(-1)
  , m_childRead(-1)
  , m_childWrite(-1)
  , m_numThreads(0)
  , m_retVal(NULL)
- , m_thread_info(NULL)
 {
 }
 
@@ -39,14 +40,15 @@ Thread::Thread(int threadNum, const Thread *parent)
  : m_read(parent->m_childRead)
  , m_write(parent->m_childWrite)
  , m_threadNum(threadNum)
-
+#ifndef NON_UNIX
+ , m_thread_info(NULL)
+#endif
  , m_parentRead(-1)
  , m_parentWrite(-1)
  , m_childRead(-1)
  , m_childWrite(-1)
  , m_numThreads(parent->m_numThreads)
  , m_retVal(&parent->m_retVal[threadNum])
- , m_thread_info(NULL)
 {
 }
 
@@ -54,15 +56,17 @@ Thread::~Thread()
 {
   if(m_threadNum == -1)
   {
+#ifndef NON_UNIX
     for(int i = 0; i < m_numThreads; i++)
     {
       pthread_join(m_thread_info[i], NULL);
     }
+    delete m_thread_info;
+#endif
     file_close(m_parentRead);
     file_close(m_parentWrite);
     file_close(m_childRead);
     file_close(m_childWrite);
-    delete m_thread_info;
     delete m_retVal;
   }
 }
@@ -120,10 +124,10 @@ void Thread::go(PVOID param, int num)
     fprintf(stderr, "Can't init thread attributes.\n");
   if(pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE))
     fprintf(stderr, "Can't set thread attributes.\n");
+  m_thread_info = new pthread_t[num];
 #endif
 
   m_retVal = new int[num + 1];
-  m_thread_info = new pthread_t[num];
   for(int i = 1; i <= num; i++)
   {
     m_retVal[i] = -1;

@@ -1,8 +1,10 @@
 #ifndef BONNIE
 #define BONNIE
 
-#define BON_VERSION "1.93"
-#define CSV_VERSION "1.92b"
+using namespace std;
+
+#define BON_VERSION "1.93b"
+#define CSV_VERSION "1.93b"
 
 #include "port.h"
 #include <stdio.h>
@@ -14,9 +16,9 @@ typedef FILE *PFILE;
 // million files (7) + up to 12 random extra chars
 #define RandExtraLen (12)
 #define MaxNameLen (7 + RandExtraLen)
-// data includes index to which directory (4 bytes) and terminating '\0' for
+// data includes index to which directory (6 bytes) and terminating '\0' for
 // the name and pointer to file name
-#define MaxDataPerFile (MaxNameLen + 4 + 1 + 4)
+#define MaxDataPerFile (MaxNameLen + 6 + 1 + 4)
 #define MinTime (0.5)
 #define Seeks (8192)
 #define UpdateSeek (10)

@@ -11,6 +11,19 @@ using namespace std;
 #endif
 typedef vector<PCCHAR> STR_VEC;
 
+#ifndef HAVE_MIN_MAX
+#if defined(HAVE_ALGO_H) || defined(HAVE_ALGO)
+#ifdef HAVE_ALGO
+#include <algo>
+#else
+#include <algo.h>
+#endif
+#else
+#define min(XX,YY) ((XX) < (YY) ? (XX) : (YY))
+#define max(XX,YY) ((XX) > (YY) ? (XX) : (YY))
+#endif
+#endif
+
 vector<STR_VEC> data;
 typedef PCCHAR * PPCCHAR;
 PPCCHAR * props;
@@ -65,7 +78,8 @@ void usage()
 
 int main(int argc, char **argv)
 {
-  for(int i = 0; i < MAX_ITEMS; i++)
+  unsigned int i;
+  for(i = 0; i < MAX_ITEMS; i++)
     col_used[i] = false;
 
   char buf[1024];
@@ -85,7 +99,6 @@ int main(int argc, char **argv)
   }
 
   props = new PPCCHAR[data.size()];
-  unsigned int i;
   for(i = 0; i < data.size(); i++)
   {
     props[i] = new PCCHAR[MAX_ITEMS];
@@ -176,11 +189,13 @@ void calc_vals()
     switch(vals[column_ind])
     {
     case eNoCols:
+    {
       for(unsigned int row_ind = 0; row_ind < data.size(); row_ind++)
       {
         if(data[row_ind][column_ind] && strlen(data[row_ind][column_ind]))
           col_used[column_ind] = true;
       }
+    }
     break;
     case eCPU:
       // gotta add support for CPU vals.  This means sorting on previous-col
@@ -221,8 +236,8 @@ void calc_vals()
             if(min_col == -1.0)
               min_col = arr[sort_ind].val;
             else
-              min_col = __min(arr[sort_ind].val, min_col);
-            max_col = __max(max_col, arr[sort_ind].val);
+              min_col = min(arr[sort_ind].val, min_col);
+            max_col = max(max_col, arr[sort_ind].val);
           }
         }
         arr[sort_ind].col_ind = col_count;
@@ -281,7 +296,7 @@ PCCHAR get_col(double range_col, double val, bool reverse, CPCCHAR extra)
   const int buf_len = 256;
   PCHAR buf = new char[buf_len];
   int green = int(255.0 * val / range_col);
-  green = __min(green, 255);
+  green = min(green, 255);
   int red = 255 - green;
   _snprintf(buf
 #ifndef NO_SNPRINTF

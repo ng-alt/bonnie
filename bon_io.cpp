@@ -68,11 +68,15 @@ int CFileOp::action(PVOID)
   int ticket;
   int rc;
   Duration dur, test_time;
+  rc = Read(&ticket, sizeof(ticket), 0);
+#ifndef WIN32
   CPU_Duration test_cpu;
+#endif
   test_time.getTime(&seeker_report.StartTime);
+#ifndef WIN32
   test_cpu.start();
-  while((rc = Read(&ticket, sizeof(ticket), 0)) == sizeof(ticket)
-         && ticket != END_SEEK_PROCESS)
+#endif
+  if(rc == sizeof(ticket) && ticket != END_SEEK_PROCESS) do
   {
     bool update = false;
     if(ticket < 0)
@@ -84,7 +88,9 @@ int CFileOp::action(PVOID)
     if(doseek(ticket % m_total_chunks, update) )
       return 1;
     dur.stop();
-  }
+  } while((rc = Read(&ticket, sizeof(ticket), 0)) == sizeof(ticket)
+         && ticket != END_SEEK_PROCESS);
+
   if(rc != sizeof(ticket))
   {
     fprintf(stderr, "Can't read ticket.\n");
@@ -93,7 +99,9 @@ int CFileOp::action(PVOID)
   Close();
   // seeker report is start and end times, CPU used, and latency
   test_time.getTime(&seeker_report.EndTime);
+#ifndef WIN32
   seeker_report.CPU = test_cpu.stop();
+#endif
   seeker_report.Latency = dur.getMax();
   if(Write(&seeker_report, sizeof(seeker_report), 0) != sizeof(seeker_report))
   {
@@ -340,9 +348,10 @@ int CFileOp::m_open(CPCCHAR base_name, bool create)
     flags = O_RDWR;
 #ifdef WIN32
     flags |= O_BINARY;
-#endif
+#else
 #ifdef _LARGEFILE64_SOURCE
     flags |= O_LARGEFILE;
+#endif
 #endif
 
 #endif

@@ -15,6 +15,7 @@ LINK=@CXX@
 THREAD_LFLAGS=@thread_ldflags@
 
 INSTALL=@INSTALL@
+INSTALL_PROGRAM=@INSTALL_PROGRAM@
 
 BONSRC=bonnie++.cpp bon_io.cpp bon_file.cpp bon_time.cpp semaphore.cpp \
  sync.cpp thread.cpp bon_suid.cpp duration.cpp rand.o util.o
@@ -38,7 +39,7 @@ bonnie++: $(BONOBJS)
 zcav: $(ZCAVOBJS)
 	$(LINK) -o zcav $(ZCAVOBJS) $(THREAD_LFLAGS)
 
-getc_putc: $(GETCOBJS)
+getc_putc: $(GETCOBJS) getc_putc_helper
 	$(LINK) -o getc_putc $(GETCOBJS) $(THREAD_LFLAGS)
 
 getc_putc_helper: $(GETCHOBJS)
@@ -54,7 +55,7 @@ install-bin: $(EXE) $(EXES)
 	mkdir -p $(eprefix)/bin $(eprefix)/sbin
 	@INSTALL_PROGRAM@ @stripping@ $(EXES) $(eprefix)/sbin
 	@INSTALL_PROGRAM@ @stripping@ $(EXE) $(eprefix)/bin
-	@INSTALL_PROGRAM@ $(SCRIPTS) $(eprefix)/bin
+	@INSTALL_SCRIPT@ $(SCRIPTS) $(eprefix)/bin
 
 install: install-bin
 	mkdir -p @mandir@/man1 @mandir@/man8
@@ -70,7 +71,7 @@ clean:
 	rm -f debian/{substvars,files} config.log depends.bak
 
 realclean: clean
-	rm -f config.* Makefile bonnie++.spec
+	rm -f config.* Makefile bonnie++.spec port-unix.h
 	rm -f bon_csv2txt bon_csv2html.1 sun/pkginfo
 
 dep:

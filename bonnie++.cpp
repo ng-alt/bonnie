@@ -43,7 +43,17 @@ typedef char Sync;
 #endif
 
 #ifndef NON_UNIX
+#include "conf.h"
+#ifdef HAVE_ALGORITHM
+#include <algorithm>
+#else
+#ifdef HAVE_ALGO
+#include <algo>
+#else
 #include <algo.h>
+#endif
+#endif
+
 #include <sys/wait.h>
 #include <unistd.h>
 #include <sys/time.h>
@@ -159,15 +169,19 @@ int TestDirOps(int directory_size, int max_size, int min_size
 int TestFileOps(int file_size, CGlobalItems &globals);
 
 static bool exitNow;
+static bool already_printed_error;
 
 #ifndef NON_UNIX
-void ctrl_c_handler(int sig)
+extern "C"
 {
-  if(sig == SIGXCPU)
-    fprintf(stderr, "Exceeded CPU usage.\n");
-  else if(sig == SIGXFSZ)
-    fprintf(stderr, "exceeded file storage limits.\n");
-  exitNow = true;
+  void ctrl_c_handler(int sig, siginfo_t *siginf, void *unused)
+  {
+    if(siginf->si_signo == SIGXCPU)
+      fprintf(stderr, "Exceeded CPU usage.\n");
+    else if(siginf->si_signo == SIGXFSZ)
+      fprintf(stderr, "exceeded file storage limits.\n");
+    exitNow = true;
+  }
 }
 #endif
 
@@ -188,12 +202,12 @@ int main(int argc, char *argv[])
   bool setSize = false;
 
   exitNow = false;
+  already_printed_error = false;
 
 #ifndef NON_UNIX
   struct sigaction sa;
-  sa.sa_sigaction = NULL;
-  sa.sa_handler = ctrl_c_handler;
-  sa.sa_flags = SA_RESETHAND;
+  sa.sa_sigaction = &ctrl_c_handler;
+  sa.sa_flags = SA_RESETHAND | SA_SIGINFO;
   if(sigaction(SIGINT, &sa, NULL)
    || sigaction(SIGXCPU, &sa, NULL)
    || sigaction(SIGXFSZ, &sa, NULL))
@@ -249,7 +263,7 @@ int main(int argc, char *argv[])
         concurrency = atoi(optarg);
       break;
       case 'd':
-        if(chdir(optarg))
+        if(sys_chdir(optarg))
         {
           fprintf(stderr, "Can't change to directory \"%s\".\n", optarg);
           usage();
@@ -266,7 +280,7 @@ int main(int argc, char *argv[])
       break;
       case 'n':
       {
-        char *sbuf = strdup(optarg);
+        char *sbuf = _strdup(optarg);
         char *size = strtok(sbuf, ":");
         directory_size = size_from_str(size, "m");
         size = strtok(NULL, ":");
@@ -306,7 +320,7 @@ int main(int argc, char *argv[])
       break;
       case 's':
       {
-        char *sbuf = strdup(optarg);
+        char *sbuf = _strdup(optarg);
         char *size = strtok(sbuf, ":");
 #ifdef _LARGEFILE64_SOURCE
         file_size = size_from_str(size, "gt");
@@ -333,7 +347,7 @@ int main(int argc, char *argv[])
       {
         if(userName)
           usage();
-        userName = strdup(optarg);
+        userName = _strdup(optarg);
         int i;
         for(i = 0; userName[i] && userName[i] != ':'; i++);
         if(userName[i] == ':')
@@ -415,7 +429,7 @@ int main(int argc, char *argv[])
     char utsBuf[MAX_COMPUTERNAME_LENGTH + 2];
     DWORD size = MAX_COMPUTERNAME_LENGTH + 1;
     if(GetComputerName(utsBuf, &size))
-      machine = strdup(utsBuf);
+      machine = _strdup(utsBuf);
 #else
 #ifdef OS2
     machine = "OS/2";
@@ -813,8 +827,12 @@ io_error(CPCCHAR message, bool do_exit)
 {
   char buf[1024];
 
-  sprintf(buf, "Bonnie: drastic I/O error (%s)", message);
-  perror(buf);
+  if(!already_printed_error && !do_exit)
+  {
+    sprintf(buf, "Bonnie: drastic I/O error (%s)", message);
+    perror(buf);
+    already_printed_error = 1;
+  }
   if(do_exit)
     exit(1);
   return(1);

@@ -1,3 +1,5 @@
+using namespace std;
+
 #include <stdlib.h>
 #ifdef OS2
 #define INCL_DOSFILEMGR
@@ -21,10 +23,21 @@
 
 #endif
 #ifndef NON_UNIX
+#include "conf.h"
 #include <unistd.h>
 #include <sys/resource.h>
 #include <sys/time.h>
+
+#ifdef HAVE_ALGORITHM
+#include <algorithm>
+#else
+#ifdef HAVE_ALGO
+#include <algo>
+#else
 #include <algo.h>
+#endif
+#endif
+
 #endif
 
 Duration_Base::Duration_Base()
@@ -70,6 +83,7 @@ bool Duration::getTime(double *tv)
   return false;
 }
 
+#ifndef WIN32
 bool CPU_Duration::getTime(double *tv)
 {
 #ifdef NON_UNIX
@@ -92,3 +106,4 @@ bool CPU_Duration::getTime(double *tv)
 #endif
   return false;
 }
+#endif

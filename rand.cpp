@@ -2,18 +2,22 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#ifdef WIN32
+#include <io.h>
+#else
 #include <unistd.h>
 #include <netinet/in.h>
+#endif
 
 bool Rand::seedFile(CPCCHAR name)
 {
-  int fd = open(name, O_RDONLY);
+  int fd = file_open(name, O_RDONLY);
   struct stat buf;
   if(fd == -1 || fstat(fd, &buf) == -1)
   {
     fprintf(stderr, "Can't open random file \"%s\".\n", name);
     if(fd != -1)
-      close(fd);
+      file_close(fd);
     return true;
   }
   int size = buf.st_size / sizeof(int);
@@ -27,7 +31,11 @@ bool Rand::seedFile(CPCCHAR name)
   }
   for(int i = 0; i < size; i++)
   {
-    m_arr[i] = abs(ntohl(m_arr[i]));
+#ifdef WIN32
+    m_arr[i] = abs(m_arr[i]);
+#else
+    m_arr[i] = abs(int(ntohl(m_arr[i])));
+#endif
   }
   close(fd);
   m_ind = -1;

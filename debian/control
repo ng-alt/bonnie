@@ -19,4 +19,4 @@ Description: Hard drive bottleneck testing benchmark suite.
  have a number (often more than 8) of zones where each zone has the same
  number of sectors (due to the need for an integral number of sectors per
  track).  This program allows you to determine the levels of performance
- provided by different zones and store them in a conveniant format for gnuplot.
+ provided by different zones and store them in a convenient format for gnuplot.

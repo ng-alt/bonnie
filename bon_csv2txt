@@ -19,7 +19,7 @@
 
 sub IOHeader
 {
-  my $version = '1.93';
+  my $version = '1.93b';
 printf(STDOUT "Version %9s   ------Sequential Output------ --Sequential Input- --Random-\n", $version);
 print "                    -Per Chr- --Block-- -Rewrite- -Per Chr- --Block-- --Seeks--\n";
 print "Machine        Size K/sec %CP K/sec %CP K/sec %CP K/sec %CP K/sec %CP  /sec %CP\n";
@@ -39,7 +39,7 @@ sub process
   chomp($line);
   $line =~ s/\r//;
   my @arr = split(',', $line);
-  my $csv_version = '1.92b';
+  my $csv_version = '1.93b';
   if($arr[0] ne $csv_version)
   {
     printf(STDERR "Can't process: %s\n", $line);

@@ -1,3 +1,37 @@
+bonnie++ (1.93c) unstable; urgency=low
+
+  * Made it compile with GCC 3.2.
+
+ -- Russell Coker <russell@coker.com.au>  Wed,  8 Jan 2003 23:13:00 +0100
+
+bonnie++ (1.93b) unstable; urgency=low
+
+  * Fixed an error in calculating seeks, it used to add an extra 5 seconds to
+    the test time before calculation and therefore under-reported the results.
+
+  * Fixed the signal handling error on Irix.
+
+  * Fixed <algo> check to work with GCC 3.2.
+
+  * Fixed a bug where it would SEGV if you specified more than 999 directories
+    (now it handles 99,999 and displays an error message if you ask for more).
+
+  * Fixed a bug in error handling during a stat test with multiple directories.
+
+  * Fixed the mandir for RPM package building.
+
+ -- Russell Coker <russell@coker.com.au>  Wed,  1 Jan 2003 18:02:00 +0100
+
+bonnie++ (1.93a) unstable; urgency=low
+
+  * Made the signal handler extern "C".
+
+  * Updated the RPM packaging.
+
+  * Improved the NT portability code.
+
+ -- Russell Coker <russell@coker.com.au>  Fri,  1 Mar 2002 17:28:00 +0100
+
 bonnie++ (1.93) unstable; urgency=low
 
   * Updated to latest debian standards version and follow the latest Debian

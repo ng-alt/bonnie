@@ -19,18 +19,34 @@
 #ifndef NON_UNIX
 #include <sys/time.h>
 #include <unistd.h>
+#endif
+
+#ifndef HAVE_MIN_MAX
+#if defined(HAVE_ALGO_H) || defined(HAVE_ALGO)
+#ifdef HAVE_ALGO
+#include <algo>
+#else
 #include <algo.h>
+#endif
+#else
+#define min(XX,YY) ((XX) < (YY) ? (XX) : (YY))
+#define max(XX,YY) ((XX) > (YY) ? (XX) : (YY))
+#endif
 #endif
 
 void BonTimer::start()
 {
   m_dur.start();
+#ifndef WIN32
   m_cpu_dur.start();
+#endif
 }
 void BonTimer::stop_and_record(tests_t test)
 {
   m_delta[test].Elapsed = m_dur.stop();
+#ifndef WIN32
   m_delta[test].CPU = m_cpu_dur.stop();
+#endif
 }
 
 void BonTimer::add_delta_report(report_s &rep, tests_t test)
@@ -42,12 +58,12 @@ void BonTimer::add_delta_report(report_s &rep, tests_t test)
   }
   else
   {
-    m_delta[test].FirstStart = __min(m_delta[test].FirstStart, rep.StartTime);
-    m_delta[test].LastStop = __max(m_delta[test].LastStop, rep.EndTime);
+    m_delta[test].FirstStart = min(m_delta[test].FirstStart, rep.StartTime);
+    m_delta[test].LastStop = max(m_delta[test].LastStop, rep.EndTime);
   }
   m_delta[test].CPU += rep.CPU;
   m_delta[test].Elapsed = m_delta[test].LastStop - m_delta[test].FirstStart;
-  m_delta[test].Latency = __max(m_delta[test].Latency, rep.Latency);
+  m_delta[test].Latency = max(m_delta[test].Latency, rep.Latency);
 }
 
 BonTimer::BonTimer()
@@ -72,7 +88,7 @@ BonTimer::Initialize()
 void
 BonTimer::add_latency(tests_t test, double t)
 {
-  m_delta[test].Latency = __max(m_delta[test].Latency, t);
+  m_delta[test].Latency = max(m_delta[test].Latency, t);
 }
 
 int BonTimer::print_cpu_stat(tests_t test)

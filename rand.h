@@ -1,6 +1,7 @@
 #ifndef RAND_H
 #define RAND_H
 
+using namespace std;
 #include "port.h"
 #include <stdio.h>
 #include <stdlib.h>
