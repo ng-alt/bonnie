@@ -1,0 +1,83 @@
+dnl Process this file with autoconf to produce a configure script.
+AC_INIT(bonnie++.cpp)
+AC_SUBST(version)
+version="1.90a"
+
+AC_ARG_ENABLE(stripping,
+      [  --disable-stripping  disables stripping of installed binaries],
+      STRIPPING=$strippingval, STRIPPING=no)
+AC_SUBST(stripping)
+if [[ ! "$STRIPPING" = "no" ]]; then
+  stripping=""
+else
+  stripping="-s"
+fi
+
+dnl Checks for programs.
+AC_LANG_CPLUSPLUS
+AC_PROG_CXX
+AC_PROG_CXXCPP
+AC_PROG_INSTALL
+
+dnl Checks for typedefs, structures, and compiler characteristics.
+AC_C_CONST
+AC_TYPE_SIZE_T
+
+AC_SUBST(semun)
+AC_TRY_COMPILE(#include <sys/types.h>
+#include <sys/ipc.h>
+#include <sys/sem.h>
+    , union semun sem; , semun="yes")
+if [[ -n "$semun" ]]; then
+   semun="#define SEMUN_IN_SEM_H"
+fi
+AC_SUBST(bool)
+AC_TRY_COMPILE([], [bool var;] , , bool="typedef bool char;")
+AC_SUBST(true_false)
+AC_TRY_COMPILE(, [char c = true; char d = false;
+] , true_false="0", true_false="1")
+
+AC_SUBST(linux_pthread)
+AC_TRY_COMPILE([#define _GNU_SOURCE
+#include <pthread.h>
+] , [pthread_mutexattr_t attr;
+    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE_NP);]
+  , linux_pthread="yes")
+if [[ -n "$linux_pthread" ]]; then
+   linux_pthread="#define LINUX_PTHREAD"
+fi
+ 
+LDFLAGS=-lpthread
+AC_SUBST(extra_ldflags)
+extra_ldflags=
+AC_TRY_LINK([#include <pthread.h>
+void * thread_func(void * param) { return NULL; }
+] , [pthread_t thread_info;
+     pthread_attr_t attr;
+     pthread_create(&thread_info, &attr, &thread_func, NULL);]
+  , extra_ldflags="$extra_ldflags -lpthread"
+  , extra_ldflags="$extra_ldflags -pthread")
+
+AC_SUBST(exes)
+AC_SUBST(man8)
+exes="bonnie++"
+man8="bonnie++.8"
+AC_CHECK_HEADERS(vector.h, exes="$exes zcav" man8="$man8 zcav.8", echo "STL not installed so no ZCAV!")
+
+dnl AC_SUBST(o_large_file)
+dnl AC_TRY_COMPILE([#include <sys/types.h>
+dnl #include <sys/stat.h>
+dnl #include <fcntl.h>
+dnl ] , [ int fd = open("foo", O_WRONLY | O_LARGEFILE);
+dnl ] , o_large_file="yes")
+dnl 
+dnl if [[ "$o_large_file" = "yes" ]] ; then
+dnl   o_large_file="#define USE_LARGE_FILE | O_LARGEFILE"
+dnl else
+dnl   o_large_file="#define USE_LARGE_FILE"
+dnl fi
+
+
+dnl Checks for library functions.
+
+AC_OUTPUT(Makefile bonnie.h port.h bonnie++.spec bon_csv2html bon_csv2txt bon_csv2html.1 sun/pkginfo)

@@ -1,0 +1,122 @@
+#!/usr/bin/perl
+
+{
+  my $line;
+  $iocount = 0;
+  $filecount = 0;
+  while($line = <STDIN>)
+  {
+    while($line =~ /^name,/)
+    {
+      $line = <STDIN>;
+    }
+    process($line);
+  }
+  printIOData();
+
+  printFileData();
+}
+
+sub IOHeader
+{
+  my $version = '@version@';
+print "Version  $version      ------Sequential Output------ --Sequential Input- --Random-\n";
+print "                    -Per Chr- --Block-- -Rewrite- -Per Chr- --Block-- --Seeks--\n";
+print "Machine        Size K/sec %CP K/sec %CP K/sec %CP K/sec %CP K/sec %CP  /sec %CP\n";
+}
+
+sub FileHeader
+{
+print "                    ------Sequential Create------ --------Random Create--------\n";
+print "                    -Create-- --Read--- -Delete-- -Create-- --Read--- -Delete--\n";
+print "files:max:min        /sec %CP  /sec %CP  /sec %CP  /sec %CP  /sec %CP  /sec %CP\n";
+}
+
+sub process
+{
+  my($line) = @_;
+
+  chop($line);
+  my @arr = split(',', $line);
+  if($arr[0] ne '2')
+  {
+    printf(STDERR "Can't process: %s\n", $line);
+    return;
+  }
+  my $name = $arr[2];
+
+# merge size and chunk-size
+  my $tmp = $arr[3];
+  if($arr[4] ne "")
+  {
+    $tmp .= ":" . $arr[4];
+  }
+  $arr[4] = $tmp;
+# $ioline contains the file-IO data, IE we strip off the data on file creation
+  my @ioline = @arr[4 .. 16];
+  if(join('', @ioline) ne "")
+  {
+    $io[$iocount] = $name . "," . join(',', @ioline);
+    $iocount++;
+  }
+
+  $tmp = $arr[17];
+  if($arr[18] ne "")
+  {
+    $tmp .= ":" . $arr[18];
+  }
+  if($arr[19] ne "")
+  {
+    $tmp .= ":" . $arr[19];
+  }
+  if($arr[20] ne "")
+  {
+    $tmp .= "/" . $arr[20];
+  }
+  $arr[20] = $tmp;
+# $fileline contains the file creation data - everything but $ioline
+  my @fileline = @arr[20 .. 32];
+  if(join('', @fileline) ne "")
+  {
+    $file[$filecount] = $name . "," . join(',', @fileline);
+    $filecount++;
+  }
+}
+
+sub printFileData
+{
+  if($filecount < 1){ return; }
+  FileHeader();
+  for($i = 0; $i < $filecount; $i++)
+  {
+    @arr = split(/,/,$file[$i]);
+    my $size = $arr[1];
+    $size =~ s/:0:0:/\//;
+    my $desc = $arr[0] . "                   ";
+    $desc = substr($desc, 0, 18 - length($size) );
+    $desc .= " " . $size;
+    printf(STDOUT "%19s %5s %3s %5s %3s %5s %3s %5s %3s %5s %3s %5s %3s\n"
+         , $desc, $arr[2], $arr[3], $arr[4], $arr[5], $arr[6], $arr[7]
+         , $arr[8], $arr[9], $arr[10], $arr[11], $arr[12], $arr[13]
+         , $arr[14], $arr[15]);
+  }
+}
+
+sub printIOData
+{
+  if($iocount < 1){ return; }
+  IOHeader();
+  for($i = 0; $i < $iocount; $i++)
+  {
+    @arr = split(/,/,$io[$i]);
+    my $size = $arr[1];
+    my $desc = $arr[0] . "                   ";
+    $desc = substr($desc, 0, 18 - length($size) );
+    $desc .= " " . $size;
+    printf(STDOUT "%19s %5s %3s %5s %3s %5s %3s %5s %3s %5s %3s %5s %3s\n"
+         , $desc, $arr[2], $arr[3], $arr[4], $arr[5], $arr[6], $arr[7]
+         , $arr[8], $arr[9], $arr[10], $arr[11], $arr[12], $arr[13]
+         , $arr[14], $arr[15]);
+  }
+}
+
