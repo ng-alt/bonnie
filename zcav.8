@@ -1,0 +1,38 @@
+.TH zcav 1 
+.SH NAME
+zcav \- program to test raw hard drive throughput.
+
+.SH SYNOPSIS
+.B zcav
+.I file-name [count] [block-size]
+
+.SH "DESCRIPTION"
+This manual page documents briefly the
+.BR zcav ,
+program.
+.P
+Modern hard drives have a constant rotational speed but have varying numbers
+of sectors per track (outside tracks are longer and have more sectors). This
+is referred to as Zoned Constant Angular Velocity (or ZCAV). The outer tracks
+will have a higher data transfer rate due to having more sectors per track,
+these tracks generally have the lower track/sector numbers.
+.P
+This program tests the ZCAV performance of a hard drive, by reading the entire
+data on it a specified number of times. The file name given as the first
+parameter, it can be specified as
+.BR - ,
+for standard input. This file will be opened as read-only and in usual
+operation it will be
+.BR /dev/hdX .
+The first parameter is the number of times to read through the specified file
+or device (default 1). The second parameter is the block size in mega-bytes
+(default 100).
+.P
+The output should be able to be easily graphed with
+.BR gnuplot
+which is what I use to view the results.
+
+.SH AUTHOR
+This program, it's manual page, and the Debian package were written by
+Russell Coker <russell@coker.com.au>.
+

@@ -1,0 +1,86 @@
+bonnie++ (1.00) unstable; urgency=low
+
+  * License is now GPL.
+
+  * Now include ZCAV in the same package.  ZCAV package should disappear.
+
+  * ZCAV reads through a hard drive sequentially and reports the IO speeds for
+    different zones of the drive.
+
+  * Fixed a few minor issues with the documentation, and put the test programs
+    in /usr/sbin as they aren't generally run by regular users.  Also use man
+    section 8.
+
+ -- Russell Coker <russell@coker.com.au>  Sat, 01 Mar 2000 12:01:00 +0100
+
+bonnie++ (0.99j) unstable; urgency=low
+
+  * 0.99h core dumped when you didn't specify "-b" for file creation tests,
+    fixed.
+
+ -- Russell Coker <russell@coker.com.au>  Sun, 05 Mar 2000 11:16:42 +0100
+
+bonnie++ (0.99h) unstable; urgency=low
+
+  * Fixed a variety of bugs in the semaphore code which were introduced in
+    0.99g.
+
+  * Fixed formatting of output.
+
+  * Added "-b" option to sync all writes.
+
+ -- Russell Coker <russell@coker.com.au>  Sun, 05 Mar 2000 11:16:42 +0100
+
+bonnie++ (0.99g) unstable; urgency=low
+
+  * Now use getopt() for checking command-line options.
+
+  * Added new versions of fork and semaphore code, initially developed for
+    postal.
+
+  * Fixed the message that's displayed when bad command-line parameters are
+    entered.
+
+ -- Russell Coker <russell@coker.com.au>  Wed, 23 Feb 2000 22:16:23 +0100
+
+bonnie++ (0.99f) unstable; urgency=low
+
+  * Added "-f" parameter to skip per-char tests and semaphore code to
+    synchronise multiple instances of Bonnie++.  Thanks to
+    Christian Kagerhuber <c.kagerhuber@t-online.net> for the patch!
+
+  * Added srand() after the fork so each child gets different random numbers.
+
+ -- Russell Coker <russell@coker.com.au>  Wed, 12 Jan 2000 16:45:28 +1100
+
+bonnie++ (0.99e) unstable; urgency=low
+
+  * Fixed the operation of "-x" parameter (used to just cause crashes).
+ 
+  * Made it cleanly exit under some error conditions where it used to crash.
+
+  * Merged code from the OS/2 port, needs lots of testing...
+
+ -- Russell Coker <russell@coker.com.au>  Wed, 12 Jan 2000 16:45:28 +1100
+
+bonnie++ (0.99d) unstable; urgency=low
+
+  * Added some more functionality. Tests hard and soft link creation.
+
+ -- Russell Coker <russell@coker.com.au>  Sun, 21 Nov 1999 22:37:42 +0200
+
+bonnie++ (0.99c) unstable; urgency=low
+
+  * Fix some bugs with big IO and include man pages.
+
+ -- Russell Coker <russell@coker.com.au>  Sun, 21 Nov 1999 22:37:42 +0200
+
+bonnie++ (0.99b) unstable; urgency=low
+
+  * Initial Release.
+
+ -- Russell Coker <russell@coker.com.au>  Wed, 13 Oct 1999 22:15:53 +0200
+
+Local variables:
+mode: debian-changelog
+End:

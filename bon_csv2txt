@@ -1,0 +1,96 @@
+#!/usr/bin/perl
+
+{
+  my $line;
+  $iocount = 0;
+  $filecount = 0;
+  while($line = <STDIN>)
+  {
+    while($line =~ /^name,/)
+    {
+      $line = <STDIN>;
+    }
+    process($line);
+  }
+  printIOData();
+
+  printFileData();
+}
+
+sub IOHeader
+{
+print "Version  1.00       ------Sequential Output------ --Sequential Input- --Random-\n";
+print "                    -Per Chr- --Block-- -Rewrite- -Per Chr- --Block-- --Seeks--\n";
+print "Machine          MB K/sec %CP K/sec %CP K/sec %CP K/sec %CP K/sec %CP  /sec %CP\n";
+}
+
+sub FileHeader
+{
+print "                    ------Sequential Create------ --------Random Create--------\n";
+print "                    -Create-- --Read--- -Delete-- -Create-- --Read--- -Delete--\n";
+print "files:max:min        /sec %CP  /sec %CP  /sec %CP  /sec %CP  /sec %CP  /sec %CP\n";
+}
+
+sub process
+{
+  my($line) = @_;
+
+  chop($line);
+  my $name = $line;
+  $name =~ s/,.*$//;
+  $line =~ s/$name,//;
+
+  my $ioline = $line;
+  $ioline =~ s/,[:0-9\-\+.]+,[0-9\+.]+,[0-9\+.]+,[0-9\+.]+,[0-9\+.]+,[0-9\+.]+,[0-9\+.]+,[0-9\+.]+,[0-9\+.]+,[0-9\+.]+,[0-9\+.]+,[0-9\+.]+,[0-9\+.]+$//;
+  $ioline =~ s/,,,,,,,,,,,,,$//;
+  if(join('', split(/,/,$ioline)) != "")
+  {
+    $io[$iocount] = $name . "," . $ioline;
+    $iocount++;
+  }
+  my $fileline = substr($line, length($ioline));
+  if(join('', split(/,/,$fileline)) != "")
+  {
+    $file[$filecount] = $name . $fileline;
+    $filecount++;
+  }
+}
+
+sub printFileData
+{
+  if($filecount < 1){ return; }
+  FileHeader();
+  for($i = 0; $i < $filecount; $i++)
+  {
+    @arr = split(/,/,$file[$i]);
+    my $name = substr($arr[0],0,10);
+    my $size = $arr[1];
+    $size =~ s/:0:0:/\//;
+    if(length($name) + length($size) > 17)
+    {
+      $name = substr($name, 0, 17 - length($size));
+    }
+    $desc = sprintf("%s %s", $name, $size);
+    printf(STDOUT "%-19s %5s %3s %5s %3s %5s %3s %5s %3s %5s %3s %5s %3s\n"
+         , $desc, $arr[2], $arr[3], $arr[4], $arr[5], $arr[6], $arr[7]
+         , $arr[8], $arr[9], $arr[10], $arr[11], $arr[12], $arr[13]
+         , $arr[14], $arr[15]);
+  }
+}
+
+sub printIOData
+{
+  if($iocount < 1){ return; }
+  IOHeader();
+  for($i = 0; $i < $iocount; $i++)
+  {
+    @arr = split(/,/,$io[$i]);
+    my $name = substr($arr[0],0,10);
+    my $size = $arr[1];
+    printf(STDOUT "%10s %8s %5s %3s %5s %3s %5s %3s %5s %3s %5s %3s %5s %3s\n"
+         , $name, $size, $arr[2], $arr[3], $arr[4], $arr[5], $arr[6], $arr[7]
+         , $arr[8], $arr[9], $arr[10], $arr[11], $arr[12], $arr[13]
+         , $arr[14], $arr[15]);
+  }
+}
+

@@ -1,0 +1,9 @@
+Tim Bray <tbray@textuality.com>  Author of the original Bonnie program.
+
+Christian Kagerhuber <c.kagerhuber@t-online.net>  Contributed some patches
+including the semaphore code.  Also found the srand() bug in the seek code!
+
+Brian A. May <bam@snoopy.apana.org.au>  Sponsored the Debianization of this
+and other programs I am writing.
+
+
