@@ -5,6 +5,7 @@
 
 #ifndef NON_UNIX
 #include <sys/poll.h>
+#include <pthread.h>
 #endif
 
 class Thread;
@@ -66,6 +67,7 @@ private:
   FILE_TYPE m_childWrite;
   int m_numThreads;
   int *m_retVal;
+  pthread_t *m_thread_info;
 
   Thread(const Thread &f);
   Thread & operator =(const Thread &f);

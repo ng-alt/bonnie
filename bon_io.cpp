@@ -20,9 +20,13 @@
 
 #include <sys/stat.h>
 #include <string.h>
+#include <limits.h>
 
 #include "bon_io.h"
 #include "bon_time.h"
+
+
+#define END_SEEK_PROCESS INT_MIN
 
 CFileOp::~CFileOp()
 {
@@ -61,26 +65,27 @@ int CFileOp::action(PVOID)
   struct report_s seeker_report;
   if(reopen(false))
     return 1;
-  char ticket;
+  int ticket;
   int rc;
-  int lseek_count = 0;
   Duration dur, test_time;
   CPU_Duration test_cpu;
   test_time.getTime(&seeker_report.StartTime);
   test_cpu.start();
-  while((rc = Read(&ticket, 1, 0)) == 1 && ticket)
+  while((rc = Read(&ticket, sizeof(ticket), 0)) == sizeof(ticket)
+         && ticket != END_SEEK_PROCESS)
   {
-    bool update;
-    if( (lseek_count++ % UpdateSeek) == 0)
+    bool update = false;
+    if(ticket < 0)
+    {
+      ticket = abs(ticket);
       update = true;
-    else
-      update = false;
+    }
     dur.start();
-    if(doseek(rand() % m_total_chunks, update) )
+    if(doseek(ticket % m_total_chunks, update) )
       return 1;
     dur.stop();
   }
-  if(rc != 1)
+  if(rc != sizeof(ticket))
   {
     fprintf(stderr, "Can't read ticket.\n");
     return 1;
@@ -98,14 +103,22 @@ int CFileOp::action(PVOID)
   return 0;
 }
 
-int CFileOp::seek_test(bool quiet, Sync &s)
+int CFileOp::seek_test(Rand &r, bool quiet, Sync &s)
 {
-  char seek_tickets[SeekProcCount + Seeks];
+  int seek_tickets[SeekProcCount + Seeks];
   int next;
   for(next = 0; next < Seeks; next++)
-    seek_tickets[next] = 1;
+  {
+    seek_tickets[next] = r.getNum();
+    if(seek_tickets[next] < 0)
+      seek_tickets[next] = abs(seek_tickets[next]);
+    if(seek_tickets[next] % UpdateSeek == 0)
+      seek_tickets[next] = -seek_tickets[next];
+  }
   for( ; next < (Seeks + SeekProcCount); next++)
-    seek_tickets[next] = 0;
+    seek_tickets[next] = END_SEEK_PROCESS;
+  if(reopen(false))
+    return 1;
   go(NULL, SeekProcCount);
 
   sleep(3);
@@ -119,6 +132,7 @@ int CFileOp::seek_test(bool quiet, Sync &s)
     fprintf(stderr, "Can't write tickets.\n");
     return 1;
   }
+  Close();
   for (next = 0; next < SeekProcCount; next++)
   { /* for each child */
     struct report_s seeker_report;
@@ -162,7 +176,7 @@ int CFileOp::seek(int offset, int whence)
   rc = DosSetFilePtr(m_fd, real_offset, whence, &actual);
   if(rc != 0) rc = -1;
 #else
-  rc = _lseek(m_fd, real_offset, whence);
+  rc = file_lseek(m_fd, real_offset, whence);
 #endif
 
   if(rc == OFF_TYPE(-1))
@@ -188,7 +202,7 @@ int CFileOp::read_block(PVOID buf)
     else
       rc = actual;
 #else
-    int rc = ::_read(m_fd, buf, m_chunk_size - total);
+    int rc = file_read(m_fd, buf, m_chunk_size - total);
 #endif
     if(rc == -1)
     {
@@ -307,7 +321,7 @@ int CFileOp::m_open(CPCCHAR base_name, bool create)
 #endif
   if(create)
   { /* create from scratch */
-    _unlink(base_name);
+    file_unlink(base_name);
 #ifdef OS2
     createFlag = OPEN_ACTION_CREATE_IF_NEW | OPEN_ACTION_REPLACE_IF_EXISTS;
 #else
@@ -341,7 +355,7 @@ int CFileOp::m_open(CPCCHAR base_name, bool create)
   if(rc)
     m_fd = -1;
 #else
-  m_fd = _open(base_name, flags, S_IRUSR | S_IWUSR);
+  m_fd = file_open(base_name, flags, S_IRUSR | S_IWUSR);
 #endif
 
   if(m_fd == -1)
@@ -360,7 +374,7 @@ void CFileOp::Close()
   {
     if(fsync(m_fd))
       fprintf(stderr, "Can't sync file.\n");
-    _close(m_fd);
+    file_close(m_fd);
   }
   m_isopen = false;
   m_fd = -1;
@@ -395,7 +409,7 @@ CFileOp::doseek(unsigned int where, bool update)
   { /* update this block */
 
     /* touch a byte */
-    m_buf[int(rand()) % m_chunk_size]--;
+    m_buf[where % m_chunk_size]--;
     if(seek(where, SEEK_SET) == -1)
       return io_error("lseek in doseek update");
     if (write_block(PVOID(m_buf)) == -1)

@@ -30,18 +30,17 @@ typedef enum
 #define INCL_DOSPROCESS
 #include <os2.h>
 
-#define _read DosRead
-#define _strdup strdup
+#define file_read DosRead
 #define NO_SNPRINTF
 #define __min min
 #define __max max
 typedef ULONG TIMEVAL_TYPE;
 #define chdir(XX) DosSetCurrentDir(XX)
 #define fsync(XX) DosResetBuffer(XX)
-#define _rmdir(XX) DosDeleteDir(XX)
-#define _chdir(XX) DosSetCurrentDir(XX)
-#define _findclose DosFindClose
-#define _close DosClose
+#define sys_rmdir(XX) DosDeleteDir(XX)
+#define sys_chdir(XX) DosSetCurrentDir(XX)
+#define file_findclose DosFindClose
+#define file_close DosClose
 #define make_directory(XX) DosCreateDir(XX, NULL)
 typedef HFILE FILE_TYPE;
 #define pipe(XX) DosCreatePipe(&XX[0], &XX[1], 8 * 1024)
@@ -50,6 +49,15 @@ typedef HFILE FILE_TYPE;
 typedef ULONG pid_t;
 #else
 // WIN32 here
+#define file_read _read
+#define file_unlink _unlink
+#define sys_rmdir _rmdir
+#define sys_chdir _chdir
+#define sys_getpid _getpid
+#define file_lseek _lseek
+#define file_creat _creat
+#define file_open _open
+
 typedef int ssize_t;
 typedef struct _timeb TIMEVAL_TYPE;
 typedef int FILE_TYPE;
@@ -66,32 +74,41 @@ typedef int pid_t;
 
 #else
 // UNIX here
-#define _read read
-#define _unlink unlink
-#define _strdup strdup
+#define file_read read
+#define file_unlink unlink
 typedef struct timeval TIMEVAL_TYPE;
-#define _rmdir rmdir
-#define _chdir chdir
-#define _getpid getpid
+#define sys_rmdir rmdir
+#define sys_chdir chdir
+#define sys_getpid getpid
 
 #ifdef _LARGEFILE64_SOURCE
 #define OFF_TYPE off64_t
-#define _lseek lseek64
-#define _creat creat64
-#define _open open64
+#define file_lseek lseek64
+#define file_creat creat64
+#define file_open open64
 #else
 #define OFF_TYPE off_t
-#define _lseek lseek
-#define _creat creat
-#define _open ::open
+#define file_lseek lseek
+#define file_creat creat
+#define file_open open
 #endif
 
-#define _sleep sleep
-#define _close ::close
+#define second_sleep sleep
+#define file_close close
 #define make_directory(XX) mkdir(XX, S_IRWXU)
 typedef int FILE_TYPE;
 #define __min min
 #define __max max
+typedef unsigned int UINT;
+typedef unsigned long ULONG;
+typedef const char * PCCHAR;
+typedef char * PCHAR;
+typedef PCHAR const CPCHAR;
+typedef PCCHAR const CPCCHAR;
+typedef void * PVOID;
+typedef PVOID const CPVOID;
+typedef const CPVOID CPCVOID;
+
 #endif
 typedef FILE_TYPE *PFILE_TYPE;
 
@@ -102,16 +119,5 @@ typedef FILE_TYPE *PFILE_TYPE;
 #define _snprintf snprintf
 #endif
 #endif
-
-#define EXIT_CTRL_C 5
-
-typedef const char * PCCHAR;
-typedef char * PCHAR;
-typedef PCHAR const CPCHAR;
-typedef PCCHAR const CPCCHAR;
-typedef void * PVOID;
-typedef PVOID const CPVOID;
-typedef const CPVOID CPCVOID;
-
 
 #endif

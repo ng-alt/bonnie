@@ -1,3 +1,24 @@
+bonnie++ (1.92a) unstable; urgency=low
+
+  * Made the -d option to bonnie++ work with relative paths.  Now it does
+    chdir() to the specifed directory and proceeds as usual.
+
+  * Fixed a tricky bug related to thread management which caused SEGV.  For
+    some time I had known of the existance of the bug but I couldn't work
+    out how to reproduce it.
+
+  * Added a feature of specifying the random number seed for repeatable tests.
+    Also made a separate class to manage all random numbers as part of this.
+
+  * Made bonnie++ have the facility to read from a file containing random
+    numbers and created a program to generate them.
+
+  * Added a "make dep" rule and include it's output in the archive.
+
+  * Now I don't use stupid macro names like _close which break on BSD!
+
+ -- Russell Coker <russell@coker.com.au>  Fri, 11 May 2001 16:34:58 +0100
+
 bonnie++ (1.92) unstable; urgency=low
 
   * Made the per-byte code use read() and write() instead of putc() and getc().

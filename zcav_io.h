@@ -1,8 +1,9 @@
 #ifndef ZCAV_IO_H
 #define ZCAV_IO_H
-#include <vector>
 
 #include "bonnie.h"
+#include <vector>
+
 #include "duration.h"
 #ifndef OS2
 using namespace std;
@@ -28,9 +29,9 @@ public:
   ZcavRead(){ m_name = NULL; }
   ~ZcavRead();
 
-  int open(bool *finished, int block_size, const char *file, const char *log);
-  void close();
-  int read(int max_loops, int max_size, int writeCom);
+  int Open(bool *finished, int block_size, const char *file, const char *log);
+  void Close();
+  int Read(int max_loops, int max_size, int writeCom);
 
 private:
   ssize_t readall(int count);
@@ -53,6 +54,9 @@ private:
   int m_block_size;
   char *m_name;
   Duration m_dur;
+
+  ZcavRead(const ZcavRead &t);
+  ZcavRead & operator =(const ZcavRead &t);
 };
 
 #endif

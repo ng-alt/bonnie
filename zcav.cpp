@@ -101,8 +101,8 @@ MultiZcav::MultiZcav(int threadNum, const MultiZcav *parent)
 int MultiZcav::action(PVOID)
 {
   ZcavRead *zc = (*m_readers)[getThreadNum() - 1];
-  int rc = zc->read(m_max_loops, m_max_size / m_block_size, m_write);
-  zc->close();
+  int rc = zc->Read(m_max_loops, m_max_size / m_block_size, m_write);
+  zc->Close();
   return rc;
 }
 
@@ -127,7 +127,7 @@ int MultiZcav::runit()
     usage();
   for(i = 0; i < num_threads; i++)
   {
-    if((*m_readers)[i]->open(NULL, m_block_size, m_fileNames[i], m_logNames[i]))
+    if((*m_readers)[i]->Open(NULL, m_block_size, m_fileNames[i], m_logNames[i]))
     {
       return 1;
     }

@@ -31,6 +31,7 @@ Thread::Thread()
  , m_childWrite(-1)
  , m_numThreads(0)
  , m_retVal(NULL)
+ , m_thread_info(NULL)
 {
 }
 
@@ -45,6 +46,7 @@ Thread::Thread(int threadNum, const Thread *parent)
  , m_childWrite(-1)
  , m_numThreads(parent->m_numThreads)
  , m_retVal(&parent->m_retVal[threadNum])
+ , m_thread_info(NULL)
 {
 }
 
@@ -52,10 +54,15 @@ Thread::~Thread()
 {
   if(m_threadNum == -1)
   {
-    _close(m_parentRead);
-    _close(m_parentWrite);
-    _close(m_childRead);
-    _close(m_childWrite);
+    for(int i = 0; i < m_numThreads; i++)
+    {
+      pthread_join(m_thread_info[i], NULL);
+    }
+    file_close(m_parentRead);
+    file_close(m_parentWrite);
+    file_close(m_childRead);
+    file_close(m_childWrite);
+    delete m_thread_info;
     delete m_retVal;
   }
 }
@@ -108,15 +115,15 @@ void Thread::go(PVOID param, int num)
   m_writePoll.events = POLLOUT | POLLERR | POLLHUP | POLLNVAL;
   m_readPoll.fd = m_parentRead;
   m_writePoll.fd = m_parentWrite;
-  pthread_t *thread_info = new pthread_t[num];
   pthread_attr_t attr;
   if(pthread_attr_init(&attr))
     fprintf(stderr, "Can't init thread attributes.\n");
-  if(pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED))
+  if(pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE))
     fprintf(stderr, "Can't set thread attributes.\n");
 #endif
 
   m_retVal = new int[num + 1];
+  m_thread_info = new pthread_t[num];
   for(int i = 1; i <= num; i++)
   {
     m_retVal[i] = -1;
@@ -143,7 +150,7 @@ void Thread::go(PVOID param, int num)
       exit(1);
     }
 #else
-    int p = pthread_create(&thread_info[i - 1], &attr, thread_func, PVOID(td));
+    int p = pthread_create(&m_thread_info[i - 1], &attr, thread_func, PVOID(td));
     if(p)
     {
       fprintf(stderr, "Can't create a thread.\n");
@@ -184,7 +191,7 @@ int Thread::Read(PVOID buf, int size, int timeout)
   int rc = DosRead(m_read, buf, size, &actual);
   if(rc || actual != size)
 #else
-  if(size != _read(m_read, buf, size) )
+  if(size != file_read(m_read, buf, size) )
 #endif
   {
     fprintf(stderr, "Can't read data from ITC pipe.\n");

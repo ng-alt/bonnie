@@ -21,7 +21,7 @@ ZcavRead::~ZcavRead()
   delete m_name;
 }
 
-int ZcavRead::open(bool *finished, int block_size
+int ZcavRead::Open(bool *finished, int block_size
                  , const char *file, const char *log)
 {
   m_name = strdup(file);
@@ -30,7 +30,7 @@ int ZcavRead::open(bool *finished, int block_size
 
   if(strcmp(file, "-"))
   {
-    m_fd = ::open(file, O_RDONLY);
+    m_fd = file_open(file, O_RDONLY);
     if(m_fd == -1)
     {
       fprintf(stderr, "Can't open %s\n", file);
@@ -48,7 +48,7 @@ int ZcavRead::open(bool *finished, int block_size
     if(m_log == NULL)
     {
       fprintf(stderr, "Can't open %s\n", log);
-      _close(m_fd);
+      file_close(m_fd);
       return 1;
     }
   }
@@ -60,7 +60,7 @@ int ZcavRead::open(bool *finished, int block_size
   return 0;
 }
 
-void ZcavRead::close()
+void ZcavRead::Close()
 {
   if(m_logFile)
     fclose(m_log);
@@ -78,7 +78,7 @@ int ZcavRead::writeStatus(int fd, char c)
   return 0;
 }
 
-int ZcavRead::read(int max_loops, int max_size, int writeCom)
+int ZcavRead::Read(int max_loops, int max_size, int writeCom)
 {
   int i;
   bool exiting = false;
@@ -167,7 +167,7 @@ ssize_t ZcavRead::readall(int count)
   ssize_t total = 0;
   while(total != static_cast<ssize_t>(count) )
   {
-    ssize_t rc = ::_read(m_fd, &m_buf[total], count - total);
+    ssize_t rc = file_read(m_fd, &m_buf[total], count - total);
     if(rc == -1 || rc == 0)
       return -1;
     total += rc;

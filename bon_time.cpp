@@ -223,7 +223,7 @@ void print_size(char *buf, unsigned int size, CPCCHAR units)
 }
 
 int
-BonTimer::DoReportIO(CPCCHAR machine, int file_size, int char_file_size
+BonTimer::DoReportIO(int file_size, int char_file_size
                    , int io_chunk_size, FILE *fp)
 {
   int i;
@@ -272,7 +272,7 @@ BonTimer::DoReportIO(CPCCHAR machine, int file_size, int char_file_size
 #ifndef NO_SNPRINTF
 , txt_machine_size - 1
 #endif
-              , "%s                  ", machine);
+              , "%s                  ", m_name);
       buf[txt_machine_size - 1] = '\0';
       // set cur to point to a byte past where we end the machine name
       // size of the buf - size of the new data - 1 for the space - 1 for the
@@ -285,7 +285,8 @@ BonTimer::DoReportIO(CPCCHAR machine, int file_size, int char_file_size
     }
     else
     {
-      printf(CSV_VERSION "," BON_VERSION ",%s,%s", machine, size_buf);
+      printf(CSV_VERSION "," BON_VERSION ",%s,%s,%s", m_name
+           , random_source.getSeed().c_str(), size_buf);
     }
     for(i = ByteWrite; i < Lseek; i++)
     {
@@ -305,13 +306,14 @@ BonTimer::DoReportIO(CPCCHAR machine, int file_size, int char_file_size
   }
   else if(m_type == csv)
   {
-    fprintf(m_fp, "2," BON_VERSION ",%s,,,,,,,,,,,,,,", machine);
+    fprintf(m_fp, CSV_VERSION "," BON_VERSION ",%s,%s,,,,,,,,,,,,,", m_name
+          , random_source.getSeed().c_str());
   }
   return 0;
 }
 
 int
-BonTimer::DoReportFile(CPCCHAR machine, int directory_size
+BonTimer::DoReportFile(int directory_size
                      , int max_size, int min_size, int num_directories
                      , int file_chunk_size, FILE *fp)
 {
@@ -387,7 +389,7 @@ BonTimer::DoReportFile(CPCCHAR machine, int directory_size
       fprintf(m_fp, "Version %5s       ", BON_VERSION);
       fprintf(m_fp,
         "------Sequential Create------ --------Random Create--------\n");
-      fprintf(m_fp, "%-19.19s ", machine);
+      fprintf(m_fp, "%-19.19s ", m_name);
       fprintf(m_fp,
            "-Create-- --Read--- -Delete-- -Create-- --Read--- -Delete--\n");
       if(min_size)

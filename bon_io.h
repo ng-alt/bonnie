@@ -7,6 +7,7 @@
 class Sync;
 #endif
 class BonTimer;
+class Rand;
 
 class CFileOp : public Thread
 {
@@ -20,7 +21,7 @@ public:
   int read_block(PVOID buf);
   int seek(int offset, int whence);
   int doseek(unsigned int where, bool update);
-  int seek_test(bool quiet, Sync &s);
+  int seek_test(Rand &r, bool quiet, Sync &s);
   void Close();
   // reopen a file, bool for whether the file should be unlink()'d and creat()'d
   int reopen(bool create);

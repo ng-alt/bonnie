@@ -57,10 +57,10 @@ typedef char Sync;
 #include "bon_io.h"
 #include "bon_file.h"
 #include "bon_time.h"
+#include "rand.h"
 #include <ctype.h>
 #include <string.h>
 #include <signal.h>
-#include <ctype.h>
 
 void usage();
 
@@ -105,7 +105,7 @@ public:
     DosQuerySysInfo(QSV_FOREGROUND_PROCESS, QSV_FOREGROUND_PROCESS
                   , &myPid, sizeof(myPid));
 #else
-    pid_t myPid = _getpid();
+    pid_t myPid = sys_getpid();
 #endif
     sprintf(name, "%s/Bonnie.%d", path, int(myPid));
   }
@@ -171,11 +171,11 @@ void ctrl_c_handler(int sig)
 }
 #endif
 
-unsigned int size_from_str(CPCCHAR string, CPCCHAR conv)
+unsigned int size_from_str(CPCCHAR str, CPCCHAR conv)
 {
   const unsigned int mult[3] = { 1<<10 , 1<<20, 1<<30 };
-  unsigned int size = atoi(string);
-  char c = tolower(string[strlen(string) - 1]);
+  unsigned int size = atoi(str);
+  char c = tolower(str[strlen(str) - 1]);
   if(conv)
   {
     for(int i = 0; conv[i] != '\0' && i < 3; i++)
@@ -242,8 +242,17 @@ int main(int argc, char *argv[])
   globals.ram = ms.dwTotalPhys / 1024 / 1024;
 #endif
 
+  pid_t myPid = 0;
+#ifdef OS2
+    DosQuerySysInfo(QSV_FOREGROUND_PROCESS, QSV_FOREGROUND_PROCESS
+                  , &myPid, sizeof(myPid));
+#else
+  myPid = sys_getpid();
+#endif
+  globals.timer.random_source.seedNum(myPid ^ time(NULL));
+
   int int_c;
-  while(-1 != (int_c = getopt(argc, argv, "bd:f::g:l:m:n:p:qr:s:u:x:y:")) )
+  while(-1 != (int_c = getopt(argc, argv, "bd:f::g:l:m:n:p:qr:s:u:x:y:z:Z:")) )
   {
     switch(char(int_c))
     {
@@ -255,7 +264,11 @@ int main(int argc, char *argv[])
         globals.bufSync = true;
       break;
       case 'd':
-        globals.SetName(optarg);
+        if(chdir(optarg))
+        {
+          fprintf(stderr, "Can't change to directory \"%s\".\n", optarg);
+          usage();
+        }
       break;
       case 'f':
         if(optarg)
@@ -268,7 +281,7 @@ int main(int argc, char *argv[])
       break;
       case 'n':
       {
-        char *sbuf = _strdup(optarg);
+        char *sbuf = strdup(optarg);
         char *size = strtok(sbuf, ":");
         directory_size = size_from_str(size, "m");
         size = strtok(NULL, ":");
@@ -308,7 +321,7 @@ int main(int argc, char *argv[])
       break;
       case 's':
       {
-        char *sbuf = _strdup(optarg);
+        char *sbuf = strdup(optarg);
         char *size = strtok(sbuf, ":");
 #ifdef _LARGEFILE64_SOURCE
         file_size = size_from_str(size, "gt");
@@ -367,6 +380,19 @@ int main(int argc, char *argv[])
         globals.sync_bonnie = true;
       break;
 #endif
+      case 'z':
+      {
+        UINT tmp;
+        if(sscanf(optarg, "%u", &tmp) == 1)
+          globals.timer.random_source.seedNum(tmp);
+      }
+      break;
+      case 'Z':
+      {
+        if(globals.timer.random_source.seedFile(optarg))
+          return eParam;
+      }
+      break;
     }
   }
 #ifndef NON_UNIX
@@ -402,7 +428,7 @@ int main(int argc, char *argv[])
     char utsBuf[MAX_COMPUTERNAME_LENGTH + 2];
     DWORD size = MAX_COMPUTERNAME_LENGTH + 1;
     if(GetComputerName(utsBuf, &size))
-      machine = _strdup(utsBuf);
+      machine = strdup(utsBuf);
 #else
 #ifdef OS2
     machine = "OS/2";
@@ -413,6 +439,8 @@ int main(int argc, char *argv[])
 #endif
 #endif
   }
+
+  globals.timer.setMachineName(machine);
 
 #ifndef NON_UNIX
   if(userName || groupName)
@@ -488,14 +516,6 @@ int main(int argc, char *argv[])
     globals.timer.SetType(BonTimer::csv);
     globals.timer.PrintHeader(stdout);
   }
-  pid_t myPid = 0;
-#ifdef OS2
-    DosQuerySysInfo(QSV_FOREGROUND_PROCESS, QSV_FOREGROUND_PROCESS
-                  , &myPid, sizeof(myPid));
-#else
-  myPid = _getpid();
-#endif
-  srand(myPid ^ time(NULL));
   for(; test_count > 0 || test_count == -1; test_count--)
   {
     globals.timer.Initialize();
@@ -510,23 +530,23 @@ int main(int argc, char *argv[])
     if(test_count == -1)
     {
       globals.timer.SetType(BonTimer::txt);
-      rc = globals.timer.DoReportIO(machine, file_size, globals.byte_io_size
+      rc = globals.timer.DoReportIO(file_size, globals.byte_io_size
                     , globals.io_chunk_size(), globals.quiet ? stderr : stdout);
-      rc |= globals.timer.DoReportFile(machine, directory_size
+      rc |= globals.timer.DoReportFile(directory_size
                     , directory_max_size, directory_min_size, num_directories
                     , globals.file_chunk_size()
                     , globals.quiet ? stderr : stdout);
     }
     // print a csv version in every case
     globals.timer.SetType(BonTimer::csv);
-    rc = globals.timer.DoReportIO(machine, file_size, globals.byte_io_size
+    rc = globals.timer.DoReportIO(file_size, globals.byte_io_size
                    , globals.io_chunk_size(), stdout);
-    rc |= globals.timer.DoReportFile(machine, directory_size
+    rc |= globals.timer.DoReportFile(directory_size
                     , directory_max_size, directory_min_size, num_directories
                     , globals.file_chunk_size(), stdout);
     if(rc) return rc;
   }
-  return 0;
+  return eNoErr;
 }
 
 int
@@ -557,7 +577,7 @@ TestFileOps(int file_size, CGlobalItems &globals)
     if(rc)
       return rc;
     if(exitNow)
-      return EXIT_CTRL_C;
+      return eCtrl_C;
     Duration dur;
 
     globals.timer.start();
@@ -574,7 +594,7 @@ TestFileOps(int file_size, CGlobalItems &globals)
           return 1;
         dur.stop();
         if(exitNow)
-          return EXIT_CTRL_C;
+          return eCtrl_C;
       }
       fflush(NULL);
       /*
@@ -599,7 +619,7 @@ TestFileOps(int file_size, CGlobalItems &globals)
     for(i = 0; i < num_chunks; i++)
     {
       if(exitNow)
-        return EXIT_CTRL_C;
+        return eCtrl_C;
       // for each chunk in the Unit
       buf[bufindex]++;
       bufindex = (bufindex + 1) % globals.io_chunk_size();
@@ -644,7 +664,7 @@ TestFileOps(int file_size, CGlobalItems &globals)
         return io_error("re write(2)");
       dur.stop();
       if(exitNow)
-        return EXIT_CTRL_C;
+        return eCtrl_C;
     }
     file.Close();
     globals.timer.stop_and_record(ReWrite);
@@ -668,7 +688,7 @@ TestFileOps(int file_size, CGlobalItems &globals)
           return 1;
         dur.stop();
         if(exitNow)
-          return EXIT_CTRL_C;
+          return eCtrl_C;
       }
 
       file.Close();
@@ -693,7 +713,7 @@ TestFileOps(int file_size, CGlobalItems &globals)
         return io_error("read(2)");
       dur.stop();
       if(exitNow)
-        return EXIT_CTRL_C;
+        return eCtrl_C;
     } /* per block */
     file.Close();
     globals.timer.stop_and_record(FastRead);
@@ -701,7 +721,7 @@ TestFileOps(int file_size, CGlobalItems &globals)
     if(!globals.quiet) fprintf(stderr, "done\n");
 
     globals.timer.start();
-    if(file.seek_test(globals.quiet, *globals.syn))
+    if(file.seek_test(globals.timer.random_source, globals.quiet, *globals.syn))
       return 1;
 
     /*
@@ -722,7 +742,7 @@ TestFileOps(int file_size, CGlobalItems &globals)
      *  all the children are lseeking on the same underlying file object?
      */
   }
-  return 0;
+  return eNoErr;
 }
 
 int
@@ -745,14 +765,14 @@ TestDirOps(int directory_size, int max_size, int min_size
            "start paging Bonnie++ data and the test will give suspect\n"
            "results, use less files or install more RAM for this test.\n"
           , directory_size, globals.ram);
-    return 1;
+    return eParam;
   }
   // Can't use more than 1G of RAM
   if(directory_size * MaxDataPerFile > (1 << 20))
   {
     fprintf(stderr, "Not enough ram to test with %dK files.\n"
                   , directory_size);
-    return 1;
+    return eParam;
   }
   globals.decrement_and_wait(CreateSeq);
   if(!globals.quiet) fprintf(stderr, "Create files in sequential order...");
@@ -783,7 +803,7 @@ TestDirOps(int directory_size, int max_size, int min_size
   if(open_test.delete_random(globals.timer))
     return 1;
   if(!globals.quiet) fprintf(stderr, "done.\n");
-  return 0;
+  return eNoErr;
 }
 
 void
@@ -794,9 +814,9 @@ usage()
     "      [-n number-to-stat[:max-size[:min-size][:num-directories[:chunk-size]]]]\n"
     "      [-m machine-name] [-r ram-size-in-Mb]\n"
     "      [-x number-of-tests] [-u uid-to-use:gid-to-use] [-g gid-to-use]\n"
-    "      [-q] [-f] [-b] [-p processes | -y]\n"
+    "      [-q] [-f] [-b] [-p processes | -y] [-z seed | -Z random-file]\n"
     "\nVersion: " BON_VERSION "\n");
-  exit(1);
+  exit(eParam);
 }
 
 int

@@ -1,5 +1,5 @@
 .TH bon_csv2html 1 
-.SH NAME
+.SH "NAME"
 .BR bon_csv2html
 program to convert CSV format Bonnie++ data to a HTML form
 using tables suitable for display on a web page. NB Lynx can't display this
@@ -15,7 +15,7 @@ They take CSV format (comma-delimited spreadsheet files AKA Comma Seperated
 Values in MS land) data on standard input and produce HTML or plain text on
 standard output respectively.
 
-.SH FORMAT
+.SH "FORMAT"
 This is a list of the fields used in the CSV files format version 2.  Format
 version 1 was the type used in Bonnie++ < 1.90.
 Before each field I list the field number as well as the name given in the heading
@@ -102,6 +102,6 @@ Latency for ran_create, ran_stat, and ran_del
 .P
 A string that starts with '#' is a comment.
 
-.SH AUTHOR
+.SH "AUTHOR"
 These programs were written by Russell Coker <russell@coker.com.au>. May be
 freely used and distributed without restriction.

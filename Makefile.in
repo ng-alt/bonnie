@@ -1,5 +1,5 @@
 EXES=bonnie++ zcav
-EXE=bon_csv2html
+EXE=bon_csv2html generate_randfile
 
 all: $(EXE) $(EXES)
 
@@ -11,30 +11,34 @@ eprefix=@exec_prefix@
 WFLAGS=-Wall -W -Wshadow -Wpointer-arith -Wwrite-strings -pedantic -ffor-scope $(MORE_WARNINGS)
 CFLAGS=-O2 -DNDEBUG $(WFLAGS) $(MORECFLAGS)
 CXX=@CXX@ $(CFLAGS)
+LINK=@CXX@
 THREAD_LFLAGS=@thread_ldflags@
 
 INSTALL=@INSTALL@
 
-BONSRC=bon_io.cpp bon_file.cpp bon_time.cpp semaphore.cpp sync.cpp thread.cpp \
- bon_suid.cpp duration.cpp
+BONSRC=bonnie++.cpp bon_io.cpp bon_file.cpp bon_time.cpp semaphore.cpp \
+ sync.cpp thread.cpp bon_suid.cpp duration.cpp rand.o
 BONOBJS=$(BONSRC:.cpp=.o)
 
-MAN1=bon_csv2html.1 bon_csv2txt.1
+MAN1=bon_csv2html.1 bon_csv2txt.1 generate_randfile.1
 MAN8=bonnie++.8 zcav.8
 
-ZCAVSRC=thread.cpp zcav_io.cpp bon_suid.cpp duration.cpp
+ZCAVSRC=zcav.cpp thread.cpp zcav_io.cpp bon_suid.cpp duration.cpp
 ZCAVOBJS=$(ZCAVSRC:.cpp=.o)
 
-ALLOBJS=$(BONOBJS) $(ZCAVOBJS)
+ALLOBJS=$(BONOBJS) $(ZCAVOBJS) generate_randfile.o bon_csv2html.o
 
-bonnie++: bonnie++.cpp $(BONOBJS)
-	$(CXX) bonnie++.cpp -o bonnie++ $(BONOBJS) $(THREAD_LFLAGS)
+bonnie++: $(BONOBJS)
+	$(LINK) -o bonnie++ $(BONOBJS) $(THREAD_LFLAGS)
 
-zcav: zcav.cpp $(ZCAVOBJS)
-	$(CXX) zcav.cpp -o zcav $(ZCAVOBJS) $(THREAD_LFLAGS)
+zcav: $(ZCAVOBJS)
+	$(LINK) -o zcav $(ZCAVOBJS) $(THREAD_LFLAGS)
 
-bon_csv2html: bon_csv2html.cpp
-	$(CXX) bon_csv2html.cpp -o bon_csv2html
+bon_csv2html: bon_csv2html.o
+	$(LINK) bon_csv2html.o -o bon_csv2html
+
+generate_randfile: generate_randfile.o
+	$(LINK) generate_randfile.o -o generate_randfile
 
 install-bin: $(EXE) $(EXES)
 	mkdir -p $(eprefix)/bin $(eprefix)/sbin
@@ -47,17 +51,20 @@ install: install-bin
 	@INSTALL_DATA@ $(MAN1) @mandir@/man1
 	@INSTALL_DATA@ $(MAN8) @mandir@/man8
 
-%.o: %.cpp %.h bonnie.h port.h
-	$(CXX) -c $<
-
-bon_suid.o: bon_suid.cpp bonnie.h port.h
+%.o: %.cpp
 	$(CXX) -c $<
 
 clean:
 	rm -f $(EXE) $(EXES) $(ALLOBJS) build-stamp install-stamp
 	rm -rf debian/tmp core debian/*.debhelper
-	rm -f debian/{substvars,files} config.log
+	rm -f debian/{substvars,files} config.log depends.bak
 
 realclean: clean
 	rm -f config.* Makefile bonnie++.spec
 	rm -f bon_csv2txt bon_csv2html.1 sun/pkginfo
+
+dep:
+	makedepend -Y -f depends *.cpp 2> /dev/null
+
+include depends
+

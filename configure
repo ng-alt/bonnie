@@ -524,9 +524,9 @@ fi
 
 
 
-version="1.92"
+version="1.92a"
 
-csv_version="1.92"
+csv_version="1.92a"
 
 # Check whether --enable-stripping or --disable-stripping was given.
 if test "${enable_stripping+set}" = set; then

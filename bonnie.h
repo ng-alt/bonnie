@@ -1,8 +1,8 @@
 #ifndef BONNIE
 #define BONNIE
 
-#define BON_VERSION "1.92"
-#define CSV_VERSION "1.92"
+#define BON_VERSION "1.92a"
+#define CSV_VERSION "1.92a"
 
 #include "port.h"
 #include <stdio.h>
@@ -52,5 +52,12 @@ enum tests_t
 
 int   io_error(CPCCHAR message, bool do_exit = false);
 int bon_setugid(CPCCHAR user, CPCCHAR group, bool quiet);
+
+typedef enum
+{
+  eNoErr = 0,
+  eParam = 1,
+  eCtrl_C = 5
+} ERROR_TYPE;
 
 #endif

@@ -53,4 +53,11 @@ enum tests_t
 int   io_error(CPCCHAR message, bool do_exit = false);
 int bon_setugid(CPCCHAR user, CPCCHAR group, bool quiet);
 
+typedef enum
+{
+  eNoErr = 0,
+  eParam = 1,
+  eCtrl_C = 5
+} ERROR_TYPE;
+
 #endif

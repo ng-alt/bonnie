@@ -3,6 +3,7 @@
 
 #include "bonnie.h"
 #include "duration.h"
+#include "rand.h"
 
 struct report_s
 {
@@ -31,9 +32,9 @@ public:
   void start();
   void stop_and_record(tests_t test);
   void add_delta_report(report_s &rep, tests_t test);
-  int DoReportIO(CPCCHAR machine, int file_size, int char_file_size
+  int DoReportIO(int file_size, int char_file_size
                , int io_chunk_size, FILE *fp);
-  int DoReportFile(CPCCHAR machine, int directory_size
+  int DoReportFile(int directory_size
                  , int max_size, int min_size, int num_directories
                  , int file_chunk_size, FILE *fp);
   void SetType(RepType type) { m_type = type; }
@@ -45,7 +46,11 @@ public:
   static double get_cpu_use();
 
   void add_latency(tests_t test, double t);
+
+  void setMachineName(CPCCHAR name) { m_name = name; }
  
+  Rand random_source;
+
 private:
   int print_cpu_stat(tests_t test);
   int print_stat(tests_t test, int test_size);
@@ -56,6 +61,7 @@ private:
   FILE *m_fp;
   Duration m_dur;
   CPU_Duration m_cpu_dur;
+  PCCHAR m_name;
 
   BonTimer(const BonTimer&);
   BonTimer &operator=(const BonTimer&);

@@ -9,6 +9,7 @@ bonnie++ \- program to test hard drive performance.
 .I [\-m machine\-name] [\-r ram\-size\-in\-Mb] [\-x number\-of\-tests]
 .I [\-u uid\-to\-use:gid\-to\-use] [\-g gid\-to\-use]
 .I [\-q] [\-f size\-for\-char\-io] [\-b] [\-p processes | \-y p|s ]
+.I [\-z seed\-num|\-Z random\-file]
 
 .SH "DESCRIPTION"
 This manual page documents briefly the
@@ -155,6 +156,13 @@ for semaphores and option
 .B p
 for prompting.
 
+.TP
+.B \-z seed
+random number seed to repeat the same test.
+
+.TP
+.B \-Z random\-file
+file containing random data in network byte order.
 .P
 
 .SH "OUTPUT"
