@@ -4,7 +4,7 @@ zcav \- program to test raw hard drive throughput.
 
 .SH "SYNOPSIS"
 .B zcav
-.I [\-b block\-size] [\-c count]
+.I [\-b block\-size[:chunk\-size]] [\-c count] [\-n num_blocks] [\-w]
 .I [\-u uid\-to\-use:gid\-to\-use] [\-g gid\-to\-use]
 .I [\-f] file\-name
 
@@ -39,11 +39,20 @@ which is what I use to view the results.
 
 .TP
 .B \-b
-the size of the blocks to read from disk (default 100M).
+the size (in Meg) of the blocks to read/write (default 100M), optionally
+followed by a ':' and the chunk size for read/write operations (default 1M).
+Note that the chunk size must be less than or equal to the block size and
+must also be significantly less than the size of the RAM in the machine.
+Also note that for the write test there will be a fsync() after writing every
+chunk.
 
 .TP
 .B \-c
-the number of times to read the entire disk.
+the number of times to read/write the entire disk.
+
+.TP
+.B \-n
+the amount of data (in Meg) to read/write on each pass (default the entire device).
 
 .TP
 .B \-f
@@ -71,6 +80,10 @@ for the
 .B \-u
 parameter, just a different way to specify it for compatibility with other
 programs.
+
+.TP
+.B \-w
+write zero blocks to the disk instead of reading from the disk - will destroy data!
 
 .SH "AUTHOR"
 This program, it's manual page, and the Debian package were written by

@@ -38,9 +38,9 @@ install-bin: $(EXES)
 	${INSTALL} $(SCRIPTS) $(eprefix)/bin
 
 install: install-bin
-	mkdir -p ${prefix}/man/man1 ${prefix}/man/man8
-	${INSTALL} -m 644 $(MAN1) ${prefix}/man/man1
-	${INSTALL} -m 644 $(MAN8) ${prefix}/man/man8
+	mkdir -p ${prefix}/share/man/man1 ${prefix}/share/man/man8
+	${INSTALL} -m 644 $(MAN1) ${prefix}/share/man/man1
+	${INSTALL} -m 644 $(MAN8) ${prefix}/share/man/man8
 
 %.o: %.cpp %.h bonnie.h port.h
 	$(CXX) -c $<

@@ -18,7 +18,7 @@ using namespace std;
 
 // Read the specified number of megabytes of data from the fd and return the
 // amount of time elapsed in seconds.
-double readmegs(int fd, int size, char *buf);
+double access_data(int fd, int size, void *buf, int chunk_size, int do_write);
 
 // Returns the mean of the values in the array.  If the array contains
 // more than 2 items then discard the highest and lowest thirds of the
@@ -26,7 +26,8 @@ double readmegs(int fd, int size, char *buf);
 double average(double *array, int count);
 void printavg(int position, double avg, int block_size);
 
-const int meg = 1024*1024;
+const int MEG = 1024*1024;
+const int DEFAULT_CHUNK_SIZE = 1;
 typedef double *PDOUBLE;
 
 void usage()
@@ -46,17 +47,24 @@ int main(int argc, char *argv[])
   vector<int> count;
   int block_size = 100;
 
-  int max_loops = 1;
+  int max_loops = 1, pass_size = 0, chunk_size = DEFAULT_CHUNK_SIZE;
+  int do_write = 0;
   char *file_name = NULL;
 
   char *userName = NULL, *groupName = NULL;
   int c;
-  while(-1 != (c = getopt(argc, argv, "-c:b:f:g:u:")) )
+  while(-1 != (c = getopt(argc, argv, "-c:b:f:g:n:u:w")) )
   {
     switch(char(c))
     {
       case 'b':
-        block_size = atoi(optarg);
+      {
+        int rc = sscanf(optarg, "%d:%d", &block_size, &chunk_size);
+        if(rc == 1)
+          chunk_size = DEFAULT_CHUNK_SIZE;
+        else if(rc != 2)
+          usage();
+      }
       break;
       case 'c':
         max_loops = atoi(optarg);
@@ -82,6 +90,12 @@ int main(int argc, char *argv[])
         }
       }
       break;
+      case 'n':
+        pass_size = atoi(optarg);
+      break;
+      case 'w':
+        do_write = 1;
+      break;
       case 'f':
       case char(1):
         file_name = optarg;
@@ -91,6 +105,8 @@ int main(int argc, char *argv[])
     }
   }
 
+  pass_size = pass_size / block_size;
+
   if(userName || groupName)
   {
     if(bon_setugid(userName, groupName, false))
@@ -99,7 +115,8 @@ int main(int argc, char *argv[])
       free(userName);
   }
 
-  if(max_loops < 1 || block_size < 1)
+  if(max_loops < 1 || block_size < 1 || chunk_size < 1
+    || chunk_size > block_size)
     usage();
   if(!file_name)
     usage();
@@ -107,11 +124,14 @@ int main(int argc, char *argv[])
   printf("#block K/s time\n");
 
   int i;
-  char *buf = new char[meg];
+  void *buf = calloc(chunk_size * MEG, 1);
   int fd;
   if(strcmp(file_name, "-"))
   {
-    fd = open(file_name, O_RDONLY);
+    if(do_write)
+      fd = open(file_name, O_WRONLY);
+    else
+      fd = open(file_name, O_RDONLY);
     if(fd == -1)
     {
       printf("Can't open %s\n", file_name);
@@ -131,9 +151,9 @@ int main(int argc, char *argv[])
         printf("Can't llseek().\n");
         return 1;
       }
-      for(i = 0; loops == 0 || times[0][i] != -1.0; i++)
+      for(i = 0; (loops == 0 || times[0][i] != -1.0) && (!pass_size || i < pass_size); i++)
       {
-        double read_time = readmegs(fd, block_size, buf);
+        double read_time = access_data(fd, block_size, buf, chunk_size, do_write);
         if(loops == 0)
         {
           times.push_back(new double[max_loops]);
@@ -144,7 +164,7 @@ int main(int argc, char *argv[])
         {
           if(i == 0)
           {
-            fprintf(stderr, "Input file too small.\n");
+            fprintf(stderr, "Data file/device too small.\n");
             return 1;
           }
           times[i][0] = -1.0;
@@ -161,16 +181,16 @@ int main(int argc, char *argv[])
   }
   else
   {
-    for(i = 0; 1; i++)
+    for(i = 0; !pass_size || i < pass_size; i++)
     {
-      double read_time = readmegs(fd, block_size, buf);
+      double read_time = access_data(fd, block_size, buf, chunk_size, do_write);
       if(read_time < 0.0)
         break;
       printavg(i, read_time, block_size);
     }
     if(i == 0)
     {
-      fprintf(stderr, "Input file too small.\n");
+      fprintf(stderr, "File/device too small.\n");
       return 1;
     }
   }
@@ -211,24 +231,34 @@ double average(double *array, int count)
   return total / arr_items;
 }
 
-// just like the read() system call but takes a (char *) and will not return
-// a partial result.
-ssize_t readall(int fd, char *buf, size_t count)
+// just like read() or write() but will not return a partial result and the
+// size is expressed in MEG.
+ssize_t access_all(int fd, void *buf, size_t chunk_size, int do_write)
 {
   ssize_t total = 0;
-  while(total != static_cast<ssize_t>(count) )
+  chunk_size *= MEG;
+  while(total != static_cast<ssize_t>(chunk_size) )
   {
-    ssize_t rc = read(fd, &buf[total], count - total);
+    ssize_t rc;
+    // for both read and write just pass the base address of the buffer
+    // as we don't care for the data, if we ever do checksums we have to
+    // change this
+    if(do_write)
+      rc = write(fd, buf, chunk_size - total);
+    else
+      rc = read(fd, buf, chunk_size - total);
     if(rc == -1 || rc == 0)
       return -1;
     total += rc;
   }
-  return total;
+  if(do_write && fsync(fd))
+    return -1;
+  return total / MEG;
 }
 
 // Read the specified number of megabytes of data from the fd and return the
-// amount of time elapsed in seconds.
-double readmegs(int fd, int size, char *buf)
+// amount of time elapsed in seconds.  If do_write == 1 then write data.
+double access_data(int fd, int size, void *buf, int chunk_size, int do_write)
 {
   struct timeval tp;
  
@@ -240,10 +270,13 @@ double readmegs(int fd, int size, char *buf)
   double start = double(tp.tv_sec) +
     (double(tp.tv_usec) / 1000000.0);
 
-  for(int i = 0; i < size; i++)
+  for(int i = 0; i < size; i += chunk_size)
   {
-    int rc = readall(fd, buf, meg);
-    if(rc != meg)
+    int access_size = chunk_size;
+    if(i + chunk_size > size)
+      access_size = size - i;
+    int rc = access_all(fd, buf, access_size, do_write);
+    if(rc != access_size)
       return -1.0;
   }
   if (gettimeofday(&tp, static_cast<struct timezone *>(NULL)) == -1)

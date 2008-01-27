@@ -45,9 +45,9 @@ the size of the file(s) for IO performance measures in megabytes. If the size
 is greater than 1G then multiple files will be used to store the data, and
 each file will be up to 1G in size.  This parameter may include the chunk size
 seperated from the size by a colon.  The chunk\-size is measured in bytes and
-must be a power of two from 256 to 1048576.  NB You can specify the size in
-giga\-bytes or the chunk\-size in kilo\-bytes if you add 'g' or 'k' to the end of
-the number respectively.
+must be a power of two from 256 to 1048576, the default is 8192.  NB You can
+specify the size in giga\-bytes or the chunk\-size in kilo\-bytes if you add
+\f3g\f1 or \f3k\f1 to the end of the number respectively.
 
 If the specified size is 0 then this test will be skipped.
 .TP
@@ -104,7 +104,8 @@ tests have been completed, or it is killed.
 .TP
 .B \-u
 user\-id to use.  When running as root specify the UID to use for the tests.  It
-is not recommended to use root, so if you really want to run as root then use
+is not recommended to use root (since the occasion when a Bonnie++ bug wiped
+out someone's system), so if you really want to run as root then use
 .B \-u root.
 Also if you want to specify the group to run as then use the
 .B user:group
@@ -170,7 +171,7 @@ can't be calculated accurately due to rounding errors and I would rather
 display no result than a wrong result.
 
 .SH "AUTHOR"
-This program, it's manual page, and the Debian package were written by
+This program, its manual page, and the Debian package were written by
 Russell Coker <russell@coker.com.au>, parts of the program are based on the
 work of Tim Bray <tbray@textuality.com>.
 .P
@@ -180,7 +181,7 @@ under joint copyright with Tim Bray.
 
 .SH "SIGNALS"
 Handles SIGINT and does a cleanup (which may take some time), a second SIGINT
-or a SIGQUIT will cause it to immidiately die.
+or a SIGQUIT will cause it to immediately die.
 .P
 SIGXCPU and SIGXFSZ act like SIGINT.
 .P

@@ -75,8 +75,7 @@ COpenTest::~COpenTest()
           io_error("rmdir");
       }
     }
-    chdir("..");
-    if(rmdir(m_dirname))
+    if(chdir("..") || rmdir(m_dirname))
       io_error("rmdir");
     delete m_dirname;
   }
@@ -395,8 +394,7 @@ int COpenTest::delete_random(BonTimer &timer)
       close(m_directoryHandles[0]);
     }
   }
-  chdir("..");
-  if(rmdir(m_dirname))
+  if(chdir("..") || rmdir(m_dirname))
   {
     io_error("rmdir");
     return -1;
@@ -486,16 +484,14 @@ int COpenTest::delete_sequential(BonTimer &timer)
     }
     if(m_number_directories != 1)
     {
-      chdir("..");
-      if(rmdir(buf))
+      if(chdir("..") || rmdir(buf))
       {
         io_error("rmdir");
         return -1;
       }
     }
   }
-  chdir("..");
-  if(rmdir(m_dirname))
+  if(chdir("..") || rmdir(m_dirname))
   {
     io_error("rmdir");
     return -1;
@@ -601,7 +597,10 @@ int COpenTest::stat_sequential(BonTimer &timer)
     {
       fprintf(stderr, "Can't open directory.\n");
       if(m_number_directories != 1)
-        chdir("..");
+      {
+        if(chdir(".."))
+          fprintf(stderr, "Can't chdir().\n");
+      }
       return -1;
     }
     do
@@ -615,7 +614,10 @@ int COpenTest::stat_sequential(BonTimer &timer)
         if(-1 == stat_file(findBuf.achName))
         {
           if(m_number_directories != 1)
-            chdir("..");
+          {
+            if(chdir(".."))
+              fprintf(stderr, "Can't chdir().\n");
+          }
           return -1;
         }
         count++;
@@ -629,7 +631,10 @@ int COpenTest::stat_sequential(BonTimer &timer)
     {
       fprintf(stderr, "Can't open directory.\n");
       if(m_number_directories != 1)
-        chdir("..");
+      {
+        if(chdir(".."))
+          fprintf(stderr, "Can't chdir().\n");
+      }
       return -1;
     }
     dirent *file_ent;
@@ -649,7 +654,10 @@ int COpenTest::stat_sequential(BonTimer &timer)
         if(-1 == stat_file(file_ent->d_name))
         {
           if(m_number_directories != 1)
-            chdir("..");
+          {
+            if(chdir(".."))
+              fprintf(stderr, "Can't chdir().\n");
+          }
           return -1;
         }
         count++;

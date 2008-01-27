@@ -1,3 +1,29 @@
+bonnie++ (1.03c) unstable; urgency=low
+
+  * Fixed some failures to check the return code of chdir().
+
+ -- Russell Coker <russell@coker.com.au>  Sun, 27 Jan 2008 15:31:00 +1100
+
+bonnie++ (1.03b.1) unstable; urgency=low
+
+  * Fixed typos in man page.
+    Closes: #133714
+    Closes: #449596
+  * Documented why UID==0 is bad.
+    Closes: #182023
+
+ -- Russell Coker <russell@coker.com.au>  Wed,  5 Dec 2007 09:09:00 +1100
+
+bonnie++ (1.03b) unstable; urgency=low
+
+  * Added support for testing write speed to zcav.
+
+  * Documented the default chunk size in bonnie++.8.
+
+  * Improved error handling for chunk size.
+
+ -- Russell Coker <russell@coker.com.au>  Mon,  3 Dec 2007 10:13:00 +1100
+
 bonnie++ (1.03a) unstable; urgency=low
 
   * Fixed the bugs in GCC 3.2 compilation and compiled with GCC 3.2.  Results
