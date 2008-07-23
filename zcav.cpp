@@ -8,7 +8,8 @@ using namespace std;
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <stdlib.h>
+#include <cstdlib>
+#include <cstring>
 #include "bonnie.h"
 #ifdef HAVE_VECTOR
 #include <vector>
@@ -32,7 +33,7 @@ typedef double *PDOUBLE;
 
 void usage()
 {
-  printf("Usage: zcav [-b block-size] [-c count]\n"
+  printf("Usage: zcav [-b block-size] [-c count] [-n number of megs to read]\n"
          "            [-u uid-to-use:gid-to-use] [-g gid-to-use]\n"
          "            [-f] file-name\n"
          "File name of \"-\" means standard input\n"
@@ -45,7 +46,7 @@ int main(int argc, char *argv[])
 {
   vector<double *> times;
   vector<int> count;
-  int block_size = 100;
+  int block_size = 256;
 
   int max_loops = 1, pass_size = 0, chunk_size = DEFAULT_CHUNK_SIZE;
   int do_write = 0;
@@ -80,7 +81,8 @@ int main(int argc, char *argv[])
           usage();
         userName = strdup(optarg);
         int i;
-        for(i = 0; userName[i] && userName[i] != ':'; i++);
+        for(i = 0; userName[i] && userName[i] != ':'; i++)
+        {}
         if(userName[i] == ':')
         {
           if(groupName)
@@ -121,7 +123,6 @@ int main(int argc, char *argv[])
   if(!file_name)
     usage();
   printf("#loops: %d, version: %s\n", max_loops, BON_VERSION);
-  printf("#block K/s time\n");
 
   int i;
   void *buf = calloc(chunk_size * MEG, 1);
@@ -144,6 +145,12 @@ int main(int argc, char *argv[])
   }
   if(max_loops > 1)
   {
+    struct stat stat_out, stat_err;
+    if(fstat(1, &stat_out) || fstat(2, &stat_err))
+    {
+      printf("Can't stat stdout/stderr.\n");
+      return 1;
+    }
     for(int loops = 0; loops < max_loops; loops++)
     {
       if(lseek(fd, 0, SEEK_SET))
@@ -151,9 +158,11 @@ int main(int argc, char *argv[])
         printf("Can't llseek().\n");
         return 1;
       }
+      double total_read_time = 0.0;
       for(i = 0; (loops == 0 || times[0][i] != -1.0) && (!pass_size || i < pass_size); i++)
       {
         double read_time = access_data(fd, block_size, buf, chunk_size, do_write);
+        total_read_time += read_time;
         if(loops == 0)
         {
           times.push_back(new double[max_loops]);
@@ -172,8 +181,21 @@ int main(int argc, char *argv[])
         }
         count[i]++;
       }
-      fprintf(stderr, "Finished loop %d.\n", loops + 1);
+      time_t now = time(NULL);
+      struct tm *cur_time = localtime(&now);
+      fprintf(stderr, "# Finished loop %d, %d:%02d:%02d\n", loops + 1
+            , cur_time->tm_hour, cur_time->tm_min, cur_time->tm_sec);
+      printf("# Read %d gigs in %d seconds, %d megabytes per second.\n"
+           , i * block_size / 1024, int(total_read_time)
+           , int(double(i * block_size) / total_read_time));
+      if(stat_out.st_dev != stat_err.st_dev || stat_out.st_ino != stat_err.st_ino)
+      {
+        fprintf(stderr, "Read %d gigs in %d seconds, %d megabytes per second.\n"
+             , i * block_size / 1024, int(total_read_time)
+             , int(double(i * block_size) / total_read_time));
+      }
     }
+    printf("#\n#block offset (GiB), MiB/s, time\n");
     for(i = 0; count[i]; i++)
     {
       printavg(i, average(times[i], count[i]), block_size);
@@ -181,29 +203,34 @@ int main(int argc, char *argv[])
   }
   else
   {
+    printf("#block offset (GiB), MiB/s, time\n");
+    double total_read_time = 0.0;
     for(i = 0; !pass_size || i < pass_size; i++)
     {
       double read_time = access_data(fd, block_size, buf, chunk_size, do_write);
       if(read_time < 0.0)
         break;
       printavg(i, read_time, block_size);
+      total_read_time += read_time;
     }
     if(i == 0)
     {
       fprintf(stderr, "File/device too small.\n");
       return 1;
     }
+    printf("# Read %d gigs in %d seconds, %d megabytes per second.\n"
+         , i * block_size / 1024, int(total_read_time)
+         , int(double(i * block_size) / total_read_time));
   }
   return 0;
 }
 
 void printavg(int position, double avg, int block_size)
 {
-  double num_k = double(block_size * 1024);
   if(avg < MinTime)
-    printf("#%d ++++ %f \n", position * block_size, avg);
+    printf("#%.2f ++++ %.3f \n", float(position) * float(block_size) / 1024.0, avg);
   else
-    printf("%d %d %f\n", position * block_size, int(num_k / avg), avg);
+    printf("%.2f %.2f %.3f\n", float(position) * float(block_size) / 1024.0, float(double(block_size) / avg), avg);
 }
 
 int compar(const void *a, const void *b)

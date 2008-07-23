@@ -4,7 +4,7 @@ all: $(EXES)
 
 SCRIPTS=bon_csv2html bon_csv2txt
 
-prefix=/usr/local
+prefix=/home/rjc/debian/bonnie++-1.03d/debian/bonnie++/usr
 eprefix=${prefix}
 #MORE_WARNINGS=-Weffc++ -Wcast-align
 WFLAGS=-Wall -W -Wshadow -Wpointer-arith -Wwrite-strings -pedantic -ffor-scope $(MORE_WARNINGS)
@@ -38,9 +38,9 @@ install-bin: $(EXES)
 	${INSTALL} $(SCRIPTS) $(eprefix)/bin
 
 install: install-bin
-	mkdir -p ${prefix}/share/man/man1 ${prefix}/share/man/man8
-	${INSTALL} -m 644 $(MAN1) ${prefix}/share/man/man1
-	${INSTALL} -m 644 $(MAN8) ${prefix}/share/man/man8
+	mkdir -p /home/rjc/debian/bonnie++-1.03d/debian/bonnie++/usr/share/man/man1 /home/rjc/debian/bonnie++-1.03d/debian/bonnie++/usr/share/man/man8
+	${INSTALL} -m 644 $(MAN1) /home/rjc/debian/bonnie++-1.03d/debian/bonnie++/usr/share/man/man1
+	${INSTALL} -m 644 $(MAN8) /home/rjc/debian/bonnie++-1.03d/debian/bonnie++/usr/share/man/man8
 
 %.o: %.cpp %.h bonnie.h port.h
 	$(CXX) -c $<

@@ -1,3 +1,16 @@
+bonnie++ (1.03d) unstable; urgency=low
+
+  * Made it compile with GCC 4.3.
+  * Added the URL to the man pages.
+  * Made zcav display the total time and average speed for a loop and also the
+    time that each loop completed.
+  * Made the zcav default block size 256M to cope with larger and faster disks.
+  * Made the zcav output units be in MiB/s and GiB.
+  * Improved the Bonnie++ man page in regard to the -y and -p options.
+  * Use DH_COMPAT=4 and dh_installman.
+
+ -- Russell Coker <russell@coker.com.au>  Wed, 23 Jul 2008 10:54:24 +1000
+
 bonnie++ (1.03c) unstable; urgency=low
 
   * Fixed some failures to check the return code of chdir().

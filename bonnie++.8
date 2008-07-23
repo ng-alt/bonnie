@@ -1,12 +1,12 @@
-.TH bonnie++ 1 
+.TH bonnie++ 8
 .SH "NAME"
 bonnie++ \- program to test hard drive performance.
 
 .SH "SYNOPSIS"
 .B bonnie++
-.I [\-d dir] [\-s size(Mb)[:chunk\-size(b)]]
+.I [\-d dir] [\-s size(MiB)[:chunk\-size(b)]]
 .I [\-n number\-to\-stat(*1024)[:max\-size[:min\-size][:num\-directories]]]
-.I [\-m machine\-name] [\-r ram\-size\-in\-Mb] [\-x number\-of\-tests]
+.I [\-m machine\-name] [\-r ram\-size\-in\-MiB] [\-x number\-of\-tests]
 .I [\-u uid\-to\-use:gid\-to\-use] [\-g gid\-to\-use]
 .I [\-q] [\-f] [\-b] [\-p processes | \-y]
 
@@ -151,6 +151,17 @@ wait for semaphore before each test.
 
 .P
 
+.SH "MULTIPLE PROCESSES"
+Run the following commands to run three copies of Bonnie++ simultaneously:
+.P
+bonnie++ -p3
+.P
+bonnie++ -y > out1 &
+.P
+bonnie++ -y > out2 &
+.P
+bonnie++ -y > out3 &
+
 .SH "OUTPUT"
 The primary output is plain\-text in 80 columns which is designed to fit well
 when pasted into email and which will work well with Braille displays.
@@ -192,6 +203,11 @@ Ignores SIGHUP.
 The random file sizes will add up to different values for different test runs.
 I plan to add some code that checks the sum and ensures that the sum of the
 values will be the same on seperate runs.
+
+.SH "AVAILABILITY"
+The source is available from http://www.coker.com.au/bonnie++ .
+.P
+See http://etbe.coker.com.au/category/benchmark for further information.
 
 .SH "SEE ALSO"
 .BR bon_csv2html (1),

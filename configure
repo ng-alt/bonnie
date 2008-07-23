@@ -1693,7 +1693,7 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 ac_config_headers="$ac_config_headers conf.h"
 
 
-version="1.03c"
+version="1.03d"
 
 
 # Check whether --enable-stripping was given.

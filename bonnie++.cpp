@@ -207,7 +207,7 @@ int main(int argc, char *argv[])
   odm_obj = getattr("sys0", "realmem", 0, &how_many);
   globals.ram = atoi(odm_obj->value) / 1024;
   odm_terminate();
-  printf("Memory = %d MB\n", globals.ram);
+  printf("Memory = %d MiB\n", globals.ram);
 #endif
 
 #endif
@@ -284,7 +284,8 @@ int main(int argc, char *argv[])
           usage();
         userName = strdup(optarg);
         int i;
-        for(i = 0; userName[i] && userName[i] != ':'; i++);
+        for(i = 0; userName[i] && userName[i] != ':'; i++)
+        {}
         if(userName[i] == ':')
         {
           if(groupName)
@@ -363,7 +364,8 @@ int main(int argc, char *argv[])
     usage();
   int i;
   globals.chunk_bits = 0;
-  for(i = globals.chunk_size(); i > 1; i = i >> 1, globals.chunk_bits++);
+  for(i = globals.chunk_size(); i > 1; i = i >> 1, globals.chunk_bits++)
+  {}
   if(1 << globals.chunk_bits != globals.chunk_size())
     usage();
 
@@ -609,7 +611,7 @@ TestDirOps(int directory_size, int max_size, int min_size
   if(globals.ram && directory_size * MaxDataPerFile * 2 > (globals.ram << 10))
   {
     fprintf(stderr
-         , "When testing %dK of files in %d MB of RAM the system is likely to\n"
+        , "When testing %dK of files in %d MiB of RAM the system is likely to\n"
            "start paging Bonnie++ data and the test will give suspect\n"
            "results, use less files or install more RAM for this test.\n"
           , directory_size, globals.ram);
@@ -658,10 +660,10 @@ void
 usage()
 {
   fprintf(stderr,
-    "usage: bonnie++ [-d scratch-dir] [-s size(Mb)[:chunk-size(b)]]\n"
+    "usage: bonnie++ [-d scratch-dir] [-s size(MiB)[:chunk-size(b)]]\n"
     "                [-n number-to-stat[:max-size[:min-size][:num-directories]]]\n"
     "                [-m machine-name]\n"
-    "                [-r ram-size-in-Mb]\n"
+    "                [-r ram-size-in-MiB]\n"
     "                [-x number-of-tests] [-u uid-to-use:gid-to-use] [-g gid-to-use]\n"
     "                [-q] [-f] [-b] [-p processes | -y]\n"
     "\nVersion: " BON_VERSION "\n");
