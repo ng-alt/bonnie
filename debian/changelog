@@ -1,3 +1,10 @@
+bonnie++ (1.03e) unstable; urgency=low
+
+  * Added the -D option to bonnie++ to use direct IO (O_DIRECT) for bulk IO.
+    Thanks to Dave Murch from Violin Memory - http://violin-memory.com/
+
+ -- Russell Coker <russell@coker.com.au>  Wed, 10 Dec 2008 09:08:00 +1100
+
 bonnie++ (1.03d) unstable; urgency=low
 
   * Made it compile with GCC 4.3.

@@ -8,7 +8,7 @@ bonnie++ \- program to test hard drive performance.
 .I [\-n number\-to\-stat(*1024)[:max\-size[:min\-size][:num\-directories]]]
 .I [\-m machine\-name] [\-r ram\-size\-in\-MiB] [\-x number\-of\-tests]
 .I [\-u uid\-to\-use:gid\-to\-use] [\-g gid\-to\-use]
-.I [\-q] [\-f] [\-b] [\-p processes | \-y]
+.I [\-q] [\-f] [\-b] [\-D] [\-p processes | \-y]
 
 .SH "DESCRIPTION"
 This manual page documents briefly the
@@ -148,6 +148,10 @@ semaphore.
 .TP
 .B \-y
 wait for semaphore before each test.
+
+.TP
+.B \-D
+use direct IO (O_DIRECT) for the bulk IO tests
 
 .P
 

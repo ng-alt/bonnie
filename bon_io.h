@@ -8,7 +8,7 @@ class BonTimer;
 class CFileOp
 {
 public:
-  CFileOp(BonTimer &timer, int file_size, int chunk_bits, bool use_sync = false);
+  CFileOp(BonTimer &timer, int file_size, int chunk_bits, bool use_sync = false, bool use_direct_io = false);
   int open(CPCCHAR base_name, bool create, bool use_fopen = false);
   ~CFileOp();
   int write_block_putc();
@@ -33,6 +33,7 @@ private:
   bool m_isopen;
   char *m_name;
   bool m_sync;
+  bool m_use_direct_io;
   const int m_chunk_bits, m_chunk_size;
   int m_chunks_per_file, m_total_chunks;
   int m_last_file_chunks;

@@ -272,7 +272,7 @@ int CFileOp::write_block(PVOID buf)
   int rc = ::write(m_fd[m_file_ind], buf, m_chunk_size);
   if(rc != m_chunk_size)
   {
-    fprintf(stderr, "Can't write block.\n");
+    fprintf(stderr, "Can't write block; rc=%d, buf=%p, chunk_size=%d\n", rc, buf, m_chunk_size);
     return -1;
   }
 #endif
@@ -311,13 +311,14 @@ int CFileOp::open(CPCCHAR base_name, bool create, bool use_fopen)
   return reopen(create, use_fopen);
 }
 
-CFileOp::CFileOp(BonTimer &timer, int file_size, int chunk_bits, bool use_sync)
+CFileOp::CFileOp(BonTimer &timer, int file_size, int chunk_bits, bool use_sync, bool use_direct_io)
  : m_timer(timer)
  , m_stream(NULL)
  , m_fd(NULL)
  , m_isopen(false)
  , m_name(NULL)
  , m_sync(use_sync)
+ , m_use_direct_io(use_direct_io)
  , m_chunk_bits(chunk_bits)
  , m_chunk_size(1 << m_chunk_bits)
  , m_chunks_per_file(Unit / m_chunk_size * IOFileSize)
@@ -392,6 +393,10 @@ int CFileOp::m_open(CPCCHAR base_name, int ind, bool create)
     createFlag = OPEN_ACTION_CREATE_IF_NEW | OPEN_ACTION_REPLACE_IF_EXISTS;
 #else
     flags = O_RDWR | O_CREAT | O_EXCL;
+    if(m_use_direct_io)
+    {
+      flags |= O_DIRECT;
+    }
 #endif
   }
   else

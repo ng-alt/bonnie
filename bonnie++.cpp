@@ -56,6 +56,7 @@ public:
   bool quiet;
   bool fast;
   bool sync_bonnie;
+  bool use_direct_io;
   BonTimer timer;
   int ram;
   Semaphore sem;
@@ -65,9 +66,10 @@ public:
   int chunk_size() const { return m_chunk_size; }
   bool *doExit;
   void set_chunk_size(int size)
-    { delete m_buf; m_buf = new char[size]; m_chunk_size = size; }
+    { delete m_buf; pa_new(size, m_buf, m_buf_pa); m_chunk_size = size; }
 
-  char *buf() { return m_buf; }
+  // Return the page-aligned version of the local buffer
+  char *buf() { return m_buf_pa; }
 
   CGlobalItems(bool *exitFlag);
   ~CGlobalItems() { delete name; delete m_buf; }
@@ -89,17 +91,35 @@ public:
   }
 private:
   int m_chunk_size;
-  char *m_buf;
-
+  char *m_buf;     // Pointer to the entire buffer
+  char *m_buf_pa;  // Pointer to the page-aligned version of the same buffer
 
   CGlobalItems(const CGlobalItems &f);
   CGlobalItems & operator =(const CGlobalItems &f);
+
+  // Implement a page-aligned version of new.
+  // 'p' is the pointer created
+  // 'page_aligned_p' is the page-aligned pointer created
+  void pa_new(unsigned int num_bytes, char *&p, char *&page_aligned_p)
+  {
+#ifdef NON_UNIX
+    SYSTEM_INFO system_info;
+    GetSystemInfo(&system_info);
+    long page_size = system_info.dwPageSize;
+#else
+    int page_size = getpagesize();
+#endif
+    p = ::new char [num_bytes + page_size];
+
+    page_aligned_p = (char *)((((unsigned long)p + page_size - 1) / page_size) * page_size);
+  }
 };
 
 CGlobalItems::CGlobalItems(bool *exitFlag)
  : quiet(false)
  , fast(false)
  , sync_bonnie(false)
+ , use_direct_io(false)
  , timer()
  , ram(0)
  , sem(SemKey, TestCount)
@@ -108,8 +128,10 @@ CGlobalItems::CGlobalItems(bool *exitFlag)
  , chunk_bits(DefaultChunkBits)
  , doExit(exitFlag)
  , m_chunk_size(DefaultChunkSize)
- , m_buf(new char[m_chunk_size])
+ , m_buf(NULL)
+ , m_buf_pa(NULL)
 {
+  pa_new(m_chunk_size, m_buf, m_buf_pa);
   SetName(".");
 }
 
@@ -213,7 +235,7 @@ int main(int argc, char *argv[])
 #endif
 
   int int_c;
-  while(-1 != (int_c = getopt(argc, argv, "bd:fg:m:n:p:qr:s:u:x:y")) )
+  while(-1 != (int_c = getopt(argc, argv, "bd:fg:m:n:p:qr:s:u:x:yD")) )
   {
     switch(char(int_c))
     {
@@ -302,6 +324,10 @@ int main(int argc, char *argv[])
                         /* tell procs to synchronize via previous
                            defined semaphore */
         globals.sync_bonnie = true;
+      break;
+      case 'D':
+                        /* open file descriptor with direct I/O */
+        globals.use_direct_io = true;
       break;
     }
   }
@@ -428,7 +454,7 @@ TestFileOps(int file_size, CGlobalItems &globals)
 {
   if(file_size)
   {
-    CFileOp file(globals.timer, file_size, globals.chunk_bits, globals.bufSync);
+    CFileOp file(globals.timer, file_size, globals.chunk_bits, globals.bufSync, globals.use_direct_io);
     int    num_chunks;
     int    words;
     char  *buf = globals.buf();
@@ -665,7 +691,7 @@ usage()
     "                [-m machine-name]\n"
     "                [-r ram-size-in-MiB]\n"
     "                [-x number-of-tests] [-u uid-to-use:gid-to-use] [-g gid-to-use]\n"
-    "                [-q] [-f] [-b] [-p processes | -y]\n"
+    "                [-q] [-f] [-b] [-D] [-p processes | -y]\n"
     "\nVersion: " BON_VERSION "\n");
   exit(1);
 }
