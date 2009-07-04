@@ -5,9 +5,7 @@
 #include <vector>
 
 #include "duration.h"
-#ifndef OS2
 using namespace std;
-#endif
 
 enum results
 {
@@ -21,7 +19,8 @@ enum results
 // results before calculating the mean.
 double average(double *array, int count);
 
-const int meg = 1024*1024;
+const int MEG = 1024*1024;
+const int DEFAULT_CHUNK_SIZE = 1;
 
 class ZcavRead
 {
@@ -29,30 +28,33 @@ public:
   ZcavRead(){ m_name = NULL; }
   ~ZcavRead();
 
-  int Open(bool *finished, int block_size, const char *file, const char *log);
+  int Open(bool *finished, int block_size, const char *file, const char *log
+         , int chunk_size, int do_write);
   void Close();
-  int Read(int max_loops, int max_size, int writeCom);
+  int Read(int max_loops, int max_size, int writeCom, int skip_rate, int start_offset);
 
 private:
-  ssize_t readall(int count);
+  ssize_t access_all(int count);
 
   // write the status to the parent thread
   int writeStatus(int fd, char c);
 
   // Read the m_block_count megabytes of data from the fd and return the
   // amount of time elapsed in seconds.
-  double readmegs();
+  double access_data(int skip);
   void printavg(int position, double avg, int block_size);
 
   bool *m_finished;
   vector <double *> m_times;
   vector<int> m_count; // number of times each block has been read
-  char m_buf[meg];
+  void *m_buf;
   int m_fd;
   FILE *m_log;
   bool m_logFile;
   int m_block_size;
   char *m_name;
+  int m_chunk_size;
+  int m_do_write;
   Duration m_dur;
 
   ZcavRead(const ZcavRead &t);

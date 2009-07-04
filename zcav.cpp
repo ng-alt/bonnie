@@ -1,22 +1,22 @@
 #include "port.h"
-#ifndef WIN32
 #include <unistd.h>
-#endif
 
 #include "zcav_io.h"
 #include "thread.h"
-#ifdef NON_UNIX
-#include "getopt.h"
-#endif
+
+#include <cstdlib>
+#include <cstring>
 
 #define TOO_MANY_LOOPS 100
 
 void usage()
 {
   fprintf(stderr
-       , "Usage: zcav [-b block-size] [-c count] [-s max-size] [-w]\n"
-#ifndef NON_UNIX
+       , "Usage: zcav [-b block-size[:chunk-size]] [-c count]\n"
+         "            [-r [start offset:]end offset] [-w]\n"
          "            [-u uid-to-use:gid-to-use] [-g gid-to-use]\n"
+#ifdef _LARGEFILE64_SOURCE
+         "            [-s skip rate]\n"
 #endif
          "            [-l log-file] [-f] file-name\n"
          "            [-l log-file [-f] file-name]...\n"
@@ -47,11 +47,17 @@ public:
     m_readers->push_back(new ZcavRead);
   }
 
-  void setBlockSize(int block_size)
+  void setSizes(int block_size, int chunk_size)
   {
     m_block_size = block_size;
-    if(m_block_size < 1)
+    m_chunk_size = chunk_size;
+    if(m_block_size < 1 || m_chunk_size < 1 || m_chunk_size > m_block_size)
       usage();
+  }
+
+  void setWrite(int do_write)
+  {
+    m_do_write = do_write;
   }
 
   void setLoops(int max_loops)
@@ -68,6 +74,20 @@ public:
       usage();
   }
 
+  void setStartOffset(int start_offset)
+  {
+    m_start_offset = start_offset;
+    if(start_offset < 1)
+      usage();
+  }
+
+  void setSkipRate(int skip_rate)
+  {
+    m_skip_rate = skip_rate;
+    if(skip_rate < 2 || skip_rate > 20)
+      usage();
+  }
+
 private:
   virtual Thread *newThread(int threadNum)
                   { return new MultiZcav(threadNum, this); }
@@ -75,7 +95,8 @@ private:
   vector<const char *> m_fileNames, m_logNames;
   vector<ZcavRead *> *m_readers;
 
-  int m_block_size, m_max_loops, m_max_size;
+  int m_block_size, m_max_loops, m_max_size, m_start_offset, m_skip_rate;
+  int m_chunk_size, m_do_write;
 
   MultiZcav(const MultiZcav &m);
   MultiZcav & operator =(const MultiZcav &m);
@@ -83,9 +104,13 @@ private:
 
 MultiZcav::MultiZcav()
 {
-  m_block_size = 100;
+  m_block_size = 256;
   m_max_loops = 1;
   m_max_size = 0;
+  m_start_offset = 0;
+  m_skip_rate = 1;
+  m_chunk_size = DEFAULT_CHUNK_SIZE;
+  m_do_write = 0;
   m_readers = new vector<ZcavRead *>;
 }
 
@@ -95,13 +120,15 @@ MultiZcav::MultiZcav(int threadNum, const MultiZcav *parent)
  , m_block_size(parent->m_block_size)
  , m_max_loops(parent->m_max_loops)
  , m_max_size(parent->m_max_size)
+ , m_start_offset(parent->m_start_offset)
+ , m_skip_rate(parent->m_skip_rate)
 {
 }
 
 int MultiZcav::action(PVOID)
 {
   ZcavRead *zc = (*m_readers)[getThreadNum() - 1];
-  int rc = zc->Read(m_max_loops, m_max_size / m_block_size, m_write);
+  int rc = zc->Read(m_max_loops, m_max_size / m_block_size, m_write, m_skip_rate, m_start_offset / m_block_size);
   zc->Close();
   return rc;
 }
@@ -127,7 +154,7 @@ int MultiZcav::runit()
     usage();
   for(i = 0; i < num_threads; i++)
   {
-    if((*m_readers)[i]->Open(NULL, m_block_size, m_fileNames[i], m_logNames[i]))
+    if((*m_readers)[i]->Open(NULL, m_block_size, m_fileNames[i], m_logNames[i], m_chunk_size, m_do_write))
     {
       return 1;
     }
@@ -153,21 +180,29 @@ int main(int argc, char *argv[])
   if(argc < 2)
     usage();
 
-#ifndef NON_UNIX
   char *userName = NULL, *groupName = NULL;
-#endif
   int c;
+  int do_write = 0;
   const char *log = "-";
-  while(-1 != (c = getopt(argc, argv, "-c:b:f:l:s:w"
-#ifndef NON_UNIX
-                                     "u:g:"
+  const char *file = "";
+  while(-1 != (c = getopt(argc, argv, "-c:b:f:l:r:w"
+#ifdef _LARGEFILE64_SOURCE
+				     "s:"
 #endif
-                          )) )
+                                     "u:g:")) )
   {
     switch(char(c))
     {
       case 'b':
-        mz.setBlockSize(atoi(optarg));
+      {
+        int block_size, chunk_size;
+        int rc = sscanf(optarg, "%d:%d", &block_size, &chunk_size);
+        if(rc == 1)
+          chunk_size = DEFAULT_CHUNK_SIZE;
+        else if(rc != 2)
+          usage();
+        mz.setSizes(block_size, chunk_size);
+      }
       break;
       case 'c':
         mz.setLoops(atoi(optarg));
@@ -175,10 +210,26 @@ int main(int argc, char *argv[])
       case 'l':
         log = optarg;
       break;
-      case 's':
-        mz.setMaxSize(atoi(optarg));
+      case 'r':
+      {
+        int a, b, rc;
+        rc = sscanf(optarg, "%d:%d", &a, &b);
+        if(rc == 0)
+          usage();
+        if(rc == 1)
+          mz.setMaxSize(a);
+        else
+        {
+          mz.setStartOffset(a);
+          mz.setMaxSize(b);
+        }
+      }
       break;
-#ifndef NON_UNIX
+#ifdef _LARGEFILE64_SOURCE
+      case 's':
+        mz.setSkipRate(atoi(optarg));
+      break;
+#endif
       case 'g':
         if(groupName)
           usage();
@@ -190,7 +241,8 @@ int main(int argc, char *argv[])
           usage();
         userName = strdup(optarg);
         int i;
-        for(i = 0; userName[i] && userName[i] != ':'; i++);
+        for(i = 0; userName[i] && userName[i] != ':'; i++) {}
+
         if(userName[i] == ':')
         {
           if(groupName)
@@ -199,19 +251,22 @@ int main(int argc, char *argv[])
           groupName = &userName[i + 1];
         }
       }
-#endif
       break;
+      case 'w':
+        mz.setWrite(1);
+        do_write = 1;
       break;
       case 'f':
       case char(1):
         mz.setFileLogNames(optarg, log);
+        file = optarg;
         log = "-";
       break;
       default:
         usage();
     }
   }
-#ifndef NON_UNIX
+
   if(userName || groupName)
   {
     if(bon_setugid(userName, groupName, false))
@@ -219,11 +274,14 @@ int main(int argc, char *argv[])
     if(userName)
       free(userName);
   }
-#endif
 
+  if(do_write)
+  {
+    fprintf(stderr, "Warning, writing to %s in 5 seconds.\n", file);
+    sleep(5);
+  }
   int rc = mz.runit();
   sleep(2); // time for all threads to complete
   return rc;
 }
-
 

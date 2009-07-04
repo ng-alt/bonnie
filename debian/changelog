@@ -1,3 +1,57 @@
+bonnie++ (1.96) unstable; urgency=low
+
+  * Fix a minor bug in setting the GID.
+  * Make it build on Solaris by checking for O_DIRECT being defined.
+  * The option -n9765 or greater caused the small file test to abort,
+    to increase this I changed the number format to hexadecimal and made it
+    10 digits.  Now any option smaller than -n1073741824 will be OK.
+    Thanks Nick Dokos of HP.
+  * Updated bon_csv2html, made the machine name span two rows, made the
+    concurrency column go away when there's no data, correctly calculated the
+    colors of the speed columns (was off by one column before), and calculate
+    the CPU colors.
+
+ -- Russell Coker <russell@coker.com.au>  Sat, 04 Jul 2009 11:24:13 +1000
+
+bonnie++ (1.95) unstable; urgency=low
+
+  * Removed code for building on OS/2, I think that no-one has been interested
+    in this for a while.
+  * Removed code for building on NT, I don't think that anyone was ever very
+    interested in that and it probably didn't work.
+  * Patch from Justin Clift to make getc_putc compile on RHEL 5.2.
+  * Added the -D option to bonnie++ to use direct IO (O_DIRECT) for bulk IO.
+    Thanks to Dave Murch from Violin Memory - http://violin-memory.com/
+  * Fixed some more warnings with recent versions of GCC.
+
+ -- Russell Coker <russell@coker.com.au>  Wed, 31 Dec 2008 08:50:06 +1100
+
+bonnie++ (1.94) unstable; urgency=low
+
+  * Fixed typos in man page.
+    Closes: #133714, #449596
+  * Added the URL to the man pages.
+  * Documented why UID==0 is bad.
+    Closes: #182023
+  * Check return value of chdir()
+  * Removed the zcav -s option which did the same thing as -n.
+  * Made zcav report in GiB and MiB/s, and made the default 256MiB.
+  * Improved bonnie++.8 documentation of the -y and -p options.
+  * Made zcav support skipping blocks for faster completion.
+  * Fixed the autoconf checks for 64bit seek.
+
+ -- Russell Coker <russell@coker.com.au>  Tue, 19 Aug 2008 18:36:08 +1000
+
+bonnie++ (1.93d) unstable; urgency=low
+
+  * Documented the default chunk size in bonnie++.8.
+
+  * Added support for testing write speed to zcav.
+
+  * Made default block size for zcav 200M.
+
+ -- Russell Coker <russell@coker.com.au>  Mon,  3 Dec 2007 10:18:00 +1100
+
 bonnie++ (1.93c) unstable; urgency=low
 
   * Made it compile with GCC 3.2.

@@ -1,17 +1,9 @@
 #include "bonnie.h"
 
-#ifdef NON_UNIX
-#include "getopt.h"
-#endif
-
-#ifndef NON_UNIX
 #include <unistd.h>
 #include <sys/utsname.h>
-#endif
 #include <stdlib.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
+#include <cstring>
 #include <vector>
 
 #include "duration.h"
@@ -20,7 +12,7 @@
 static void usage()
 {
   fprintf(stderr, "usage:\n"
-    "getc_putc [-d scratch-dir] [-s size(Kb)] [-m machine-name]\n"
+    "getc_putc [-d scratch-dir] [-s size(KiB)] [-m machine-name]\n"
     "[-u uid-to-use:gid-to-use] [-g gid-to-use]\n"
     "\nVersion: " BON_VERSION "\n");
   exit(eParam);
@@ -50,9 +42,7 @@ int main(int argc, char *argv[])
   int file_size = 40 << 10;
   PCCHAR dir = ".";
   bool quiet = false;
-#ifndef NON_UNIX
   char *userName = NULL, *groupName = NULL;
-#endif
   PCCHAR machine = NULL;
 
   int int_c;
@@ -76,7 +66,6 @@ int main(int argc, char *argv[])
       case 'm':
         machine = optarg;
       break;
-#ifndef NON_UNIX
       case 'g':
         if(groupName)
           usage();
@@ -88,7 +77,8 @@ int main(int argc, char *argv[])
           usage();
         userName = strdup(optarg);
         int i;
-        for(i = 0; userName[i] && userName[i] != ':'; i++);
+        for(i = 0; userName[i] && userName[i] != ':'; i++) {}
+
         if(userName[i] == ':')
         {
           if(groupName)
@@ -98,11 +88,9 @@ int main(int argc, char *argv[])
         }
       }
       break;
-#endif
     }
   }
 
-#ifndef NON_UNIX
   if(userName || groupName)
   {
     if(bon_setugid(userName, groupName, quiet))
@@ -115,24 +103,12 @@ int main(int argc, char *argv[])
     fprintf(stderr, "You must use the \"-u\" switch when running as root.\n");
     usage();
   }
-#endif
 
   if(machine == NULL)
   {
-#ifdef WIN32
-    char utsBuf[MAX_COMPUTERNAME_LENGTH + 2];
-    DWORD size = MAX_COMPUTERNAME_LENGTH + 1;
-    if(GetComputerName(utsBuf, &size))
-      machine = strdup(utsBuf);
-#else
-#ifdef OS2
-    machine = "OS/2";
-#else
     struct utsname utsBuf;
     if(uname(&utsBuf) != -1)
       machine = utsBuf.nodename;
-#endif
-#endif
   }
 
   file_size -= (file_size % WRITE_SIZE_FACT);
@@ -165,7 +141,7 @@ int main(int argc, char *argv[])
   int size = 0, wrote;
   while(size < file_size)
   {
-    wrote = write(FILE_FD, buf, min(sizeof(buf), (unsigned int)file_size - size));
+    wrote = write(FILE_FD, buf, min(sizeof(buf), (size_t)file_size - size));
     if(wrote < 0)
     {
       fprintf(stderr, "Can't extend file - disk full?\n");

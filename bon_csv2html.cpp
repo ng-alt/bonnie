@@ -1,4 +1,5 @@
 #include "bonnie.h"
+#include <cstdlib>
 #include <stdio.h>
 #include <vector>
 #include <string.h>
@@ -6,23 +7,8 @@
 
 // Maximum number of items expected on a csv line
 #define MAX_ITEMS 48
-#ifndef OS2
 using namespace std;
-#endif
 typedef vector<PCCHAR> STR_VEC;
-
-#ifndef HAVE_MIN_MAX
-#if defined(HAVE_ALGO_H) || defined(HAVE_ALGO)
-#ifdef HAVE_ALGO
-#include <algo>
-#else
-#include <algo.h>
-#endif
-#else
-#define min(XX,YY) ((XX) < (YY) ? (XX) : (YY))
-#define max(XX,YY) ((XX) > (YY) ? (XX) : (YY))
-#endif
-#endif
 
 vector<STR_VEC> data;
 typedef PCCHAR * PPCCHAR;
@@ -38,7 +24,7 @@ void read_in(CPCCHAR buf);
 // HTML table
 void print_a_line(int num, int start, int end);
 // print a single item of data
-void print_item(int num, int item);
+void print_item(int num, int item, CPCCHAR extra = NULL);
 // Print the end of the HTML file
 void footer();
 // Calculate the colors for backgrounds
@@ -50,7 +36,7 @@ PCCHAR get_col(double range_col, double val, bool reverse, CPCCHAR extra);
 
 typedef enum { eNoCols, eSpeed, eCPU, eLatency } VALS_TYPE;
 const VALS_TYPE vals[MAX_ITEMS] =
-  { eNoCols,eNoCols,eNoCols,eNoCols,eNoCols,eNoCols,eSpeed,eCPU,eSpeed,eCPU,eSpeed,eCPU,eSpeed,eCPU,eSpeed,eCPU,eSpeed,eCPU,
+  { eNoCols,eNoCols,eNoCols,eNoCols,eNoCols,eNoCols,eNoCols,eSpeed,eCPU,eSpeed,eCPU,eSpeed,eCPU,eSpeed,eCPU,eSpeed,eCPU,eSpeed,eCPU,
     eNoCols,eNoCols,eNoCols,eNoCols,eNoCols,eSpeed,eCPU,eSpeed,eCPU,eSpeed,eCPU,eSpeed,eCPU,eSpeed,eCPU,eSpeed,eCPU,
     eLatency,eLatency,eLatency,eLatency,eLatency,eLatency,eLatency,eLatency,eLatency,eLatency,eLatency,eLatency };
 
@@ -124,7 +110,7 @@ int main(int argc, char **argv)
   {
 // First print the average speed line
     printf("<TR>");
-    print_item(i, COL_NAME);
+    print_item(i, COL_NAME, "rowspan=2");
     if(col_used[COL_CONCURRENCY] == true)
       print_item(i, COL_CONCURRENCY);
     print_item(i, COL_FILE_SIZE); // file_size
@@ -143,7 +129,6 @@ int main(int argc, char **argv)
     printf("</TR>\n");
 // Now print the latency line
     printf("<TR>");
-    print_item(i, COL_NAME);
     int lat_width = 1;
     if(col_used[COL_DATA_CHUNK_SIZE] == true)
       lat_width++;
@@ -192,16 +177,85 @@ void calc_vals()
     {
       for(unsigned int row_ind = 0; row_ind < data.size(); row_ind++)
       {
-        if(data[row_ind][column_ind] && strlen(data[row_ind][column_ind]))
-          col_used[column_ind] = true;
+        if(column_ind == COL_CONCURRENCY)
+        {
+          if(data[row_ind][column_ind] && strcmp("1", data[row_ind][column_ind]))
+            col_used[column_ind] = true;
+        }
+        else
+        {
+          if(data[row_ind][column_ind] && strlen(data[row_ind][column_ind]))
+            col_used[column_ind] = true;
+        }
       }
     }
     break;
     case eCPU:
-      // gotta add support for CPU vals.  This means sorting on previous-col
-      // divided by this column.  If a test run takes twice the CPU but does
-      // three times the work it should be green!  If it does half the work but
-      // uses the same CPU it should be red!
+    {
+      for(unsigned int row_ind = 0; row_ind < data.size(); row_ind++)
+      {
+        double work, cpu;
+        arr[row_ind].val = 0.0;
+        if(data[row_ind].size() > column_ind
+         && sscanf(data[row_ind][column_ind - 1], "%lf", &work) == 1
+         && sscanf(data[row_ind][column_ind], "%lf", &cpu) == 1)
+        {
+          arr[row_ind].val = cpu / work;
+        }
+        arr[row_ind].pos = row_ind;
+      }
+      qsort(arr, data.size(), sizeof(ITEM), compar);
+      int col_count = -1;
+      double min_col = -1.0, max_col = -1.0;
+      for(unsigned int sort_ind = 0; sort_ind < data.size(); sort_ind++)
+      {
+        // if item is different from previous or if the first row
+        // (sort_ind == 0) then increment col count
+        if(sort_ind == 0 || arr[sort_ind].val != arr[sort_ind - 1].val)
+        {
+          if(arr[sort_ind].val != 0.0)
+          {
+            col_count++;
+            if(min_col == -1.0)
+              min_col = arr[sort_ind].val;
+            else
+              min_col = min(arr[sort_ind].val, min_col);
+            max_col = max(max_col, arr[sort_ind].val);
+          }
+        }
+        arr[sort_ind].col_ind = col_count;
+      }
+      // if more than 1 line has data then calculate colors
+      if(col_count > 0)
+      {
+        double divisor = max_col / min_col;
+        if(divisor < 2.0)
+        {
+          double mult = sqrt(2.0 / divisor);
+          max_col *= mult;
+          min_col /= mult;
+        }
+        double range_col = max_col - min_col;
+        for(unsigned int sort_ind = 0; sort_ind < data.size(); sort_ind++)
+        {
+          if(arr[sort_ind].col_ind > -1)
+          {
+            props[arr[sort_ind].pos][column_ind]
+                  = get_col(range_col, arr[sort_ind].val - min_col, true, "");
+          }
+        }
+      }
+      else
+      {
+        for(unsigned int sort_ind = 0; sort_ind < data.size(); sort_ind++)
+        {
+          if(vals[column_ind] == eLatency)
+          {
+            props[sort_ind][column_ind] = "COLSPAN=2";
+          }
+        }
+      }
+    }
     break;
     case eSpeed:
     case eLatency:
@@ -426,17 +480,19 @@ void read_in(CPCCHAR buf)
   data.push_back(arr);
 }
 
-void print_item(int num, int item)
+void print_item(int num, int item, CPCCHAR extra)
 {
   PCCHAR line_data;
   if(int(data[num].size()) > item)
     line_data = data[num][item];
   else
     line_data = "";
+  printf("<TD");
+  if(extra)
+    printf(" %s", extra);
   if(props[num][item])
-    printf("<TD %s>%s</TD>", props[num][item], line_data);
-  else
-    printf("<TD>%s</TD>", line_data);
+    printf(" %s", props[num][item]);
+  printf(">%s</TD>", line_data);
 }
 
 void print_a_line(int num, int start, int end)

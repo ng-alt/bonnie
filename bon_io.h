@@ -3,16 +3,18 @@
 
 #include "bonnie.h"
 #include "thread.h"
-#ifndef NON_UNIX
 class Sync;
-#endif
 class BonTimer;
 class Rand;
 
 class CFileOp : public Thread
 {
 public:
-  CFileOp(BonTimer &timer, int file_size, int chunk_bits, bool use_sync);
+  CFileOp(BonTimer &timer, int file_size, int chunk_bits, bool use_sync
+#ifdef O_DIRECT
+        , bool use_direct_io = false
+#endif
+         );
   int Open(CPCCHAR base_name, bool create);
   ~CFileOp();
   int write_block_byte();
@@ -39,6 +41,9 @@ private:
   bool m_isopen;
   char *m_name;
   bool m_sync;
+#ifdef O_DIRECT
+  bool m_use_direct_io;
+#endif
   const int m_chunk_bits, m_chunk_size;
   int m_total_chunks;
   char *m_buf;

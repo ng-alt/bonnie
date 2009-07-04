@@ -3,10 +3,8 @@
 
 #include "port.h"
 
-#ifndef NON_UNIX
 #include <poll.h>
 #include <pthread.h>
-#endif
 
 class Thread;
 
@@ -57,11 +55,9 @@ private:
 
   int m_threadNum;
 
-#ifndef NON_UNIX
   pollfd m_readPoll;
   pollfd m_writePoll;
   pthread_t *m_thread_info;
-#endif
   FILE_TYPE m_parentRead;
   FILE_TYPE m_parentWrite;
   FILE_TYPE m_childRead;
@@ -73,15 +69,7 @@ private:
   Thread & operator =(const Thread &f);
 
 
-#ifdef NON_UNIX
-#ifdef OS2
-friend VOID APIENTRY thread_func(ULONG param);
-#else
-friend void( __cdecl thread_func )( void *param);
-#endif
-#else
 friend PVOID thread_func(PVOID param);
-#endif
 };
 
 #endif

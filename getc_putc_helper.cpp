@@ -1,12 +1,8 @@
 #include "bonnie.h"
 
-#ifndef NON_UNIX
 #include <unistd.h>
-#endif
 #include <stdlib.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
+#include <cstring>
 #include "duration.h"
 #include <vector>
 #include "getc_putc.h"

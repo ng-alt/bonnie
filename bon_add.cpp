@@ -6,9 +6,6 @@
 
 // Maximum number of items expected on a csv line
 #define MAX_ITEMS 45
-#ifdef WIN32
-using namespace std;
-#endif
 typedef vector<PCCHAR> STR_VEC;
 
 vector<STR_VEC> data;

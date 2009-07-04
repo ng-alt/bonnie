@@ -2,9 +2,9 @@ dnl Process this file with autoconf to produce a configure script.
 AC_INIT(bonnie++.cpp)
 AC_CONFIG_HEADER(conf.h)
 AC_SUBST(version)
-version="1.93c"
+version="1.96"
 AC_SUBST(csv_version)
-csv_version="1.93c"
+csv_version="1.96"
 
 AC_ARG_ENABLE(stripping,
       [  --disable-stripping  disables stripping of installed binaries],
@@ -91,6 +91,7 @@ AC_TRY_RUN([#ifndef _LARGEFILE64_SOURCE
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <stdlib.h>
 
 int main () {
   int fd;
@@ -122,4 +123,4 @@ if [[ -n "$large_file" ]]; then
    large_file="#define _LARGEFILE64_SOURCE"
 fi
 
-AC_OUTPUT(Makefile bonnie.h port-unix.h bonnie++.spec bon_csv2txt bon_csv2html.1 sun/pkginfo)
+AC_OUTPUT(Makefile bonnie.h port.h bonnie++.spec bon_csv2txt bon_csv2html.1 sun/pkginfo)

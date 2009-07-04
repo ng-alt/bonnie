@@ -1,24 +1,12 @@
 #include "bonnie.h"
 #include <stdlib.h>
 #include <fcntl.h>
-#include <sys/types.h>
-
-#ifdef NON_UNIX
-#ifdef OS2
-#else
-#include <windows.h>
-#include <io.h>
-#endif
-
-#else
 
 #include <dirent.h>
 #include <unistd.h>
 #include <sys/wait.h>
 #include "sync.h"
-#endif
 
-#include <sys/stat.h>
 #include <string.h>
 #include <limits.h>
 
@@ -52,6 +40,9 @@ CFileOp::CFileOp(int threadNum, CFileOp *parent)
  , m_isopen(false)
  , m_name(PCHAR(malloc(strlen(parent->m_name) + 5)))
  , m_sync(parent->m_sync)
+#ifdef O_DIRECT
+ , m_use_direct_io(parent->m_use_direct_io)
+#endif
  , m_chunk_bits(parent->m_chunk_bits)
  , m_chunk_size(parent->m_chunk_size)
  , m_total_chunks(parent->m_total_chunks)
@@ -69,13 +60,9 @@ int CFileOp::action(PVOID)
   int rc;
   Duration dur, test_time;
   rc = Read(&ticket, sizeof(ticket), 0);
-#ifndef WIN32
   CPU_Duration test_cpu;
-#endif
   test_time.getTime(&seeker_report.StartTime);
-#ifndef WIN32
   test_cpu.start();
-#endif
   if(rc == sizeof(ticket) && ticket != END_SEEK_PROCESS) do
   {
     bool update = false;
@@ -99,9 +86,7 @@ int CFileOp::action(PVOID)
   Close();
   // seeker report is start and end times, CPU used, and latency
   test_time.getTime(&seeker_report.EndTime);
-#ifndef WIN32
   seeker_report.CPU = test_cpu.stop();
-#endif
   seeker_report.Latency = dur.getMax();
   if(Write(&seeker_report, sizeof(seeker_report), 0) != sizeof(seeker_report))
   {
@@ -130,10 +115,8 @@ int CFileOp::seek_test(Rand &r, bool quiet, Sync &s)
   go(NULL, SeekProcCount);
 
   sleep(3);
-#ifndef NON_UNIX
   if(s.decrement_and_wait(Lseek))
     return 1;
-#endif
   if(!quiet) fprintf(stderr, "start 'em...");
   if(Write(seek_tickets, sizeof(seek_tickets), 0) != int(sizeof(seek_tickets)) )
   {
@@ -160,14 +143,6 @@ int CFileOp::seek_test(Rand &r, bool quiet, Sync &s)
      *  time the last child stopped
      */
     m_timer.add_delta_report(seeker_report, Lseek);
-#ifdef OS2
-    TID status = 0;
-    if(DosWaitThread(&status, DCWW_WAIT))
-//#else
-//    int status = 0;
-//    if(wait(&status) == -1)
-#endif
-//      return io_error("wait");
     if(!quiet) fprintf(stderr, "done...");
   } /* for each child */
   if(!quiet) fprintf(stderr, "\n");
@@ -179,13 +154,7 @@ int CFileOp::seek(int offset, int whence)
   OFF_TYPE rc;
   OFF_TYPE real_offset = offset;
   real_offset *= m_chunk_size;
-#ifdef OS2
-  unsigned long actual;
-  rc = DosSetFilePtr(m_fd, real_offset, whence, &actual);
-  if(rc != 0) rc = -1;
-#else
   rc = file_lseek(m_fd, real_offset, whence);
-#endif
 
   if(rc == OFF_TYPE(-1))
   {
@@ -202,16 +171,7 @@ int CFileOp::read_block(PVOID buf)
   bool printed_error = false;
   while(total != m_chunk_size)
   {
-#ifdef OS2
-    unsigned long actual;
-    int rc = DosRead(m_fd, buf, m_chunk_size - total, &actual);
-    if(rc)
-      rc = -1;
-    else
-      rc = actual;
-#else
-    int rc = file_read(m_fd, buf, m_chunk_size - total);
-#endif
+    int rc = read(m_fd, buf, m_chunk_size - total);
     if(rc == -1)
     {
       io_error("re-write read"); // exits program
@@ -242,7 +202,7 @@ int CFileOp::read_block_byte(char *buf)
       return -1;
     }
     /* just to fool optimizers */
-    buf[next]++;
+    buf[int(next)]++;
   }
 
   return 0;
@@ -250,23 +210,12 @@ int CFileOp::read_block_byte(char *buf)
 
 int CFileOp::write_block(PVOID buf)
 {
-#ifdef OS2
-  unsigned long actual;
-  int rc = DosWrite(m_fd[m_file_ind], buf, m_chunk_size, &actual);
-  if(rc)
-    rc = -1;
-  else
-    rc = 0;
-  if(actual != m_chunk_size)
-    rc = -1;
-#else
   int rc = ::write(m_fd, buf, m_chunk_size);
   if(rc != m_chunk_size)
   {
     perror("Can't write block.");
     return -1;
   }
-#endif
   return rc;
 }
 
@@ -291,13 +240,20 @@ int CFileOp::Open(CPCCHAR base_name, bool create)
   return reopen(create);
 }
 
-CFileOp::CFileOp(BonTimer &timer, int file_size, int chunk_bits, bool use_sync)
+CFileOp::CFileOp(BonTimer &timer, int file_size, int chunk_bits, bool use_sync
+#ifdef O_DIRECT
+               , bool use_direct_io
+#endif
+                )
  : m_timer(timer)
  , m_file_size(file_size)
  , m_fd(-1)
  , m_isopen(false)
  , m_name(NULL)
  , m_sync(use_sync)
+#ifdef O_DIRECT
+ , m_use_direct_io(use_direct_io)
+#endif
  , m_chunk_bits(chunk_bits)
  , m_chunk_size(1 << m_chunk_bits)
  , m_total_chunks(Unit / m_chunk_size * file_size)
@@ -322,50 +278,24 @@ int CFileOp::reopen(bool create)
 
 int CFileOp::m_open(CPCCHAR base_name, bool create)
 {
-#ifdef OS2
-  ULONG createFlag;
-#else
   int flags;
-#endif
   if(create)
   { /* create from scratch */
-    file_unlink(base_name);
-#ifdef OS2
-    createFlag = OPEN_ACTION_CREATE_IF_NEW | OPEN_ACTION_REPLACE_IF_EXISTS;
-#else
+    unlink(base_name);
     flags = O_RDWR | O_CREAT | O_EXCL;
-#ifdef WIN32
-    flags |= O_BINARY;
-#endif
-
+#ifdef O_DIRECT
+    if(m_use_direct_io)
+      flags |= O_DIRECT;
 #endif
   }
   else
   {
-#ifdef OS2
-    createFlag = OPEN_ACTION_OPEN_IF_EXISTS;
-#else
     flags = O_RDWR;
-#ifdef WIN32
-    flags |= O_BINARY;
-#else
 #ifdef _LARGEFILE64_SOURCE
     flags |= O_LARGEFILE;
 #endif
-#endif
-
-#endif
   }
-#ifdef OS2
-  ULONG action = 0;
-  ULONG rc = DosOpen(base_name, &m_fd, &action, 0, FILE_NORMAL, createFlag
-                   , OPEN_FLAGS_SEQUENTIAL | OPEN_SHARE_DENYNONE | OPEN_ACCESS_READWRITE
-                   , NULL);
-  if(rc)
-    m_fd = -1;
-#else
   m_fd = file_open(base_name, flags, S_IRUSR | S_IWUSR);
-#endif
 
   if(m_fd == -1)
   {
@@ -383,7 +313,7 @@ void CFileOp::Close()
   {
     if(fsync(m_fd))
       fprintf(stderr, "Can't sync file.\n");
-    file_close(m_fd);
+    close(m_fd);
   }
   m_isopen = false;
   m_fd = -1;
@@ -400,7 +330,7 @@ void CFileOp::Close()
  * However, it would be wrong to put the update percentage in as a
  *  parameter - the effect is too nonlinear.  Need a profile
  *  of what Oracle or Ingres or some such actually does.
- * Be warned - there is a *sharp* elbow in this curve - on a 1-Mb file,
+ * Be warned - there is a *sharp* elbow in this curve - on a 1-MiB file,
  *  most substantial unix systems show >2000 random I/Os per second -
  *  obviously they've cached the whole thing and are just doing buffer
  *  copies.

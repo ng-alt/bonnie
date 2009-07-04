@@ -62,9 +62,7 @@ private:
   RepType m_type;
   FILE *m_fp;
   Duration m_dur;
-#ifndef WIN32
   CPU_Duration m_cpu_dur;
-#endif
   PCCHAR m_name;
   int m_concurrency;
 

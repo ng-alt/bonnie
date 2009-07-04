@@ -1,8 +1,3 @@
-#ifdef OS2
-#define INCL_DOSFILEMGR
-#define INCL_BASE
-#define INCL_DOSMISC
-#endif
 
 #include <stdlib.h>
 
@@ -11,42 +6,15 @@
 #include <time.h>
 #include <string.h>
 
-#ifdef WIN32
-#include <sys/types.h>
-#include <sys/timeb.h>
-#endif
-
-#ifndef NON_UNIX
-#include <sys/time.h>
-#include <unistd.h>
-#endif
-
-#ifndef HAVE_MIN_MAX
-#if defined(HAVE_ALGO_H) || defined(HAVE_ALGO)
-#ifdef HAVE_ALGO
-#include <algo>
-#else
-#include <algo.h>
-#endif
-#else
-#define min(XX,YY) ((XX) < (YY) ? (XX) : (YY))
-#define max(XX,YY) ((XX) > (YY) ? (XX) : (YY))
-#endif
-#endif
-
 void BonTimer::start()
 {
   m_dur.start();
-#ifndef WIN32
   m_cpu_dur.start();
-#endif
 }
 void BonTimer::stop_and_record(tests_t test)
 {
   m_delta[test].Elapsed = m_dur.stop();
-#ifndef WIN32
   m_delta[test].CPU = m_cpu_dur.stop();
-#endif
 }
 
 void BonTimer::add_delta_report(report_s &rep, tests_t test)
@@ -93,16 +61,13 @@ BonTimer::add_latency(tests_t test, double t)
 
 int BonTimer::print_cpu_stat(tests_t test)
 {
-#ifndef WIN32
   if(m_delta[test].Elapsed == 0.0)
   {
-#endif
     if(m_type == txt)
       fprintf(m_fp, "    ");
     else
       fprintf(m_fp, ",");
     return 0;
-#ifndef WIN32
   }
   if(m_delta[test].Elapsed < MinTime)
   {
@@ -118,7 +83,6 @@ int BonTimer::print_cpu_stat(tests_t test)
   else
     fprintf(m_fp, ",%d", cpu);
   return 0;
-#endif
 }
 
 int BonTimer::print_stat(tests_t test, int test_size)

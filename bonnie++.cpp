@@ -20,29 +20,7 @@
 #include "bonnie.h"
 
 #include <stdlib.h>
-#ifdef OS2
-#define INCL_DOSMISC
-#endif
 
-#ifdef NON_UNIX
-typedef char Sync;
-#include "getopt.h"
-#endif
-
-#ifdef OS2
-#define INCL_DOSFILEMGR
-#define INCL_DOSMISC
-#define INCL_DOSQUEUES
-#define INCL_DOSPROCESS
-#include <os2.h>
-#endif
-
-#ifdef WIN32
-#include <process.h>
-#include <windows.h>
-#endif
-
-#ifndef NON_UNIX
 #include "conf.h"
 #ifdef HAVE_ALGORITHM
 #include <algorithm>
@@ -61,7 +39,6 @@ typedef char Sync;
 #include <grp.h>
 #include <sys/utsname.h>
 #include "sync.h"
-#endif
 
 #include <time.h>
 #include "bon_io.h"
@@ -80,6 +57,9 @@ public:
   bool quiet;
   int byte_io_size;
   bool sync_bonnie;
+#ifdef O_DIRECT
+  bool use_direct_io;
+#endif
   BonTimer timer;
   int ram;
   Sync *syn;
@@ -91,18 +71,15 @@ public:
   int file_chunk_size() const { return m_file_chunk_size; }
   bool *doExit;
   void set_io_chunk_size(int size)
-    { delete m_buf; m_buf = new char[__max(size, m_file_chunk_size)]; m_io_chunk_size = size; }
+    { delete m_buf; pa_new(size, m_buf, m_buf_pa); m_io_chunk_size = size; }
   void set_file_chunk_size(int size)
     { delete m_buf; m_buf = new char[__max(size, m_io_chunk_size)]; m_file_chunk_size = size; }
 
-  char *buf() { return m_buf; }
+  // Return the page-aligned version of the local buffer
+  char *buf() { return m_buf_pa; }
 
   CGlobalItems(bool *exitFlag);
-  ~CGlobalItems() { delete name; delete m_buf;
-#ifndef NON_UNIX
-                    delete syn;
-#endif
-                  }
+  ~CGlobalItems() { delete name; delete m_buf; delete syn; }
 
   void decrement_and_wait(int nr_sem);
 
@@ -110,28 +87,32 @@ public:
   {
     delete name;
     name = new char[strlen(path) + 15];
-#ifdef OS2
-    ULONG myPid = 0;
-    DosQuerySysInfo(QSV_FOREGROUND_PROCESS, QSV_FOREGROUND_PROCESS
-                  , &myPid, sizeof(myPid));
-#else
-    pid_t myPid = sys_getpid();
-#endif
+    pid_t myPid = getpid();
     sprintf(name, "%s/Bonnie.%d", path, int(myPid));
   }
 
-#ifndef NON_UNIX
   void setSync(SYNC_TYPE type, int semKey = 0, int num_tests = 0)
   {
     syn = new Sync(type, semKey, num_tests);
   }
-#endif
 
 private:
   int m_io_chunk_size;
   int m_file_chunk_size;
-  char *m_buf;
 
+  char *m_buf;     // Pointer to the entire buffer
+  char *m_buf_pa;  // Pointer to the page-aligned version of the same buffer
+
+  // Implement a page-aligned version of new.
+  // 'p' is the pointer created
+  // 'page_aligned_p' is the page-aligned pointer created
+  void pa_new(unsigned int num_bytes, char *&p, char *&page_aligned_p)
+  {
+    int page_size = getpagesize();
+    p = ::new char [num_bytes + page_size];
+
+    page_aligned_p = (char *)((((unsigned long)p + page_size - 1) / page_size) * page_size);
+  }
 
   CGlobalItems(const CGlobalItems &f);
   CGlobalItems & operator =(const CGlobalItems &f);
@@ -141,6 +122,9 @@ CGlobalItems::CGlobalItems(bool *exitFlag)
  : quiet(false)
  , byte_io_size(DefaultByteIO)
  , sync_bonnie(false)
+#ifdef O_DIRECT
+ , use_direct_io(false)
+#endif
  , timer()
  , ram(0)
  , syn(NULL)
@@ -151,17 +135,17 @@ CGlobalItems::CGlobalItems(bool *exitFlag)
  , doExit(exitFlag)
  , m_io_chunk_size(DefaultChunkSize)
  , m_file_chunk_size(DefaultChunkSize)
- , m_buf(new char[__max(m_io_chunk_size, m_file_chunk_size)])
+ , m_buf(NULL)
+ , m_buf_pa(NULL)
 {
+  pa_new(__max(m_io_chunk_size, m_file_chunk_size), m_buf, m_buf_pa);
   SetName(".");
 }
 
 void CGlobalItems::decrement_and_wait(int nr_sem)
 {
-#ifndef NON_UNIX
   if(syn->decrement_and_wait(nr_sem))
     exit(1);
-#endif
 }
 
 int TestDirOps(int directory_size, int max_size, int min_size
@@ -171,7 +155,6 @@ int TestFileOps(int file_size, CGlobalItems &globals);
 static bool exitNow;
 static bool already_printed_error;
 
-#ifndef NON_UNIX
 extern "C"
 {
   void ctrl_c_handler(int sig, siginfo_t *siginf, void *unused)
@@ -183,7 +166,6 @@ extern "C"
     exitNow = true;
   }
 }
-#endif
 
 int main(int argc, char *argv[])
 {
@@ -195,16 +177,13 @@ int main(int argc, char *argv[])
   int    num_directories = 1;
   int    test_count = -1;
   const char * machine = NULL;
-#ifndef NON_UNIX
   char *userName = NULL, *groupName = NULL;
-#endif
   CGlobalItems globals(&exitNow);
   bool setSize = false;
 
   exitNow = false;
   already_printed_error = false;
 
-#ifndef NON_UNIX
   struct sigaction sa;
   sa.sa_sigaction = &ctrl_c_handler;
   sa.sa_flags = SA_RESETHAND | SA_SIGINFO;
@@ -221,7 +200,6 @@ int main(int argc, char *argv[])
     printf("Can't handle SIGHUP.\n");
     return 1;
   }
-#endif
 
 #ifdef _SC_PHYS_PAGES
   int page_size = sysconf(_SC_PAGESIZE);
@@ -231,24 +209,18 @@ int main(int argc, char *argv[])
     globals.ram = page_size/1024 * (num_pages/1024);
   }
 #endif
-#ifdef WIN32
-  MEMORYSTATUS ms;
-  GlobalMemoryStatus(&ms);
-  globals.ram = ms.dwTotalPhys / 1024 / 1024;
-#endif
 
   pid_t myPid = 0;
-#ifdef OS2
-    DosQuerySysInfo(QSV_FOREGROUND_PROCESS, QSV_FOREGROUND_PROCESS
-                  , &myPid, sizeof(myPid));
-#else
-  myPid = sys_getpid();
-#endif
+  myPid = getpid();
   globals.timer.random_source.seedNum(myPid ^ time(NULL));
   int concurrency = 1;
 
   int int_c;
-  while(-1 != (int_c = getopt(argc, argv, "bc:d:f::g:l:m:n:p:qr:s:u:x:y:z:Z:")) )
+  while(-1 != (int_c = getopt(argc, argv, "bc:d:f::g:l:m:n:p:qr:s:u:x:y:z:Z:"
+#ifdef O_DIRECT
+                             "D"
+#endif
+                            )) )
   {
     switch(char(int_c))
     {
@@ -263,7 +235,7 @@ int main(int argc, char *argv[])
         concurrency = atoi(optarg);
       break;
       case 'd':
-        if(sys_chdir(optarg))
+        if(chdir(optarg))
         {
           fprintf(stderr, "Can't change to directory \"%s\".\n", optarg);
           usage();
@@ -337,7 +309,6 @@ int main(int argc, char *argv[])
         free(sbuf);
       }
       break;
-#ifndef NON_UNIX
       case 'g':
         if(groupName)
           usage();
@@ -349,7 +320,8 @@ int main(int argc, char *argv[])
           usage();
         userName = _strdup(optarg);
         int i;
-        for(i = 0; userName[i] && userName[i] != ':'; i++);
+        for(i = 0; userName[i] && userName[i] != ':'; i++) {}
+
         if(userName[i] == ':')
         {
           if(groupName)
@@ -359,11 +331,9 @@ int main(int argc, char *argv[])
         }
       }
       break;
-#endif
       case 'x':
         test_count = atoi(optarg);
       break;
-#ifndef NON_UNIX
       case 'y':
                         /* tell procs to synchronize via previous
                            defined semaphore */
@@ -378,7 +348,6 @@ int main(int argc, char *argv[])
         }
         globals.sync_bonnie = true;
       break;
-#endif
       case 'z':
       {
         UINT tmp;
@@ -386,6 +355,12 @@ int main(int argc, char *argv[])
           globals.timer.random_source.seedNum(tmp);
       }
       break;
+#ifdef O_DIRECT
+      case 'D':
+        /* open file descriptor with direct I/O */
+        globals.use_direct_io = true;
+      break;
+#endif
       case 'Z':
       {
         if(globals.timer.random_source.seedFile(optarg))
@@ -396,10 +371,8 @@ int main(int argc, char *argv[])
   }
   if(concurrency < 1 || concurrency > 200)
     usage();
-#ifndef NON_UNIX
   if(!globals.syn)
     globals.setSync(eNone);
-#endif
   if(optind < argc)
     usage();
 
@@ -425,26 +398,14 @@ int main(int argc, char *argv[])
 
   if(machine == NULL)
   {
-#ifdef WIN32
-    char utsBuf[MAX_COMPUTERNAME_LENGTH + 2];
-    DWORD size = MAX_COMPUTERNAME_LENGTH + 1;
-    if(GetComputerName(utsBuf, &size))
-      machine = _strdup(utsBuf);
-#else
-#ifdef OS2
-    machine = "OS/2";
-#else
     struct utsname utsBuf;
     if(uname(&utsBuf) != -1)
       machine = utsBuf.nodename;
-#endif
-#endif
   }
 
   globals.timer.setMachineName(machine);
   globals.timer.setConcurrency(concurrency);
 
-#ifndef NON_UNIX
   if(userName || groupName)
   {
     if(bon_setugid(userName, groupName, globals.quiet))
@@ -457,12 +418,10 @@ int main(int argc, char *argv[])
     fprintf(stderr, "You must use the \"-u\" switch when running as root.\n");
     usage();
   }
-#endif
 
   if(num_bonnie_procs && globals.sync_bonnie)
     usage();
 
-#ifndef NON_UNIX
   if(num_bonnie_procs)
   {
     globals.setSync(eSem, SemKey, TestCount);
@@ -481,7 +440,6 @@ int main(int argc, char *argv[])
     if(globals.syn->get_semid())
       return 1;
   }
-#endif
 
   if(file_size < 0 || directory_size < 0 || (!file_size && !directory_size) )
     usage();
@@ -492,10 +450,14 @@ int main(int argc, char *argv[])
   int i;
   globals.io_chunk_bits = 0;
   globals.file_chunk_bits = 0;
-  for(i = globals.io_chunk_size(); i > 1; i = i >> 1, globals.io_chunk_bits++);
+  for(i = globals.io_chunk_size(); i > 1; i = i >> 1, globals.io_chunk_bits++)
+  {}
+
   if(1 << globals.io_chunk_bits != globals.io_chunk_size())
     usage();
-  for(i = globals.file_chunk_size(); i > 1; i = i >> 1, globals.file_chunk_bits++);
+  for(i = globals.file_chunk_size(); i > 1; i = i >> 1, globals.file_chunk_bits++)
+  {}
+
   if(1 << globals.file_chunk_bits != globals.file_chunk_size())
     usage();
 
@@ -564,7 +526,11 @@ TestFileOps(int file_size, CGlobalItems &globals)
 {
   if(file_size)
   {
-    CFileOp file(globals.timer, file_size, globals.io_chunk_bits, globals.bufSync);
+    CFileOp file(globals.timer, file_size, globals.io_chunk_bits, globals.bufSync
+#ifdef O_DIRECT
+               , globals.use_direct_io
+#endif
+               );
     int    num_chunks;
     int    words;
     char  *buf = globals.buf();
@@ -764,7 +730,7 @@ TestDirOps(int directory_size, int max_size, int min_size
   if(globals.ram && directory_size * MaxDataPerFile * 2 > (globals.ram << 10))
   {
     fprintf(stderr
-         , "When testing %dK of files in %d MB of RAM the system is likely to\n"
+        , "When testing %dK of files in %d MiB of RAM the system is likely to\n"
            "start paging Bonnie++ data and the test will give suspect\n"
            "results, use less files or install more RAM for this test.\n"
           , directory_size, globals.ram);
@@ -813,11 +779,14 @@ void
 usage()
 {
   fprintf(stderr, "usage:\n"
-    "bonnie++ [-d scratch-dir] [-c concurrency] [-s size(Mb)[:chunk-size(b)]]\n"
+    "bonnie++ [-d scratch-dir] [-c concurrency] [-s size(MiB)[:chunk-size(b)]]\n"
     "      [-n number-to-stat[:max-size[:min-size][:num-directories[:chunk-size]]]]\n"
-    "      [-m machine-name] [-r ram-size-in-Mb]\n"
+    "      [-m machine-name] [-r ram-size-in-MiB]\n"
     "      [-x number-of-tests] [-u uid-to-use:gid-to-use] [-g gid-to-use]\n"
     "      [-q] [-f] [-b] [-p processes | -y] [-z seed | -Z random-file]\n"
+#ifdef O_DIRECT
+    "      [-D]\n"
+#endif
     "\nVersion: " BON_VERSION "\n");
   exit(eParam);
 }

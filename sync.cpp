@@ -20,7 +20,7 @@ int Sync::decrement_and_wait(int nr_sem)
     fflush(NULL);
     char buf[16];
     fgets(buf, sizeof(buf) - 1, stdin);
-  default:
+  case eNone:
   break;
   }
   return 0;

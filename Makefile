@@ -7,8 +7,8 @@ SCRIPTS=bon_csv2txt
 
 prefix=/usr/local
 eprefix=${prefix}
-#MORE_WARNINGS=-Weffc++ -Wcast-align
-WFLAGS=-Wall -W -Wshadow -Wpointer-arith -Wwrite-strings -pedantic -ffor-scope $(MORE_WARNINGS)
+#MORE_WARNINGS=-Weffc++
+WFLAGS=-Wall -W -Wshadow -Wpointer-arith -Wwrite-strings -pedantic -ffor-scope -Wcast-align -Wsign-compare -Wpointer-arith -Wwrite-strings -Wformat-security -Wswitch-enum -Winit-self $(MORE_WARNINGS)
 CFLAGS=-O2  -DNDEBUG $(WFLAGS) $(MORECFLAGS)
 CXX=g++ $(CFLAGS)
 LINK=g++
@@ -58,9 +58,9 @@ install-bin: $(EXE) $(EXES)
 	${INSTALL} $(SCRIPTS) $(eprefix)/bin
 
 install: install-bin
-	mkdir -p ${prefix}/man/man1 ${prefix}/man/man8
-	${INSTALL} -m 644 $(MAN1) ${prefix}/man/man1
-	${INSTALL} -m 644 $(MAN8) ${prefix}/man/man8
+	mkdir -p ${prefix}/share/man/man1 ${prefix}/share/man/man8
+	${INSTALL} -m 644 $(MAN1) ${prefix}/share/man/man1
+	${INSTALL} -m 644 $(MAN8) ${prefix}/share/man/man8
 
 %.o: %.cpp
 	$(CXX) -c $<
@@ -71,8 +71,8 @@ clean:
 	rm -f debian/{substvars,files} config.log depends.bak
 
 realclean: clean
-	rm -f config.* Makefile bonnie++.spec port-unix.h
-	rm -f bon_csv2txt bon_csv2html.1 sun/pkginfo
+	rm -f config.* Makefile bonnie++.spec port.h conf.h configure.lineno
+	rm -f bon_csv2txt bon_csv2html.1 sun/pkginfo bonnie.h
 
 dep:
 	makedepend -Y -f depends *.cpp 2> /dev/null

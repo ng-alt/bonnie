@@ -1,7 +1,3 @@
-To compile for OS/2 type "nmake -f Makefile.os2".
-
-To compile for NT type "nmake /nologo /f Makefile.nt".
-
 To build a Solaris package type "make -C sun".
 
 To build a Debian package type "fakeroot dpkg-buildpackage".

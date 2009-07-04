@@ -1,6 +1,6 @@
 PKG=bonnie++
 ARCH=sparc
-VERSION=1.93b
+VERSION=1.96
 CATEGORY=application
 NAME=Bonnie++
 DESC=Hard drive benchmark suite
