@@ -104,7 +104,7 @@ private:
 
 MultiZcav::MultiZcav()
 {
-  m_block_size = 256;
+  m_block_size = DEFAULT_BLOCK_SIZE;
   m_max_loops = 1;
   m_max_size = 0;
   m_start_offset = 0;

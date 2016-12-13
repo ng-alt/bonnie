@@ -1,6 +1,6 @@
 Summary: A program for benchmarking hard drives and filesystems
 Name: bonnie++
-Version: 1.96
+Version: 1.97
 Release: 1
 Copyright: GPL
 Group: Utilities/Benchmarking

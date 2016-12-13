@@ -40,7 +40,7 @@ which is what I use to view the results.
 
 .TP
 .B \-b
-the size (in Meg) of the blocks to read/write (default 100M), optionally
+the size (in Meg) of the blocks to read/write (default 512M), optionally
 followed by a ':' and the chunk size for read/write operations (default 1M).
 Note that the chunk size must be less than or equal to the block size and
 must also be significantly less than the size of the RAM in the machine.
@@ -62,7 +62,7 @@ rounded down to the block size.
 .TP
 .B \-s
 skip rate.  The option \-s 10 will cause it to read every 10th block and skip
-the rest.
+the rest.  Accepts values from 2 to 20.
 
 .TP
 .B \-f

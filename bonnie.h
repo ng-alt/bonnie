@@ -3,8 +3,8 @@
 
 using namespace std;
 
-#define BON_VERSION "1.96"
-#define CSV_VERSION "1.96"
+#define BON_VERSION "1.97"
+#define CSV_VERSION "1.97"
 
 #include "port.h"
 #include <stdio.h>

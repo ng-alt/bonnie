@@ -3,9 +3,9 @@
 
 using namespace std;
 #include "port.h"
+#include <string>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string>
 
 class Rand
 {

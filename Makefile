@@ -5,7 +5,7 @@ all: $(EXE) $(EXES)
 
 SCRIPTS=bon_csv2txt
 
-prefix=/usr/local
+prefix=/home/rjc/debian/bonnie++-1.97.3/debian/bonnie++/usr
 eprefix=${prefix}
 #MORE_WARNINGS=-Weffc++
 WFLAGS=-Wall -W -Wshadow -Wpointer-arith -Wwrite-strings -pedantic -ffor-scope -Wcast-align -Wsign-compare -Wpointer-arith -Wwrite-strings -Wformat-security -Wswitch-enum -Winit-self $(MORE_WARNINGS)
@@ -58,9 +58,9 @@ install-bin: $(EXE) $(EXES)
 	${INSTALL} $(SCRIPTS) $(eprefix)/bin
 
 install: install-bin
-	mkdir -p ${prefix}/share/man/man1 ${prefix}/share/man/man8
-	${INSTALL} -m 644 $(MAN1) ${prefix}/share/man/man1
-	${INSTALL} -m 644 $(MAN8) ${prefix}/share/man/man8
+	mkdir -p /home/rjc/debian/bonnie++-1.97.3/debian/bonnie++/usr/share/man/man1 /home/rjc/debian/bonnie++-1.97.3/debian/bonnie++/usr/share/man/man8
+	${INSTALL} -m 644 $(MAN1) /home/rjc/debian/bonnie++-1.97.3/debian/bonnie++/usr/share/man/man1
+	${INSTALL} -m 644 $(MAN8) /home/rjc/debian/bonnie++-1.97.3/debian/bonnie++/usr/share/man/man8
 
 %.o: %.cpp
 	$(CXX) -c $<

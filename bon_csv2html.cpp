@@ -43,14 +43,14 @@ const VALS_TYPE vals[MAX_ITEMS] =
 bool col_used[MAX_ITEMS];
 #define COL_NAME 2
 #define COL_CONCURRENCY 3
-#define COL_FILE_SIZE 5
-#define COL_DATA_CHUNK_SIZE 6
+#define COL_FILE_size 5
+#define COL_DATA_CHUNK_size 6
 #define COL_PUTC 7
 #define COL_NUM_FILES 19
-#define COL_MAX_SIZE 20
-#define COL_MIN_SIZE 21
+#define COL_MAX_size 20
+#define COL_MIN_size 21
 #define COL_NUM_DIRS 22
-#define COL_FILE_CHUNK_SIZE 23
+#define COL_FILE_CHUNK_size 23
 #define COL_RAN_DEL_CPU 35
 #define COL_PUTC_LATENCY 36
 #define COL_SEEKS_LATENCY 41
@@ -90,11 +90,11 @@ int main(int argc, char **argv)
     props[i] = new PCCHAR[MAX_ITEMS];
     props[i][0] = NULL;
     props[i][1] = NULL;
-    props[i][COL_NAME] = "bgcolor=\"#FFFFFF\" class=\"rowheader\"><FONT SIZE=+1";
+    props[i][COL_NAME] = "bgcolor=\"#FFFFFF\" class=\"rowheader\"><font size=+1";
     int j;
     for(j = COL_CONCURRENCY; j < MAX_ITEMS; j++)
     {
-      if( (j >= COL_NUM_FILES && j <= COL_FILE_CHUNK_SIZE) || j <= COL_DATA_CHUNK_SIZE )
+      if( (j >= COL_NUM_FILES && j <= COL_FILE_CHUNK_size) || j <= COL_DATA_CHUNK_size )
       {
         props[i][j] = "class=\"size\" bgcolor=\"#FFFFFF\"";
       }
@@ -109,32 +109,32 @@ int main(int argc, char **argv)
   for(i = 0; i < data.size(); i++)
   {
 // First print the average speed line
-    printf("<TR>");
-    print_item(i, COL_NAME, "rowspan=2");
+    printf("<tr>");
+    print_item(i, COL_NAME, "rowspan=\"2\"");
     if(col_used[COL_CONCURRENCY] == true)
       print_item(i, COL_CONCURRENCY);
-    print_item(i, COL_FILE_SIZE); // file_size
-    if(col_used[COL_DATA_CHUNK_SIZE] == true)
-      print_item(i, COL_DATA_CHUNK_SIZE);
+    print_item(i, COL_FILE_size); // file_size
+    if(col_used[COL_DATA_CHUNK_size] == true)
+      print_item(i, COL_DATA_CHUNK_size);
     print_a_line(i, COL_PUTC, COL_NUM_FILES);
-    if(col_used[COL_MAX_SIZE])
-      print_item(i, COL_MAX_SIZE);
-    if(col_used[COL_MIN_SIZE])
-      print_item(i, COL_MIN_SIZE);
+    if(col_used[COL_MAX_size])
+      print_item(i, COL_MAX_size);
+    if(col_used[COL_MIN_size])
+      print_item(i, COL_MIN_size);
     if(col_used[COL_NUM_DIRS])
       print_item(i, COL_NUM_DIRS);
-    if(col_used[COL_FILE_CHUNK_SIZE])
-      print_item(i, COL_FILE_CHUNK_SIZE);
-    print_a_line(i, COL_FILE_CHUNK_SIZE + 1, COL_RAN_DEL_CPU);
-    printf("</TR>\n");
+    if(col_used[COL_FILE_CHUNK_size])
+      print_item(i, COL_FILE_CHUNK_size);
+    print_a_line(i, COL_FILE_CHUNK_size + 1, COL_RAN_DEL_CPU);
+    printf("</tr>\n");
 // Now print the latency line
-    printf("<TR>");
+    printf("<tr>");
     int lat_width = 1;
-    if(col_used[COL_DATA_CHUNK_SIZE] == true)
+    if(col_used[COL_DATA_CHUNK_size] == true)
       lat_width++;
     if(col_used[COL_CONCURRENCY] == true)
       lat_width++;
-    printf("<TD class=\"size\" bgcolor=\"#FFFFFF\" COLSPAN=%d>Latency</TD>"
+    printf("<td class=\"size\" bgcolor=\"#FFFFFF\" colspan=\"%d\">Latency</td>"
          , lat_width);
     print_a_line(i, COL_PUTC_LATENCY, COL_SEEKS_LATENCY);
     int bef_lat_width;
@@ -143,10 +143,10 @@ int main(int argc, char **argv)
       lat_width = 2;
     bef_lat_width = mid_width - lat_width;
     if(bef_lat_width)
-      printf("<TD COLSPAN=%d></TD>", bef_lat_width);
-    printf("<TD class=\"size\" bgcolor=\"#FFFFFF\" COLSPAN=%d>Latency</TD>", lat_width);
+      printf("<td colspan=\"%d\"></td>", bef_lat_width);
+    printf("<td class=\"size\" bgcolor=\"#FFFFFF\" colspan=\"%d\">Latency</td>", lat_width);
     print_a_line(i, COL_SEQ_CREATE_LATENCY, COL_RAN_DEL_LATENCY);
-    printf("</TR>\n");
+    printf("</tr>\n");
   }
   footer();
   return 0;
@@ -251,7 +251,7 @@ void calc_vals()
         {
           if(vals[column_ind] == eLatency)
           {
-            props[sort_ind][column_ind] = "COLSPAN=2";
+            props[sort_ind][column_ind] = "colspan=\"2\"";
           }
         }
       }
@@ -316,14 +316,14 @@ void calc_vals()
             if(vals[column_ind] != eSpeed)
             {
               reverse = true;
-              extra = " COLSPAN=2";
+              extra = " colspan=\"2\"";
             }
             props[arr[sort_ind].pos][column_ind]
                   = get_col(range_col, arr[sort_ind].val - min_col, reverse, extra);
           }
           else if(vals[column_ind] != eSpeed)
           {
-            props[arr[sort_ind].pos][column_ind] = "COLSPAN=2";
+            props[arr[sort_ind].pos][column_ind] = "colspan=\"2\"";
           }
         }
       }
@@ -333,7 +333,7 @@ void calc_vals()
         {
           if(vals[column_ind] == eLatency)
           {
-            props[sort_ind][column_ind] = "COLSPAN=2";
+            props[sort_ind][column_ind] = "colspan=\"2\"";
           }
         }
       }
@@ -366,90 +366,90 @@ void heading(const char * const head);
 int header()
 {
   int vers_width = 2;
-  if(col_used[COL_DATA_CHUNK_SIZE] == true)
+  if(col_used[COL_DATA_CHUNK_size] == true)
     vers_width++;
   if(col_used[COL_CONCURRENCY] == true)
     vers_width++;
   int mid_width = 1;
-  if(col_used[COL_MAX_SIZE])
+  if(col_used[COL_MAX_size])
     mid_width++;
-  if(col_used[COL_MIN_SIZE])
+  if(col_used[COL_MIN_size])
     mid_width++;
   if(col_used[COL_NUM_DIRS])
     mid_width++;
-  if(col_used[COL_FILE_CHUNK_SIZE])
+  if(col_used[COL_FILE_CHUNK_size])
     mid_width++;
-  printf("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">"
-"<HTML>"
-"<HEAD><TITLE>Bonnie++ Benchmark results</TITLE>"
-"<STYLE type=\"text/css\">"
-"TD.header {text-align: center; backgroundcolor: \"#CCFFFF\" }"
-"TD.rowheader {text-align: center; backgroundcolor: \"#CCCFFF\" }"
-"TD.size {text-align: center; backgroundcolor: \"#CCCFFF\" }"
-"TD.ksec {text-align: center; fontstyle: italic }"
-"</STYLE>"
-"<BODY>"
-"<TABLE ALIGN=center BORDER=3 CELLPADDING=2 CELLSPACING=1>"
-"<TR><TD COLSPAN=%d class=\"header\"><FONT SIZE=+1><B>"
+  printf("<!DOCTYPE html PUBLIC \"-//W3C//Dtd XHTML 1.0 Strict//EN\" \"http://www.w3.org/tr/xhtml1/Dtd/xhtml1-strict.dtd\">"
+"<html xmlns=\"http://www.w3.org/1999/xhtml\">"
+"<head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=utf-8\" /><title>Bonnie++ Benchmark results</title>"
+"<style type=\"text/css\">"
+"td.header {text-align: center; background-color: \"#CCFFFF\" }"
+"td.rowheader {text-align: center; background-color: \"#CCCFFF\" }"
+"td.size {text-align: center; background-color: \"#CCCFFF\" }"
+"td.ksec {text-align: center; fontstyle: italic }"
+"</style></head>"
+"<body>"
+"<table border=\"3\" cellpadding=\"2\" cellspacing=\"1\">"
+"<tr><td colspan=\"%d\" class=\"header\"><font size=+1><b>"
 "Version " BON_VERSION
-"</B></FONT></TD>"
-"<TD COLSPAN=6 class=\"header\"><FONT SIZE=+2><B>Sequential Output</B></FONT></TD>"
-"<TD COLSPAN=4 class=\"header\"><FONT SIZE=+2><B>Sequential Input</B></FONT></TD>"
-"<TD COLSPAN=2 ROWSPAN=2 class=\"header\"><FONT SIZE=+2><B>Random<BR>Seeks</B></FONT></TD>"
-"<TD COLSPAN=%d class=\"header\"></TD>"
-"<TD COLSPAN=6 class=\"header\"><FONT SIZE=+2><B>Sequential Create</B></FONT></TD>"
-"<TD COLSPAN=6 class=\"header\"><FONT SIZE=+2><B>Random Create</B></FONT></TD>"
-"</TR>\n"
-"<TR>", vers_width, mid_width);
+"</b></font></td>"
+"<td colspan=\"6\" class=\"header\"><font size=+2><b>Sequential Output</b></font></td>"
+"<td colspan=\"4\" class=\"header\"><font size=+2><b>Sequential Input</b></font></td>"
+"<td colspan=\"2\" rowspan=\"2\" class=\"header\"><font size=+2><b>Random<br>Seeks</b></font></td>"
+"<td colspan=\"%d\" class=\"header\"></td>"
+"<td colspan=\"6\" class=\"header\"><font size=+2><b>Sequential Create</b></font></td>"
+"<td colspan=\"6\" class=\"header\"><font size=+2><b>Random Create</b></font></td>"
+"</tr>\n"
+"<tr>", vers_width, mid_width);
   if(col_used[COL_CONCURRENCY] == true)
-    printf("<TD COLSPAN=2>Concurrency</TD>");
+    printf("<td colspan=\"2\">Concurrency</td>");
   else
-    printf("<TD></TD>");
-  printf("<TD>Size</TD>");
-  if(col_used[COL_DATA_CHUNK_SIZE] == true)
-    printf("<TD>Chunk Size</TD>");
+    printf("<td></td>");
+  printf("<td>Size</td>");
+  if(col_used[COL_DATA_CHUNK_size] == true)
+    printf("<td>Chunk Size</td>");
   heading("Per Char"); heading("Block"); heading("Rewrite");
   heading("Per Char"); heading("Block");
-  printf("<TD>Num Files</TD>");
-  if(col_used[COL_MAX_SIZE])
-    printf("<TD>Max Size</TD>");
-  if(col_used[COL_MIN_SIZE])
-    printf("<TD>Min Size</TD>");
+  printf("<td>Num Files</td>");
+  if(col_used[COL_MAX_size])
+    printf("<td>Max Size</td>");
+  if(col_used[COL_MIN_size])
+    printf("<td>Min Size</td>");
   if(col_used[COL_NUM_DIRS])
-    printf("<TD>Num Dirs</TD>");
-  if(col_used[COL_FILE_CHUNK_SIZE])
-    printf("<TD>Chunk Size</TD>");
+    printf("<td>Num Dirs</td>");
+  if(col_used[COL_FILE_CHUNK_size])
+    printf("<td>Chunk Size</td>");
   heading("Create"); heading("Read"); heading("Delete");
   heading("Create"); heading("Read"); heading("Delete");
-  printf("</TR>");
+  printf("</tr>");
 
-  printf("<TR><TD COLSPAN=%d></TD>", vers_width);
+  printf("<tr><td colspan=\"%d\"></td>", vers_width);
 
   int i;
-  CPCCHAR ksec_form = "<TD class=\"ksec\"><FONT SIZE=-2>%s/sec</FONT></TD>"
-                      "<TD class=\"ksec\"><FONT SIZE=-2>%% CPU</FONT></TD>";
+  CPCCHAR ksec_form = "<td class=\"ksec\"><font size=-2>%s/sec</font></td>"
+                      "<td class=\"ksec\"><font size=-2>%% CPU</font></td>";
   for(i = 0; i < 5; i++)
   {
     printf(ksec_form, "K");
   }
   printf(ksec_form, "");
-  printf("<TD COLSPAN=%d></TD>", mid_width);
+  printf("<td colspan=\"%d\"></td>", mid_width);
   for(i = 0; i < 6; i++)
   {
     printf(ksec_form, "");
   }
-  printf("</TR>\n");
+  printf("</tr>\n");
   return mid_width;
 }
 
 void heading(const char * const head)
 {
-  printf("<TD COLSPAN=2>%s</TD>", head);
+  printf("<td colspan=\"2\">%s</td>", head);
 }
 
 void footer()
 {
-  printf("</TABLE>\n</BODY></HTML>\n");
+  printf("</table>\n</body></html>\n");
 }
 
 STR_VEC split(CPCCHAR delim, CPCCHAR buf)
@@ -473,7 +473,8 @@ void read_in(CPCCHAR buf)
   STR_VEC arr = split(",", buf);
   if(strcmp(arr[0], CSV_VERSION) )
   {
-    fprintf(stderr, "Can't process: %s\n", buf);
+    if(strncmp(arr[0], "format_version", 14))
+      fprintf(stderr, "Can't process: %s\n", buf);
     free((void *)arr[0]);
     return;
   }
@@ -487,12 +488,12 @@ void print_item(int num, int item, CPCCHAR extra)
     line_data = data[num][item];
   else
     line_data = "";
-  printf("<TD");
+  printf("<td");
   if(extra)
     printf(" %s", extra);
   if(props[num][item])
     printf(" %s", props[num][item]);
-  printf(">%s</TD>", line_data);
+  printf(">%s</td>", line_data);
 }
 
 void print_a_line(int num, int start, int end)

@@ -1,3 +1,48 @@
+bonnie++ (1.97.3) unstable; urgency=medium
+
+  * In bonnie++.8 documented -c option. Closes: #639452 #631484
+    Noted that for latency lower is better. Closes: #717285
+  * Fixed the symlink creation. Closes: #823882
+  * Change backgroundcolor to background-color for correct CSS. Closes: #242878
+
+ -- Russell Coker <russell@coker.com.au>  Tue, 13 Dec 2016 13:37:51 +1100
+
+bonnie++ (1.97.2) unstable; urgency=medium
+
+  * Added compat level and build-depends on debhelper >= 9
+    Closes: #817380  Closes: #817313
+  * Fix description Closes: #699576
+  * Added smoketest Closes: #719739
+  * Make it build with GCC-6
+
+ -- Russell Coker <russell@coker.com.au>  Thu, 30 Jun 2016 19:22:23 +1000
+
+bonnie++ (1.97.1) unstable; urgency=medium
+
+  * Fixed the changelog and aim it at unstable not wheezy.
+
+ -- Russell Coker <russell@coker.com.au>  Fri, 23 Nov 2012 20:12:46 +1100
+
+bonnie++ (1.97) unstable; urgency=medium
+
+  * Fix a CSV column alignment bug in the case where -s0 is used.  Bump the
+    data format version to 1.97.  Thanks to Brian Keefer for reporting this.
+    Also added the concurrency and seed fields to the header.
+    Closes: #660564, #669124
+  * Use a const pointer for the large file test.
+  * zcav.8 documents the maximum value of -s
+  * Made the zcav deefault block size 512M to cope with new disks that can
+    sustain >200MB/s.  Also documented this.
+  * Made zcav not SEGV when the -c option is used.
+    Closes: #687668
+  * Describe the units for the plain text output in bonnie++.8.
+    Closes: #643821
+  * Removed the outdated section in the description which referred to Lenny.
+    Closes: #693483
+  * Fixed most of the HTML validation errors in the output of bon_csv2html.
+
+ -- Russell Coker <russell@coker.com.au>  Fri, 23 Nov 2012 19:32:00 +1100
+
 bonnie++ (1.96) unstable; urgency=low
 
   * Fix a minor bug in setting the GID.

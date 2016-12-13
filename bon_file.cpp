@@ -208,7 +208,12 @@ int COpenTest::create_a_link(const char *original, const char *filename, int dir
   }
   else
   {
-    if(symlink(original, filename))
+    const char *name = strchr(original, '/');
+    if(name)
+      name++;
+    else
+      name = original;
+    if(symlink(name, filename))
     {
       fprintf(stderr, "Can't create symlink %s\n", filename);
       return -1;

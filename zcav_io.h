@@ -20,6 +20,7 @@ enum results
 double average(double *array, int count);
 
 const int MEG = 1024*1024;
+const int DEFAULT_BLOCK_SIZE = 512;
 const int DEFAULT_CHUNK_SIZE = 1;
 
 class ZcavRead

@@ -175,7 +175,7 @@ int BonTimer::print_latency(tests_t test)
 void
 BonTimer::PrintHeader(FILE *fp)
 {
-  fprintf(fp, "format_version,bonnie_version,name,file_size,io_chunk_size,putc,putc_cpu,put_block,put_block_cpu,rewrite,rewrite_cpu,getc,getc_cpu,get_block,get_block_cpu,seeks,seeks_cpu");
+  fprintf(fp, "format_version,bonnie_version,name,concurrency,seed,file_size,io_chunk_size,putc,putc_cpu,put_block,put_block_cpu,rewrite,rewrite_cpu,getc,getc_cpu,get_block,get_block_cpu,seeks,seeks_cpu");
   fprintf(fp, ",num_files,max_size,min_size,num_dirs,file_chunk_size,seq_create,seq_create_cpu,seq_stat,seq_stat_cpu,seq_del,seq_del_cpu,ran_create,ran_create_cpu,ran_stat,ran_stat_cpu,ran_del,ran_del_cpu");
   fprintf(fp, ",putc_latency,put_block_latency,rewrite_latency,getc_latency,get_block_latency,seeks_latency,seq_create_latency,seq_stat_latency,seq_del_latency,ran_create_latency,ran_stat_latency,ran_del_latency");
   fprintf(fp, "\n");
@@ -293,7 +293,7 @@ BonTimer::DoReportIO(int file_size, int char_file_size
   }
   else if(m_type == csv)
   {
-    fprintf(m_fp, CSV_VERSION "," BON_VERSION ",%s,%d,%s,,,,,,,,,,,,,", m_name
+    fprintf(m_fp, CSV_VERSION "," BON_VERSION ",%s,%d,%s,,,,,,,,,,,,,,", m_name
           , m_concurrency, random_source.getSeed().c_str());
   }
   return 0;

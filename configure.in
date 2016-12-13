@@ -2,9 +2,9 @@ dnl Process this file with autoconf to produce a configure script.
 AC_INIT(bonnie++.cpp)
 AC_CONFIG_HEADER(conf.h)
 AC_SUBST(version)
-version="1.96"
+version="1.97"
 AC_SUBST(csv_version)
-csv_version="1.96"
+csv_version="1.97"
 
 AC_ARG_ENABLE(stripping,
       [  --disable-stripping  disables stripping of installed binaries],
@@ -96,7 +96,7 @@ AC_TRY_RUN([#ifndef _LARGEFILE64_SOURCE
 int main () {
   int fd;
   off64_t i = off64_t(1) << 32 + 1;
-  char *name = "test.2g";
+  const char * const name = "test.2g";
 
   fd = open64(name, O_CREAT|O_RDWR|O_EXCL|O_LARGEFILE,
               S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP);

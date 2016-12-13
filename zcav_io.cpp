@@ -108,7 +108,7 @@ int ZcavRead::Read(int max_loops, int max_size, int writeCom, int skip_rate, int
     double total_read_time = 0.0;
     bool nextLoop = false;
     for( ; !nextLoop && (!max_size || i < max_size)
-              && (loops == 0 || m_times[i][0] != -1.0)
+              && (loops == 0 || (m_times[i] && m_times[i][0] != -1.0))
               && (!max_size || i < max_size); i++)
     {
       double read_time = access_data(i ? skip_rate - 1 : 0);
